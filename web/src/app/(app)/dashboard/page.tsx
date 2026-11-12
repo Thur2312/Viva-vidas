@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarCheck, CircleDollarSign, Handshake, UserCheck } from "lucide-react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
+import { CountUp } from "@/components/CountUp";
+import { Folio, Manchete, Marginalia } from "@/components/folha";
+import { PulseFunnel } from "@/components/PulseFunnel";
 import { RangePicker } from "@/components/RangePicker";
-import { KpiCard, PageHeader, Panel } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { useOverview, useReadiness } from "@/lib/hooks";
 import { useRangeState } from "@/lib/range";
 import { money, num, pct, perUnit, ratio } from "@/lib/format";
 import { STAGES, STAGE_META, toNum, type Overview, type Readiness as ReadinessT, type Stage } from "@/lib/types";
 
-const actorTone: Record<string, string> = { agent: "bg-ok", human: "bg-brand", system: "bg-mute" };
+// Nomes curtos para telas estreitas (seis colunas em 390 px não comportam o nome inteiro).
+const CURTO: Record<Stage, string> = { contatado: "Contato", respondeu: "Resposta", qualificado: "Qualif.", reuniao: "Reunião", compareceu: "Presença", venda: "Venda" };
+
+const actorTone: Record<string, string> = { agent: "bg-ok", human: "bg-ink", system: "bg-mute" };
 const actorLabel: Record<string, string> = { agent: "Agente", human: "Equipe", system: "Sistema" };
 
 function pilotDay(): { day: number; total: number } | null {
@@ -27,22 +32,22 @@ function DailyBars({ series }: { series: Overview["series"] }) {
   const rows = series.map((d) => ({ dia: d.dia, c: toNum(d.contatos), q: toNum(d.qualificados) }));
   const max = Math.max(1, ...rows.map((r) => r.c));
   return (
-    <figure>
-      <div className="flex h-44 items-end gap-1.5 sm:gap-2" role="img" aria-label={`Contatos e qualificados por dia: ${rows.map((r) => `${r.dia}, ${r.c} contatos, ${r.q} qualificados`).join("; ")}`}>
+    <figure className="m-0">
+      <div className="flex h-36 gap-1 sm:gap-1.5" role="img" aria-label={`Contatos e qualificados por dia: ${rows.map((r) => `${r.dia}, ${r.c} contatos, ${r.q} qualificados`).join("; ")}`}>
         {rows.map((d) => (
           <div key={d.dia} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${d.dia}: ${d.c} contatos, ${d.q} qualificados`}>
             <div className="relative flex w-full flex-1 items-end">
-              <div className="w-full rounded-t bg-deep/15 dark:bg-white/20" style={{ height: `${(d.c / max) * 100}%` }}>
-                <div className="w-full rounded-t bg-brand" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
+              <div className="w-full rounded-t-[2px] bg-ink/15" style={{ height: `${(d.c / max) * 100}%` }}>
+                <div className="w-full rounded-t-[2px] bg-sinal" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
               </div>
             </div>
-            <span className="max-w-full truncate text-[10px] text-mute sm:text-xs">{d.dia.slice(0, 5)}</span>
+            <span className="tabular max-w-full truncate font-mono text-[10px] text-mute">{d.dia.slice(0, 5)}</span>
           </div>
         ))}
       </div>
-      <figcaption className="mt-3 flex gap-4 text-xs text-mute">
-        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-deep/15 dark:bg-white/20" /> Contatos</span>
-        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-brand" /> Qualificados</span>
+      <figcaption className="mt-3 flex gap-5 text-xs text-mute">
+        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-[2px] bg-ink/15" /> Contatos</span>
+        <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-[2px] bg-sinal" /> Qualificados</span>
       </figcaption>
     </figure>
   );
@@ -69,10 +74,10 @@ function ReadinessView({ r }: { r: ReadinessT }) {
               <li key={s.stage}>
                 <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
                   <span className="font-medium">{name}</span>
-                  <span className="tabular font-semibold">{rate === null ? "sem dados" : `${pct(rate)} aproveitáveis`}</span>
+                  <span className="tabular font-mono font-medium">{rate === null ? "sem dados" : `${pct(rate)} aproveitáveis`}</span>
                 </div>
-                <div className="h-2.5 rounded-full bg-deep/[0.08] dark:bg-white/15" role="progressbar" aria-label={`Rascunhos aproveitáveis em ${name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate === null ? undefined : Math.round(rate * 100)}>
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${(rate ?? 0) * 100}%` }} />
+                <div className="h-1.5 bg-ink/10" role="progressbar" aria-label={`Rascunhos aproveitáveis em ${name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate === null ? undefined : Math.round(rate * 100)}>
+                  <div className="h-full bg-ok" style={{ width: `${(rate ?? 0) * 100}%` }} />
                 </div>
                 <p className="mt-1 text-xs text-mute">
                   {num(toNum(s.compared))} comparados de {num(toNum(s.drafts))} rascunhos
@@ -87,6 +92,8 @@ function ReadinessView({ r }: { r: ReadinessT }) {
   );
 }
 
+const countFmt = (n: number) => num(Math.round(n));
+
 export default function Dashboard() {
   const [range, setRange] = useRangeState("30d");
   const ov = useOverview(range);
@@ -100,101 +107,105 @@ export default function Dashboard() {
       </PageHeader>
 
       {pd && (
-        <div className="rise mb-6">
-          <div className="mb-1.5 flex justify-between text-xs font-medium text-mute">
+        <div className="rise mb-6 max-w-xl">
+          <div className="mb-1.5 flex justify-between font-mono text-[11px] uppercase tracking-wider text-mute">
             <span>Início do piloto</span>
-            <span>Reunião de decisão · dia {pd.total}</span>
+            <span>Decisão · dia {pd.total}</span>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pd.day} aria-valuemin={0} aria-valuemax={pd.total} aria-label="Progresso do piloto">
-            <div className="h-full rounded-full bg-brand" style={{ width: `${(pd.day / pd.total) * 100}%` }} />
+          <div className="h-1 bg-line" role="progressbar" aria-valuenow={pd.day} aria-valuemin={0} aria-valuemax={pd.total} aria-label="Progresso do piloto">
+            <div className="h-full bg-sinal" style={{ width: `${(pd.day / pd.total) * 100}%` }} />
           </div>
         </div>
       )}
 
-      <div className="mb-6"><RangePicker value={range} onChange={setRange} /></div>
+      <div className="mb-8"><RangePicker value={range} onChange={setRange} /></div>
 
-      <QueryBlock q={ov} skeleton={<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}</div>}>
-        {(d) => {
-          const f = funnelOf(d);
-          const invest = toNum(d.investido);
-          const receita = toNum(d.receita);
-          const cpq = perUnit(invest, f.qualificado);
-          return (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <KpiCard variant="primary" title="Reuniões marcadas" value={num(f.reuniao)} icon={<CalendarCheck size={18} />} sub={`${num(f.compareceu)} já compareceram`} tip="Leads que o agente qualificou e agendou na agenda do Alberto." />
-              <KpiCard title="Leads qualificados" value={num(f.qualificado)} icon={<UserCheck size={18} />} sub={`${pct(ratio(f.qualificado, f.respondeu))} de quem respondeu`} tip="Leads com perfil para a redução do plano, segundo o playbook." />
-              <KpiCard title="Custo por qualificado" value={cpq === null || invest === 0 ? "—" : money(cpq)} icon={<CircleDollarSign size={18} />} sub={invest > 0 ? `Investido ${money(invest)}` : "Sem investimento registrado"} tip="Investimento em anúncios dividido pelos leads qualificados. Aparece como traço quando não há investimento ou qualificados no período." />
-              <KpiCard variant="success" title="Vendas pelo agente" value={num(f.venda)} icon={<Handshake size={18} />} sub={`${money(receita)} vendidos`} tip="Base dos 30% da proposta. A regra de atribuição ainda será fechada em contrato." />
-            </div>
-          );
-        }}
-      </QueryBlock>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-5">
-        <Panel className="rise xl:col-span-3" title="Funil do piloto" hint="Quantos leads chegaram em cada etapa e quanto passou para a próxima.">
-          <QueryBlock q={ov} skeleton={<Skeleton className="h-72" />} isEmpty={(d) => toNum(d.funnel?.contatado) === 0} empty={<EmptyState title="Nenhum lead ainda">Quando o agente começar a contatar pessoas, o funil aparece aqui. Tente também ampliar o período.</EmptyState>}>
+      <div className="grid gap-x-14 gap-y-12 xl:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Coluna principal: a manchete e o funil */}
+        <div className="min-w-0 space-y-12">
+          <QueryBlock q={ov} skeleton={<Skeleton className="h-44" />}>
             {(d) => {
               const f = funnelOf(d);
-              const max = Math.max(1, f.contatado);
               return (
-                <>
-                  <ol className="space-y-3">
-                    {STAGES.map((s, i) => {
-                      const v = f[s];
-                      const prev = i === 0 ? null : f[STAGES[i - 1]];
-                      return (
-                        <li key={s} className="grid grid-cols-[110px_1fr] items-center gap-3 sm:grid-cols-[140px_1fr]">
-                          <div>
-                            <p className="text-sm font-semibold">{STAGE_META[s].nome}</p>
-                            {prev !== null && <p className="text-xs text-mute">{prev === 0 ? "sem base" : `${pct(ratio(v, prev))} da etapa anterior`}</p>}
-                          </div>
-                          <div className="h-9 rounded-md bg-deep/[0.06] dark:bg-white/10">
-                            <div className={`tabular flex h-full items-center rounded-md px-3 text-sm font-semibold ${s === "venda" ? "bg-brand text-on-brand" : "bg-deep text-white dark:bg-bubble"}`} style={{ width: `max(${(v / max) * 100}%, 3.5rem)` }}>
-                              {num(v)}
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                  <p className="mt-4 text-sm text-mute">De {num(f.contatado)} contatos, {pct(ratio(f.venda, f.contatado))} viraram venda.</p>
-                </>
+                <Manchete
+                  label="Reuniões marcadas pelo agente"
+                  caption={<>{num(f.compareceu)} já compareceram. {pct(ratio(f.qualificado, f.respondeu))} de quem respondeu foi qualificado.</>}
+                >
+                  <CountUp value={f.reuniao} format={countFmt} />
+                </Manchete>
               );
             }}
           </QueryBlock>
-        </Panel>
 
-        <Panel className="rise xl:col-span-2" title="Atividade do agente" hint="O que ele fez e o que foi para o Alberto.">
-          <QueryBlock q={ov} skeleton={<Skeleton className="h-72" />} isEmpty={(d) => !d.activity?.length} empty={<EmptyState title="Sem atividade no período" />}>
-            {(d) => (
-              <ul className="space-y-3.5">
-                {d.activity.map((a, i) => (
-                  <li key={`${a.hora}-${i}`} className="grid grid-cols-[44px_12px_1fr] items-start gap-2 text-sm">
-                    <span className="tabular pt-px text-xs font-medium text-mute">{a.hora}</span>
-                    <span className={`mt-1.5 h-2 w-2 rounded-full ${actorTone[a.actor] ?? "bg-mute"}`} aria-hidden="true" />
-                    <span>
-                      <span className="sr-only">{actorLabel[a.actor] ?? a.actor}: </span>
-                      <span className="capitalize">{a.type.replace(/_/g, " ")}</span>
-                      {a.name && (a.lead_id ? <> · <Link href={`/funil?leadId=${encodeURIComponent(a.lead_id)}`} className="font-medium underline underline-offset-2">{a.name}</Link></> : <> · {a.name}</>)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <Folio n="01" title="Funil do piloto" hint="Quantos leads chegaram em cada etapa. A altura é proporcional ao total, a partir de zero.">
+            <QueryBlock q={ov} skeleton={<Skeleton className="h-72" />} isEmpty={(d) => toNum(d.funnel?.contatado) === 0} empty={<EmptyState title="Nenhum lead ainda">Quando o agente começar a contatar pessoas, o funil aparece aqui. Tente também ampliar o período.</EmptyState>}>
+              {(d) => {
+                const f = funnelOf(d);
+                return (
+                  <>
+                    <PulseFunnel rows={STAGES.map((s) => ({ key: s, nome: STAGE_META[s].nome, curto: CURTO[s], v: f[s] }))} />
+                    <p className="mt-4 text-sm text-mute">De {num(f.contatado)} contatos, {pct(ratio(f.venda, f.contatado))} viraram venda.</p>
+                  </>
+                );
+              }}
+            </QueryBlock>
+          </Folio>
+
+          <Folio n="02" title="Contatos por dia" hint="A parte coral são os leads que chegaram a qualificados.">
+            <QueryBlock q={ov} skeleton={<Skeleton className="h-44" />} isEmpty={(d) => !d.series?.length} empty={<EmptyState title="Nenhum lead ainda">Sem contatos no período selecionado.</EmptyState>}>
+              {(d) => <DailyBars series={d.series} />}
+            </QueryBlock>
+          </Folio>
+        </div>
+
+        {/* Marginália: números de apoio, atividade e aprendizado */}
+        <aside className="min-w-0 space-y-10" aria-label="Números de apoio">
+          <QueryBlock q={ov} skeleton={<Skeleton className="h-64" />}>
+            {(d) => {
+              const f = funnelOf(d);
+              const invest = toNum(d.investido);
+              const receita = toNum(d.receita);
+              const cpq = perUnit(invest, f.qualificado);
+              return (
+                <Marginalia
+                  items={[
+                    { label: "Leads qualificados", value: num(f.qualificado), sub: `${pct(ratio(f.qualificado, f.respondeu))} de quem respondeu`, tip: "Leads com perfil para a redução do plano, segundo o playbook." },
+                    { label: "Custo por qualificado", value: cpq === null || invest === 0 ? "—" : money(cpq), sub: invest > 0 ? `Investido ${money(invest)}` : "Sem investimento registrado", tip: "Investimento em anúncios dividido pelos qualificados." },
+                    { label: "Vendas pelo agente", value: num(f.venda), sub: `${money(receita)} vendidos`, tone: f.venda > 0 ? "ok" : undefined, tip: "Base dos 30% da proposta. A regra de atribuição será fechada em contrato." },
+                    { label: "Responderam", value: num(f.respondeu), sub: `${pct(ratio(f.respondeu, f.contatado))} dos contatados` },
+                  ]}
+                />
+              );
+            }}
           </QueryBlock>
-        </Panel>
-      </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-5">
-        <Panel className="rise xl:col-span-3" title="Contatos por dia" hint="A parte laranja são os leads que chegaram a qualificados.">
-          <QueryBlock q={ov} skeleton={<Skeleton className="h-52" />} isEmpty={(d) => !d.series?.length} empty={<EmptyState title="Nenhum lead ainda">Sem contatos no período selecionado.</EmptyState>}>
-            {(d) => <DailyBars series={d.series} />}
-          </QueryBlock>
-        </Panel>
+          <section aria-labelledby="atividade" className="border-t border-line pt-5">
+            <h2 id="atividade" className="mb-3 font-display text-xl">Atividade do agente</h2>
+            <QueryBlock q={ov} skeleton={<Skeleton className="h-64" />} isEmpty={(d) => !d.activity?.length} empty={<EmptyState title="Sem atividade no período" />}>
+              {(d) => (
+                <ul className="space-y-3">
+                  {d.activity.map((a, i) => (
+                    <li key={`${a.hora}-${i}`} className="grid grid-cols-[40px_10px_1fr] items-start gap-2 text-sm">
+                      <span className="tabular pt-px font-mono text-xs text-mute">{a.hora}</span>
+                      <span className={`mt-1.5 h-2 w-2 rounded-full ${actorTone[a.actor] ?? "bg-mute"}`} aria-hidden="true" />
+                      <span>
+                        <span className="sr-only">{actorLabel[a.actor] ?? a.actor}: </span>
+                        <span className="capitalize">{a.type.replace(/_/g, " ")}</span>
+                        {a.name && (a.lead_id ? <> · <Link href={`/funil?leadId=${encodeURIComponent(a.lead_id)}`} className="font-medium underline underline-offset-2">{a.name}</Link></> : <> · {a.name}</>)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </QueryBlock>
+          </section>
 
-        <Panel className="rise xl:col-span-2" title="Aprendizado em modo sombra" hint="Quanto dos rascunhos do agente a equipe aproveitaria como estão.">
-          <QueryBlock q={rd} skeleton={<Skeleton className="h-52" />}>{(r) => <ReadinessView r={r} />}</QueryBlock>
-        </Panel>
+          <section aria-labelledby="sombra" className="border-t border-line pt-5">
+            <h2 id="sombra" className="mb-1 font-display text-xl">Aprendizado em modo sombra</h2>
+            <p className="mb-3 text-sm text-mute">Quanto dos rascunhos a equipe aproveitaria como estão.</p>
+            <QueryBlock q={rd} skeleton={<Skeleton className="h-40" />}>{(r) => <ReadinessView r={r} />}</QueryBlock>
+          </section>
+        </aside>
       </div>
     </>
   );
