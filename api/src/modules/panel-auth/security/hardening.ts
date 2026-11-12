@@ -95,6 +95,14 @@ export class SafeExceptionFilter implements ExceptionFilter {
     if (res.headersSent) return
 
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
+    // 502/503 LANCADOS DE PROPOSITO por nos (ex.: "Chat nao configurado", "Agenda indisponivel") levam o motivo ao painel:
+    // as mensagens sao nossas, em pt-BR, sem segredo nem dado pessoal. Excecao inesperada (500) continua generica.
+    if (exception instanceof HttpException && (status === 502 || status === 503)) {
+      this.logger.warn(`${(req as any).reqId ?? '-'} ${req.method} ${safePath(req.originalUrl ?? req.url)} -> ${status}`)
+      const body = exception.getResponse()
+      res.status(status).json(typeof body === 'string' ? { statusCode: status, message: body } : body)
+      return
+    }
     if (status >= 500) {
       const err = exception as any
       this.logger.error(`${(req as any).reqId ?? '-'} ${req.method} ${safePath(req.originalUrl ?? req.url)} -> ${status} ${err?.name ?? 'Error'}: ${scrub(err?.message ?? '')}`)

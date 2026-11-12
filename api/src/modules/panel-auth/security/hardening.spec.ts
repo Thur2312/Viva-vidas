@@ -1,4 +1,5 @@
-import { bffClientIp, corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
+import { BadGatewayException, HttpException, InternalServerErrorException, ServiceUnavailableException } from '@nestjs/common'
+import { SafeExceptionFilter, bffClientIp, corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
 import { buildTenantBaseUrl } from 'src/shared/util/tenant-url.utils'
 import { buildPublicUrl, getStorageConfig } from 'src/modules/files/config/storage.config'
 
@@ -86,5 +87,30 @@ describe('bffClientIp', () => {
   it('ignora tudo sem a env e recusa valor que nao e IP', () => {
     expect(run({ 'x-bff-key': 'x', 'x-bff-client-ip': '198.51.100.7' }, undefined)).toBe('203.0.113.9')
     expect(run({ 'x-bff-key': 'chave-do-bff', 'x-bff-client-ip': "1.2.3.4'; DROP" })).toBe('203.0.113.9')
+  })
+})
+
+describe('SafeExceptionFilter', () => {
+  const run = (e: unknown) => {
+    const out: { status?: number; body?: any } = {}
+    const res: any = { headersSent: false, status(c: number) { out.status = c; return this }, json(b: any) { out.body = b } }
+    const host: any = { switchToHttp: () => ({ getResponse: () => res, getRequest: () => ({ method: 'GET', originalUrl: '/x?token=SEGREDO', reqId: 'r1' }) }) }
+    new SafeExceptionFilter().catch(e, host)
+    return out
+  }
+  it('503/502 lancados de proposito levam o motivo ao painel (mensagem e codigo)', () => {
+    const r = run(new ServiceUnavailableException('Agenda não configurada'))
+    expect(r.status).toBe(503)
+    expect(r.body).toMatchObject({ statusCode: 503, message: 'Agenda não configurada' })
+    expect(run(new BadGatewayException('Agenda indisponível no momento')).body.message).toBe('Agenda indisponível no momento')
+    expect(run(new ServiceUnavailableException({ code: 'provedor_nao_configurado', message: 'A telefonia ainda não está configurada.' })).body).toMatchObject({ code: 'provedor_nao_configurado' })
+  })
+  it('erro inesperado e 500 continuam genericos, sem vazar detalhe', () => {
+    expect(run(new Error('connection to postgres://u:senha@host failed')).body).toEqual({ statusCode: 500, message: 'Internal server error' })
+    expect(run(new InternalServerErrorException('segredo interno')).body).toEqual({ statusCode: 500, message: 'Internal server error' })
+    expect(run(new HttpException('x', 504)).body).toEqual({ statusCode: 504, message: 'Internal server error' })
+  })
+  it('4xx passam como sempre', () => {
+    expect(run(new HttpException('Acesso negado', 403))).toEqual({ status: 403, body: { statusCode: 403, message: 'Acesso negado' } })
   })
 })
