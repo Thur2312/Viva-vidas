@@ -14,12 +14,14 @@ import { RetentionService } from './compliance/retention.service'
 import { ConversationsController } from './conversations/conversations.controller'
 import { ConversationsService } from './conversations/conversations.service'
 import { BROADCASTS_PROVIDERS, BroadcastsController } from './broadcasts/broadcasts.module-parts'
+import { CRM_PROVIDERS, CrmController } from '../crm/crm.module-parts'
 
 @Module({
   imports: [ChatGatewayModule],
-  controllers: [PilotController, BroadcastsController, ConversationsController],
+  controllers: [PilotController, BroadcastsController, ConversationsController, CrmController],
   providers: [
     ...BROADCASTS_PROVIDERS,
+    ...CRM_PROVIDERS,
     PgService, PilotService, ShadowService, PilotKeyGuard,
     CryptoService, AuditService, ConsentService, DataSubjectService, LearningService, RetentionService, ConversationsService,
   ],

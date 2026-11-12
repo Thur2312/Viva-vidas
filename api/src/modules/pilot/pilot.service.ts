@@ -6,6 +6,7 @@ import { ConsentService, GrantInput } from './compliance/consent.service'
 import { CryptoService } from './compliance/crypto.service'
 import { LearningService } from './compliance/learning.service'
 import { maskPhone, normalizePhone } from './compliance/phone'
+import { enqueueCrmEvent } from '../crm/crm.outbox'
 import { RESTRICTED_TEXT } from './compliance/content-access'
 import { flagSensitive } from './compliance/redaction'
 import { markBroadcastReply } from './broadcasts/broadcast-reply'
@@ -137,11 +138,13 @@ export class PilotService {
     )
     if (dup.rowCount) return { duplicated: true }
 
-    await db.query(
+    const inserted = await db.query(
       `INSERT INTO horizon_agent.lead_events (lead_id, type, value, actor, payload)
-       VALUES ($1, $2, $3, $4, coalesce($5::jsonb, '{}'::jsonb))`,
+       VALUES ($1, $2, $3, $4, coalesce($5::jsonb, '{}'::jsonb)) RETURNING id`,
       [leadId, type, opts.value ?? null, opts.actor ?? 'humano', opts.payload ? JSON.stringify(opts.payload) : null],
     )
+    // Fila do CRM (Pipedrive): mesma transacao do evento. Sem CRM_PROVIDER=pipedrive nao faz nada.
+    await enqueueCrmEvent(db, { tenant: this.tenant, leadId, type, eventId: inserted.rows?.[0]?.id, value: opts.value })
 
     if (type === 'opt_out') {
       await db.query(`UPDATE horizon_agent.leads SET opt_out = true, updated_at = now() WHERE id = $1`, [leadId])
