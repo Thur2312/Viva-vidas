@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  BarChart3, Bot, Scale, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
+  BarChart3, Bot, Plug, Scale, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
 } from "lucide-react";
 import { Wordmark } from "./Brand";
 import { TopProgress } from "./Block";
@@ -45,7 +45,7 @@ const nav: Category[] = [
       { title: "Disparos", icon: Send, path: "/disparos" },
     ],
   },
-  { category: "Agente", items: [{ title: "Playbook e conexões", icon: Bot, path: "/agente" }] },
+  { category: "Agente", items: [{ title: "Playbook e conexões", icon: Bot, path: "/agente" }, { title: "Integrações", icon: Plug, path: "/integracoes" }] },
 ];
 
 const titles: Record<string, string> = {
@@ -57,6 +57,7 @@ const titles: Record<string, string> = {
   "/origem": "Origem e anúncios",
   "/disparos": "Disparos",
   "/agente": "Playbook e conexões",
+  "/integracoes": "Integrações",
 };
 
 function useTheme() {

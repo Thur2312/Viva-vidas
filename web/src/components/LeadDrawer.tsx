@@ -4,6 +4,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { ErrorState, Skeleton } from "./Block";
 import { LeadConversation } from "./conversas/LeadConversation";
+import { BookMeeting } from "./integracoes/BookMeeting";
 import { usePrivacy } from "./Providers";
 import { ScoreDot } from "./ui";
 import { dateTime } from "@/lib/format";
@@ -121,6 +122,8 @@ export function LeadDrawer({ leadId, onClose }: { leadId: string; onClose: () =>
                   {consent && (<><dt className="text-mute">Consentimento</dt><dd>{consent}</dd></>)}
                 </dl>
               </section>
+
+              <BookMeeting leadId={leadId} blocked={optOut} alreadyBooked={d.events.some((e) => (e as Obj).type === "reuniao_marcada")} />
 
               <section aria-labelledby={`${titleId}-r`}>
                 <h3 id={`${titleId}-r`} className="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Rascunhos do agente × resposta humana</h3>

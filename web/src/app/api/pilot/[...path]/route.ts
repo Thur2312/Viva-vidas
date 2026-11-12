@@ -24,12 +24,17 @@ const GET_ROUTES: Route[] = [
   { re: /^broadcasts$/, params: [] },
   { re: /^broadcasts\/templates$/, params: ["refresh"] },
   { re: /^broadcasts\/number-health$/, params: [] },
+  { re: /^crm\/status$/, params: [] },
+  { re: /^calendar\/status$/, params: [] },
+  { re: /^calendar\/slots$/, params: ["limit"] },
   { re: new RegExp(`^broadcasts/${UUID}$`), params: [] },
   { re: new RegExp(`^broadcasts/${UUID}/recipients$`), params: ["status", "page"] },
 ];
 
 const POST_ROUTES: Route[] = [
   { re: new RegExp(`^conversations/${UUID}/messages$`), params: [] },
+  { re: /^crm\/retry-dead$/, params: [] },
+  { re: /^calendar\/book$/, params: [] },
   { re: /^voice\/calls$/, params: [], base: "/voice" },
   { re: /^broadcasts$/, params: [] },
   { re: /^broadcasts\/templates$/, params: [] },
@@ -67,7 +72,7 @@ const MAX_BODY = 8 * 1024;
 type Method = "POST" | "PATCH" | "PUT";
 
 const passthrough = (path: string, status: number) =>
-  status === 422 || status === 503 || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status));
+  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status));
 
 function mutate(method: Method, routes: Route[]) {
   return (req: Request, ctx: { params: Promise<{ path: string[] }> }) =>
