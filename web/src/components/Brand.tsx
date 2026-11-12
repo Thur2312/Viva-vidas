@@ -1,12 +1,12 @@
 import { brand } from "@/lib/brand";
 
-// Símbolo: três camadas de cobertura empilhadas, a de cima em destaque. Desenhado em SVG, sem imagem.
+// Símbolo: funil de três anéis que se estreitam; o de baixo em destaque (quem chegou ao fim). Desenhado em SVG, sem imagem.
 export function Mark({ size = 32, className = "" }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" className={className} aria-hidden="true" fill="none" strokeLinejoin="round">
-      <path d="M20 22 35 29 20 36 5 29Z" stroke="currentColor" strokeWidth="2.2" opacity="0.45" />
-      <path d="M20 15 35 22 20 29 5 22Z" stroke="currentColor" strokeWidth="2.2" opacity="0.75" />
-      <path d="M20 8 35 15 20 22 5 15Z" stroke="rgb(var(--brand))" strokeWidth="2.6" fill="rgb(var(--brand) / 0.14)" />
+    <svg width={size} height={size} viewBox="0 0 40 40" className={className} aria-hidden="true" fill="none">
+      <ellipse cx="20" cy="10" rx="15" ry="5" stroke="currentColor" strokeWidth="2.2" opacity="0.5" />
+      <ellipse cx="20" cy="21" rx="10" ry="3.6" stroke="currentColor" strokeWidth="2.2" opacity="0.8" />
+      <ellipse cx="20" cy="31" rx="5" ry="2.2" stroke="rgb(var(--brand))" strokeWidth="2.6" fill="rgb(var(--brand) / 0.2)" />
     </svg>
   );
 }
@@ -20,16 +20,6 @@ export function Wordmark({ light = false, compact = false }: { light?: boolean; 
         {!compact && <span className="mt-0.5 block text-[11px] font-medium tracking-wide opacity-70">{brand.tagline}</span>}
       </span>
     </span>
-  );
-}
-
-/** Fita de batimento (ECG). Decorativa: o movimento é só CSS e para com prefers-reduced-motion. */
-export function Ecg({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 600 40" preserveAspectRatio="none" className={className} aria-hidden="true" fill="none">
-      <path d="M0 22H120l10-4 8 4h24l8-16 10 34 10-30 8 12h40l8-5 8 5h120l10-4 8 4h24l8-16 10 34 10-30 8 12H600" stroke="rgb(var(--line))" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path className="ecg-run" d="M0 22H120l10-4 8 4h24l8-16 10 34 10-30 8 12h40l8-5 8 5h120l10-4 8 4h24l8-16 10 34 10-30 8 12H600" stroke="rgb(var(--sinal))" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
 

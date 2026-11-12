@@ -40,7 +40,7 @@ export default function Voz() {
           const reason = blockedReason(s, manager);
           return (
             <div className="space-y-6">
-              <div className="rise grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
                   title="Telefonia"
                   value={s.telephony.ready ? "Pronta" : "Pendente"}

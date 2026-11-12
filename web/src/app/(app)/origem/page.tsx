@@ -80,7 +80,6 @@ export default function Origem() {
       </form>
 
       <Panel
-        className="rise"
         title="Desempenho por campanha"
         hint="Custo por lead, por qualificado, por reunião e por venda."
         action={
@@ -140,7 +139,7 @@ export default function Origem() {
         </QueryBlock>
       </Panel>
 
-      <div className="rise mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title="Qualidade do lead por campanha" hint="Percentual de leads que chegaram a qualificado.">
           <QueryBlock q={q} skeleton={<Skeleton className="h-32" />} isEmpty={(d) => d.length === 0} empty={<p className="text-sm text-mute">Sem dados no período.</p>}>
             {(data) => (

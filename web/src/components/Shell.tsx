@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import {
   BarChart3, Bot, Plug, Scale, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
 } from "lucide-react";
-import { Ecg, Wordmark } from "./Brand";
+import { Wordmark } from "./Brand";
 import { brand } from "@/lib/brand";
 import { TopProgress } from "./Block";
 import { useMe } from "@/lib/hooks";
@@ -209,7 +209,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </button>
           <p className="font-display text-xl leading-none">{titles[path] ?? brand.short}</p>
         </div>
-        <Ecg className="mx-6 hidden h-6 min-w-0 flex-1 md:block" />
         <div className="flex items-center gap-1">
           <button type="button" className={iconBtn} aria-label={theme === "dark" ? "Usar tema claro" : "Usar tema escuro"} onClick={toggle}>
             {theme === "dark" ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}

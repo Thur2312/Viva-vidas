@@ -50,7 +50,7 @@ export function LoginStage() {
 
   return (
     <main ref={root} className="grid min-h-screen lg:h-screen lg:grid-cols-[1.3fr_1fr] lg:overflow-hidden">
-      <section className="relative flex min-h-[320px] flex-col justify-between overflow-hidden bg-petroleo p-8 text-osso sm:p-12 lg:min-h-0">
+      <section className="relative flex min-h-[320px] flex-col justify-between gap-6 overflow-hidden bg-petroleo p-8 text-osso sm:p-12 lg:min-h-0">
         {mode === "3d" ? (
           <Suspense fallback={null}><Scene openRef={openRef} /></Suspense>
         ) : (

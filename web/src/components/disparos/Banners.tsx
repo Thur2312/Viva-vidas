@@ -8,7 +8,7 @@ import { ConfirmDialog, PAUSE_REASON, btnPrimary } from "./bits";
 export function SafetyBanner({ safety }: { safety?: Safety }) {
   const off = !safety?.enabled;
   return (
-    <aside aria-label="Regras de envio" className="rise mb-6 rounded-xl border border-brand/40 bg-brand/10 p-5">
+    <aside aria-label="Regras de envio" className="mb-6 rounded-xl border border-brand/40 bg-brand/10 p-5">
       <p className="flex items-center gap-2 font-display text-base font-semibold">
         <ShieldAlert size={18} aria-hidden="true" className="text-brand-ink" />
         Antes de disparar: o que o WhatsApp e a LGPD exigem
@@ -40,7 +40,7 @@ export function AutoPausedBanner({ items, canResume }: { items: { id: string; na
   const m = useAct((id: string) => act("POST", `${id}/resume`, { confirm: true }));
   if (!items.length) return null;
   return (
-    <section role="alert" className="rise mb-6 rounded-xl border border-warn/40 bg-warn/10 p-5">
+    <section role="alert" className="mb-6 rounded-xl border border-warn/40 bg-warn/10 p-5">
       <p className="flex items-center gap-2 font-display text-base font-semibold text-warn">
         <PauseCircle size={18} aria-hidden="true" />
         Disparos pausados automaticamente

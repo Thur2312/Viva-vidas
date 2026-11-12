@@ -1,16 +1,16 @@
 # Design system: Prontuário (com camadas da Cobertura)
 
-Direção escolhida em 12/11/2026: **A (Prontuário) como base** + o exploded view de camadas da **B (Cobertura)** só no login e no onboarding.
+Direção escolhida em 12/11/2026: **A (Prontuário) como base**. Revisões no mesmo dia, a pedido do cliente interno: fonte única (IBM Plex Sans), **menos efeito nas telas de dado** (efeito só em controles, gráficos e na entrada) e nova cena de entrada: o **funil vivo**.
 Valores marcados *(proposta)* são decisões minhas ainda **não validadas com a marca do cliente**. Contrastes foram calculados (WCAG 2.x).
 
 > Marca, nome e logo são **configuração** (`web/src/lib/brand.ts`, a criar na Fase 1): a identidade ainda não foi atribuída a um cliente. Nada neste documento usa a Identidade Horizon (laranja/azul-marinho), que é só da agência.
 
 ## 1. Conceito
 
-O painel é um **prontuário bem organizado**: papel quente, tipografia de revista, números grandes em mono e uma única linha viva, a de batimento. Quem abre o painel deve sentir calma e precisão, não "mais um dashboard".
+O painel é um **prontuário bem organizado**: papel quente, uma fonte única e legível e números alinhados. Quem abre o painel deve sentir calma e precisão, não "mais um dashboard".
 
 - **Assunto:** corretora de planos de saúde. Reduzir o plano do cliente sem perder cobertura é tirar camadas sem quebrar a estrutura. Daí as camadas.
-- **Momento-assinatura:** ao entrar, camadas de vidro empilhadas se **abrem** e revelam o painel (login e onboarding). No dia a dia, uma **fita de batimento (ECG)** atravessa o cabeçalho e cada lead novo é um batimento.
+- **Momento-assinatura:** a cena de entrada é o **funil vivo**: centenas de pontos (os contatos) descem em vórtice por seis anéis (as etapas); a maioria some pelo caminho e só alguns chegam ao fundo, em coral (as vendas). Ao entrar, o funil se abre e leva ao painel. As taxas da cena são ilustrativas, não dados. Fora da entrada, o painel **não** tem efeito sobre o dado.
 - **Tom:** humano, direto, sem jargão de SaaS. "Quem respondeu hoje", não "Engagement rate".
 
 ## 2. Princípios (o que evitar e o que buscar)
@@ -89,11 +89,11 @@ Regras: a animação serve à narrativa; sempre respeita `prefers-reduced-motion
 
 | Momento | O que acontece | Ferramenta |
 |---|---|---|
-| **Entrada (assinatura)** | Cinco camadas de vidro empilhadas se abrem ao autenticar e revelam o painel. | R3F + GSAP |
-| **Fita de ECG** | Linha em SVG/canvas no cabeçalho; um pulso a cada lead novo (no máximo 1 a cada 2 s). | GSAP / CSS |
-| **Entrada de página** | Manchetes revelam por palavra; números contam até o valor. | GSAP (SplitText) |
-| **Estados vazios** | Camadas vazias respiram devagar. | CSS / R3F leve |
-| **Rolagem suave** | Só nas páginas de leitura longa (decisão do piloto). | Lenis |
+| **Entrada (assinatura)** | Funil vivo: 800 pontos em vórtice por seis anéis, coral no fundo; ao autenticar o funil se abre e dissolve. SVG estático equivalente como reserva. | R3F (shader de pontos) + GSAP |
+| **Gráficos** | Funil do dashboard desenha a linha ao carregar; barras mudam de altura com transição suave ao trocar o período. | GSAP / CSS |
+| **Botões** | Resposta ao clique (leve afundamento) e estados de carregando; param com redução de movimento. | CSS |
+| **Microfone (Voz)** | Onda sonora e pulso durante a ligação (a projetar). | CSS / canvas leve |
+| ~~Fita de ECG, contagem animada, entrada de página~~ | **Removidos** do painel: competiam com o dado (revisão de 12/11/2026). | — |
 
 **Fallback obrigatório** (sem WebGL, celular fraco ou `prefers-reduced-motion`): a mesma composição como SVG estático, com o painel já aberto. O 3D carrega sob demanda (`dynamic import`, `Suspense`, placeholder), e o painel funciona sem ele. Orçamento: o 3D não pode entrar no bundle das telas de trabalho.
 
@@ -114,7 +114,7 @@ Contraste AA no mínimo; foco visível; alvos ≥ 44 px; `prefers-reduced-motion
 
 Para qualquer imagem, ícone ou cena 3D gerados: *"Estilo editorial clínico e caloroso, papel creme `#F4EFE6`, tinta verde-escura `#14231F`, um único acento coral `#E5483A`, detalhes em menta `#7FB5A0`. Vidro fosco translúcido em camadas finas, bordas nítidas, luz suave lateral, sem gradiente roxo/azul, sem brilho neon, sem pessoas estereotipadas, sem cruz médica clichê. Composição assimétrica com respiro."*
 
-Cenas: (1) cinco lâminas de vidro empilhadas se separando (3/4, levemente de cima); (2) fita de ECG extrudada em 3D; (3) camada vazia tracejada para estados vazios.
+Cenas: (1) funil visto de cima em 3/4, pontos luminosos descendo em vórtice, anéis finos, fundo petróleo; (2) o mesmo funil estático, em linhas e pontos, para o SVG de reserva; (3) camada vazia tracejada para estados vazios.
 
 ## 10. Checklist de assets (o que falta fornecer)
 

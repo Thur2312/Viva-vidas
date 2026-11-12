@@ -35,7 +35,7 @@ export function PulseFunnel({ rows }: { rows: PulseRow[] }) {
   );
 
   return (
-    <figure ref={box} className="rise m-0">
+    <figure ref={box} className="m-0">
       <div role="img" aria-label={`Funil do piloto. ${summary}`}>
         <div className="relative h-[230px]" aria-hidden="true">
           <div className="absolute inset-x-0 bottom-0 top-10">

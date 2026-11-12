@@ -18,7 +18,7 @@ export default function Agente() {
         Tudo o que o agente precisa para trabalhar. O que ainda não está ligado aparece como pendente, sem estimativas.
       </PageHeader>
 
-      <div className="rise grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Aprendizado em modo sombra" hint="Lido do servidor. É o único estado desta página que vem de dados reais.">
           <QueryBlock q={rd} skeleton={<Skeleton className="h-40" />}>
             {(r) => (
@@ -61,7 +61,7 @@ export default function Agente() {
         </Panel>
       </div>
 
-      <div className="rise mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title="Playbook" hint="Texto de referência do projeto. Ainda não sincronizado com o agente.">
           <p className="mb-3 text-sm font-semibold">Regras já combinadas</p>
           <ul className="space-y-2.5 text-sm">

@@ -181,7 +181,7 @@ export function Wizard({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-6">
-      <nav aria-label="Passos" className="rise">
+      <nav aria-label="Passos">
         <ol className="flex flex-wrap gap-2">
           {STEPS.map((t, i) => (
             <li key={t} aria-current={i === step ? "step" : undefined} className={`rounded-full border px-3.5 py-2 text-sm font-semibold ${i === step ? "border-brand bg-brand/15 text-brand-ink" : i < step ? "border-ok/40 text-ok" : "border-line text-mute"}`}>

@@ -31,7 +31,7 @@ function Inbox() {
   const row = list.data?.pages.flatMap((p) => p.data).find((c) => c.id === active);
 
   return (
-    <section aria-label="Caixa de entrada" className="rise grid h-[calc(100vh-21rem)] min-h-[520px] overflow-hidden rounded-sm border border-line bg-card lg:grid-cols-[minmax(300px,380px)_1fr]">
+    <section aria-label="Caixa de entrada" className="grid h-[calc(100vh-21rem)] min-h-[520px] overflow-hidden rounded-sm border border-line bg-card lg:grid-cols-[minmax(300px,380px)_1fr]">
       {/* Mobile: lista e conversa são telas separadas. Desktop: lado a lado. */}
       <div className={`${active ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-line lg:border-r`}>
         <ConversationList activeId={active} onOpen={open} />

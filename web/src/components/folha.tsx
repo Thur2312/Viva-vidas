@@ -11,7 +11,7 @@ export function Folio({ n, title, hint, action, children, className = "" }: { n:
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
           <h2 id={id} className="font-display text-xl leading-tight">
-            <span className="mr-3 font-mono text-xs uppercase tracking-[0.18em] text-brand-ink">{n}</span>
+            <span className="mr-3 text-xs font-semibold uppercase tracking-[0.08em] text-brand-ink">{n}</span>
             {title}
           </h2>
           {hint && <p className="mt-1 max-w-xl text-sm text-mute">{hint}</p>}
@@ -26,10 +26,10 @@ export function Folio({ n, title, hint, action, children, className = "" }: { n:
 /** O número que a página inteira existe para mostrar. Grande, em mono, com uma frase em serifa embaixo. */
 export function Manchete({ label, children, caption, tone = "ink" }: { label: string; children: ReactNode; caption: ReactNode; tone?: "ink" | "brand" }) {
   return (
-    <div className="rise">
-      <p className="font-mono text-xs uppercase tracking-[0.18em] text-mute">{label}</p>
-      <p className={`tabular mt-2 font-mono font-semibold leading-none tracking-tight text-[clamp(3rem,7vw,4.75rem)] ${tone === "brand" ? "text-brand-ink" : "text-ink"}`}>{children}</p>
-      <p className="mt-4 max-w-xl text-base leading-relaxed text-ink/80 sm:text-lg">{caption}</p>
+    <div>
+      <p className="text-xs font-medium uppercase tracking-[0.08em] text-mute">{label}</p>
+      <p className={`tabular mt-1 font-semibold leading-none tracking-tight text-[clamp(2.25rem,4vw,3rem)] ${tone === "brand" ? "text-brand-ink" : "text-ink"}`}>{children}</p>
+      <p className="mt-2 max-w-xl text-sm leading-relaxed text-mute sm:text-base">{caption}</p>
     </div>
   );
 }

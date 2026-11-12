@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
-import { CountUp } from "@/components/CountUp";
 import { Folio, Manchete, Marginalia } from "@/components/folha";
 import { PulseFunnel } from "@/components/PulseFunnel";
 import { RangePicker } from "@/components/RangePicker";
@@ -37,8 +36,8 @@ function DailyBars({ series }: { series: Overview["series"] }) {
         {rows.map((d) => (
           <div key={d.dia} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${d.dia}: ${d.c} contatos, ${d.q} qualificados`}>
             <div className="relative flex w-full flex-1 items-end">
-              <div className="w-full rounded-t-[2px] bg-ink/15" style={{ height: `${(d.c / max) * 100}%` }}>
-                <div className="w-full rounded-t-[2px] bg-sinal" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
+              <div className="w-full rounded-t-[2px] bg-ink/15 transition-[height] duration-500 ease-out" style={{ height: `${(d.c / max) * 100}%` }}>
+                <div className="w-full rounded-t-[2px] bg-sinal transition-[height] duration-500 ease-out" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
               </div>
             </div>
             <span className="tabular max-w-full truncate font-mono text-[10px] text-mute">{d.dia.slice(0, 5)}</span>
@@ -92,8 +91,6 @@ function ReadinessView({ r }: { r: ReadinessT }) {
   );
 }
 
-const countFmt = (n: number) => num(Math.round(n));
-
 export default function Dashboard() {
   const [range, setRange] = useRangeState("30d");
   const ov = useOverview(range);
@@ -107,7 +104,7 @@ export default function Dashboard() {
       </PageHeader>
 
       {pd && (
-        <div className="rise mb-6 max-w-xl">
+        <div className="mb-6 max-w-xl">
           <div className="mb-1.5 flex justify-between font-mono text-[11px] uppercase tracking-wider text-mute">
             <span>Início do piloto</span>
             <span>Decisão · dia {pd.total}</span>
@@ -131,7 +128,7 @@ export default function Dashboard() {
                   label="Reuniões marcadas pelo agente"
                   caption={<>{num(f.compareceu)} já compareceram. {pct(ratio(f.qualificado, f.respondeu))} de quem respondeu foi qualificado.</>}
                 >
-                  <CountUp value={f.reuniao} format={countFmt} />
+                  {num(f.reuniao)}
                 </Manchete>
               );
             }}

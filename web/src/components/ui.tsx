@@ -4,9 +4,9 @@ import { DEMO } from "@/lib/flags";
 
 export function PageHeader({ eyebrow, title, children }: { eyebrow: string; title: string; children?: React.ReactNode }) {
   return (
-    <header className="rise mb-7 flex flex-wrap items-end justify-between gap-4">
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-brand-ink">{eyebrow}</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-brand-ink">{eyebrow}</p>
         <h1 className="font-display text-[clamp(1.75rem,3vw,2.375rem)] leading-tight">{title}</h1>
         {children && <p className="mt-2 max-w-2xl text-[15px] text-mute">{children}</p>}
       </div>
@@ -58,7 +58,7 @@ export function KpiCard({
   const trendTone = trend === undefined ? "" : trend > 0 ? "text-ok" : trend < 0 ? "text-warn" : "text-mute";
 
   return (
-    <div className={`rise rounded-xl border p-4 transition-shadow hover:shadow-md ${box[variant]}`}>
+    <div className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${box[variant]}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

@@ -13,7 +13,7 @@ Direção **Prontuário** (editorial, calor humano) com o exploded view de **cam
 - **Conceito:** o painel como prontuário bem organizado; reduzir plano é tirar camadas sem perder cobertura.
 - **Paleta (proposta, a validar com a marca do cliente):** papel `#F4EFE6`, tinta `#14231F`, ação `#C73627`, sinal `#E5483A` (só gráficos), menta `#7FB5A0` (só decoração); tema escuro `#101A17`.
 - **Fonte:** IBM Plex Sans em tudo (títulos 600, texto 400, números tabulares). Sem Inter e sem serifa decorativa: é um CRM, legibilidade primeiro.
-- **Momento-assinatura:** camadas de vidro que se abrem ao entrar; fita de ECG no cabeçalho, um pulso por lead novo.
+- **Momento-assinatura:** o funil vivo na entrada (contatos que descem em vórtice; poucos chegam ao fundo, em coral). Fora da entrada, **sem efeito sobre o dado**: efeito só em botões, gráficos e na animação do microfone (Voz).
 - **Tom:** humano e direto, em pt-BR.
 - A marca (nome, logo) é configuração (`web/src/lib/brand.ts`): ainda não foi atribuída a um cliente. **Não usar a Identidade Horizon** (laranja/azul-marinho) neste painel.
 

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
-import { CountUp } from "@/components/CountUp";
 import { Folio, Manchete, Marginalia } from "@/components/folha";
 import { RangePicker } from "@/components/RangePicker";
 import { PageHeader } from "@/components/ui";
@@ -89,7 +88,7 @@ export default function Decisao() {
                       : <>{money(c.total)} gastos em {num(f.qualificados)} qualificados, entre anúncios e janelas de WhatsApp (estimadas). Tokens de IA e voz ainda não entram.</>
                   }
                 >
-                  {c.porQualificado === null ? "—" : <CountUp value={c.porQualificado} format={money} />}
+                  {c.porQualificado === null ? "—" : money(c.porQualificado)}
                 </Manchete>
               );
             }}
