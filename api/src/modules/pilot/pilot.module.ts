@@ -15,13 +15,15 @@ import { ConversationsController } from './conversations/conversations.controlle
 import { ConversationsService } from './conversations/conversations.service'
 import { BROADCASTS_PROVIDERS, BroadcastsController } from './broadcasts/broadcasts.module-parts'
 import { CRM_PROVIDERS, CrmController } from '../crm/crm.module-parts'
+import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.module-parts'
 
 @Module({
   imports: [ChatGatewayModule],
-  controllers: [PilotController, BroadcastsController, ConversationsController, CrmController],
+  controllers: [PilotController, BroadcastsController, ConversationsController, CrmController, CalendarController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,
+    ...CALENDAR_PROVIDERS,
     PgService, PilotService, ShadowService, PilotKeyGuard,
     CryptoService, AuditService, ConsentService, DataSubjectService, LearningService, RetentionService, ConversationsService,
   ],
