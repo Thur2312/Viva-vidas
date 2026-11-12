@@ -6,7 +6,7 @@ import { DEMO } from "@/lib/flags";
 
 const field = "mb-4 min-h-[44px] w-full rounded-lg border border-line bg-card px-3 text-sm";
 
-export function LoginForm() {
+export function LoginForm({ onAuthenticated }: { onAuthenticated?: () => Promise<void> }) {
   const router = useRouter();
   const params = useSearchParams();
   const [busy, setBusy] = useState(false);
@@ -18,7 +18,11 @@ export function LoginForm() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (DEMO) return router.replace(next);
+    if (DEMO) {
+      setBusy(true);
+      await onAuthenticated?.(); // as camadas se abrem antes de entrar
+      return router.replace(next);
+    }
     setBusy(true);
     setError(null);
     const f = new FormData(e.currentTarget);
@@ -30,6 +34,7 @@ export function LoginForm() {
         body: JSON.stringify({ email: f.get("email"), password: f.get("password") }),
       });
       if (res.ok) {
+        await onAuthenticated?.();
         router.replace(next);
         router.refresh();
         return;
@@ -48,8 +53,8 @@ export function LoginForm() {
 
   return (
     <form className="w-full max-w-sm" onSubmit={onSubmit} noValidate={false}>
-      <h2 className="font-display text-2xl font-semibold">Entrar</h2>
-      <p className="mb-6 mt-1 text-sm text-mute">{DEMO ? "Modo de demonstração: sem senha." : "Use o acesso fornecido pela Horizon."}</p>
+      <h2 className="font-display text-4xl">Entrar</h2>
+      <p className="mb-6 mt-1 text-sm text-mute">{DEMO ? "Modo de demonstração: sem senha." : "Use o acesso fornecido pela sua equipe."}</p>
       <label className="mb-1.5 block text-sm font-medium" htmlFor="email">E-mail</label>
       <input id="email" name="email" type="email" required={!DEMO} autoComplete="username" className={field} />
       <label className="mb-1.5 block text-sm font-medium" htmlFor="senha">Senha</label>
@@ -57,7 +62,7 @@ export function LoginForm() {
       {error && (
         <p role="alert" className="mb-4 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">{error}</p>
       )}
-      <button type="submit" disabled={busy} className="flex min-h-[48px] w-full items-center justify-center rounded-full bg-brand px-6 text-sm font-bold text-deep transition-colors hover:bg-[#ff8a3d] disabled:opacity-60">
+      <button type="submit" disabled={busy} className="flex min-h-[48px] w-full items-center justify-center rounded-full bg-brand px-6 text-sm font-bold text-on-brand transition-colors hover:brightness-110 disabled:opacity-60">
         {busy ? "Entrando…" : "Entrar no painel"}
       </button>
       <p className="mt-6 text-xs text-mute">
