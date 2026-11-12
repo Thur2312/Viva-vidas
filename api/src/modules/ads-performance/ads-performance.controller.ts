@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import {
   AdsPerformanceService,
@@ -12,6 +13,7 @@ import { LinkAdsDto, UnlinkAdsDto } from './dto/link-ads.dto'
 import { GetAvailableAdsDto } from './dto/get-available-ads.dto'
 
 @ApiTags('ADS Performance')
+@Roles('owner')
 @Controller('ads-performance')
 export class AdsPerformanceController {
   constructor(private readonly adsPerformanceService: AdsPerformanceService) {}

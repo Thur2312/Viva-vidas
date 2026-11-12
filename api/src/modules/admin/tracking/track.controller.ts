@@ -3,13 +3,14 @@ import { TrackingService } from './tracking.service'
 import { ApiTags } from '@nestjs/swagger'
 import { Public } from 'src/modules/auth/public.decorator'
 import { SkipLogging } from 'src/shared/decorators/skip-logging.decorator'
-import { SkipThrottle } from '@nestjs/throttler'
+import { Throttle } from '@nestjs/throttler'
 import { Request } from 'express'
 import { resolveClientIpOrEmpty } from 'src/shared/util/client-ip.util'
 
 @ApiTags('Track')
 @Public()
-@SkipThrottle()
+// Rota publica: limite generoso por IP (antes sem limite nenhum).
+@Throttle({ default: { limit: 600, ttl: 60_000 } })
 @SkipLogging()
 @Controller('track')
 export class TrackController {

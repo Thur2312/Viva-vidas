@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { randomBytes, randomUUID } from 'crypto'
 import { PgService } from '../pilot/pg.service'
 import { hashPassword, verifyPassword } from './password.util'
@@ -7,6 +7,8 @@ import { hashToken, hashUserAgent, newRefreshToken, signAccessToken } from './to
 
 export const MAX_FAILED_ATTEMPTS = 5
 export const LOCK_MINUTES = 15
+/** Requisicoes simultaneas do painel podem apresentar o mesmo refresh token logo apos a rotacao: nao e roubo. */
+export const REUSE_GRACE_SECONDS = 10
 
 export interface PanelUserView {
   id: string
@@ -87,7 +89,12 @@ export class PanelAuthService {
     )
     if (!claimed.rows[0]) {
       // Nao reivindicou: desconhecido, expirado ou JA USADO. Se ja foi usado, ha reuso -> derruba a familia.
-      const prev = await this.db.query(`SELECT family_id, revoked_at FROM horizon_agent.panel_refresh_tokens WHERE token_hash = $1`, [hash])
+      const prev = await this.db.query(`SELECT family_id, revoked_at, replaced_by FROM horizon_agent.panel_refresh_tokens WHERE token_hash = $1`, [hash])
+      const revokedAt = prev.rows[0]?.revoked_at ? new Date(prev.rows[0].revoked_at).getTime() : 0
+      // Rotacionado ha poucos segundos por outra requisicao: o cliente so precisa tentar de novo com o cookie novo.
+      if (revokedAt && prev.rows[0]?.replaced_by && Date.now() - revokedAt < REUSE_GRACE_SECONDS * 1000) {
+        throw new ConflictException('refresh_in_progress')
+      }
       if (prev.rows[0]?.revoked_at) {
         await this.revokeFamily(prev.rows[0].family_id)
         this.logger.warn(`reuso de refresh token detectado; familia ${prev.rows[0].family_id} revogada`)

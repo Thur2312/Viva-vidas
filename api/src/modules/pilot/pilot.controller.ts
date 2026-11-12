@@ -6,11 +6,12 @@ import { PilotKeyGuard } from './pilot-key.guard'
 import { PilotService } from './pilot.service'
 import { ShadowService } from './shadow.service'
 import { AuditService, requestCtx } from './compliance/audit.service'
+import { canReadContent } from './compliance/content-access'
 import { ConsentService } from './compliance/consent.service'
 import { ConsentDto, CorrectLeadDto, RevokeConsentDto } from './compliance/compliance.dto'
 import { DataSubjectService } from './compliance/data-subject.service'
 import { RetentionService } from './compliance/retention.service'
-import { CreateLeadDto, EventDto, IngestMessageDto, ListLeadsQuery, PeriodQuery, QualificationDto, ShadowRunDto } from './pilot.dto'
+import { AuditLogQuery, CreateLeadDto, DsrQuery, EventDto, IngestMessageDto, ListLeadsQuery, PeriodQuery, QualificationDto, ShadowRunDto } from './pilot.dto'
 
 /**
  * Ingestão (chat e agente → API): @Public + x-pilot-key. Sem PILOT_API_KEY a rota fica fechada.
@@ -68,7 +69,7 @@ export class PilotController {
   @NoTenant() @Roles('viewer') @Get('leads/:id')
   lead(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
     // Detalhe do lead: telefone completo e conteúdo das mensagens. A leitura fica na trilha de auditoria.
-    return this.pilot.getLead(id, requestCtx(req))
+    return this.pilot.getLead(id, requestCtx(req), canReadContent(req))
   }
 
   // ───── LGPD: direitos do titular, consentimento, retenção e auditoria (JWT) ─────
@@ -108,8 +109,8 @@ export class PilotController {
   }
 
   @NoTenant() @Roles('manager') @Get('data-subject-requests')
-  dsr(@Query('status') status?: string) {
-    return this.subjects.listRequests({ status })
+  dsr(@Query() q: DsrQuery) {
+    return this.subjects.listRequests({ status: q.status })
   }
 
   @NoTenant() @Roles('owner') @Post('retention/run')
@@ -118,8 +119,8 @@ export class PilotController {
   }
 
   @NoTenant() @Roles('owner') @Get('audit-log')
-  auditLog(@Query('limit') limit?: string, @Query('offset') offset?: string, @Query('action') action?: string) {
-    return this.audit.list({ limit: Number(limit) || 50, offset: Number(offset) || 0, action })
+  auditLog(@Query() q: AuditLogQuery) {
+    return this.audit.list({ limit: q.limit ?? 50, offset: q.offset ?? 0, action: q.action })
   }
 
   @NoTenant() @Roles('viewer') @Get('campaigns')

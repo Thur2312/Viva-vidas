@@ -40,6 +40,7 @@ d('PanelAuthService (banco real, com rollback)', () => {
     const a = await svc.login('INT@exemplo.com', PASS, 'jest')
     expect(a.user.id).toBe(id)
     const b = await svc.refresh(a.refreshToken)
+    await client.query(`UPDATE horizon_agent.panel_refresh_tokens SET revoked_at = now() - interval '11 seconds' WHERE user_id = $1 AND revoked_at IS NOT NULL`, [id])
     await expect(svc.refresh(a.refreshToken)).rejects.toThrow()
     await expect(svc.refresh(b.refreshToken)).rejects.toThrow() // familia revogada
     const rows = (await client.query(`SELECT revoked_at, replaced_by FROM horizon_agent.panel_refresh_tokens WHERE user_id = $1`, [id])).rows

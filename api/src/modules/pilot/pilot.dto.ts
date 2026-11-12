@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateNested } from 'class-validator'
+import { IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ConsentDto } from './compliance/compliance.dto'
 
@@ -42,15 +42,26 @@ export class ShadowRunDto {
 }
 
 export class ListLeadsQuery {
-  @IsOptional() @IsString() stage?: string
+  @IsOptional() @IsString() @MaxLength(40) stage?: string
   @IsOptional() @IsString() @MaxLength(80) search?: string
-  @IsOptional() @IsString() campaignId?: string
+  @IsOptional() @IsString() @MaxLength(80) campaignId?: string
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number
 }
 
+const DATE = /^\d{4}-\d{2}-\d{2}(T[\d:.+\-Zz]+)?$/
+export class AuditLogQuery {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(200) limit?: number
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) offset?: number
+  @IsOptional() @IsString() @MaxLength(80) action?: string
+}
+
+export class DsrQuery {
+  @IsOptional() @IsString() @MaxLength(30) status?: string
+}
+
 export class PeriodQuery {
-  @IsOptional() @IsString() from?: string
-  @IsOptional() @IsString() to?: string
+  @IsOptional() @Matches(DATE) from?: string
+  @IsOptional() @Matches(DATE) to?: string
 }
 

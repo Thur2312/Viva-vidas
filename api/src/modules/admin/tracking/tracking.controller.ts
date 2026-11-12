@@ -16,6 +16,7 @@ import { FilterTrackingActionsDto } from './dto/filter-tracking-actions.dto'
 import { FilterTrackingEventsDto } from './dto/filter-tracking-events.dto'
 import { UpsertTrackingActionConfigDto } from './dto/tracking-action-config.dto'
 import { ApiTags } from '@nestjs/swagger'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { Public } from 'src/modules/auth/public.decorator'
 import { SkipLogging } from 'src/shared/decorators/skip-logging.decorator'
 
@@ -25,6 +26,7 @@ import { SkipLogging } from 'src/shared/decorators/skip-logging.decorator'
 // (`/tracking/collect/orion` + `/tracking/:id` + `create-tracking-event`), todas de maquina.
 // Mesmo criterio (e mesmo decorator) ja aplicado no `track.controller.ts`.
 @SkipLogging()
+@Roles('owner')
 @Controller('tracking')
 export class TrackingController {
   constructor(

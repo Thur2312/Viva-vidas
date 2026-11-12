@@ -96,6 +96,9 @@ describe('panel-auth (HTTP, PgService falso)', () => {
     const b = (await http().post('/panel-auth/refresh').send({ refreshToken: a.refreshToken }).expect(200)).body
     expect(b.refreshToken).not.toBe(a.refreshToken)
     expect(b.user.email).toBe('viewer@x.com')
+    // Logo apos a rotacao: 409 (requisicao simultanea), sem derrubar a sessao.
+    await http().post('/panel-auth/refresh').send({ refreshToken: a.refreshToken }).expect(409)
+    pg.tokens.forEach((t) => t.revoked_at && (t.revoked_at = new Date(Date.now() - 11_000))) // passou a janela de tolerancia
     await http().post('/panel-auth/refresh').send({ refreshToken: a.refreshToken }).expect(401)
     await http().post('/panel-auth/refresh').send({ refreshToken: b.refreshToken }).expect(401)
     const c = (await login('viewer@x.com')).body

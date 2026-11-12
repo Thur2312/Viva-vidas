@@ -51,7 +51,7 @@ export class FakePg {
       t.revoked_at = new Date()
       return ok([{ id: t.id, user_id: t.user_id, family_id: t.family_id }])
     }
-    if (/SELECT family_id, revoked_at FROM horizon_agent\.panel_refresh_tokens WHERE token_hash/.test(sql))
+    if (/SELECT family_id, revoked_at, replaced_by FROM horizon_agent\.panel_refresh_tokens WHERE token_hash/.test(sql))
       return ok(this.tokens.filter((x) => x.token_hash === params[0]))
     if (/SELECT family_id FROM horizon_agent\.panel_refresh_tokens WHERE token_hash/.test(sql))
       return ok(this.tokens.filter((x) => x.token_hash === params[0]))
