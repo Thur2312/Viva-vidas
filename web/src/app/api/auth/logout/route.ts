@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export function POST(req: Request) {
   return guard(async () => {
     if (!sameOrigin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    const rt = cookies().get(RT)?.value;
+    const rt = (await cookies()).get(RT)?.value;
     if (rt) {
       // Melhor esforço: mesmo se a API estiver fora, a sessão local é encerrada.
       await rawFetch("/panel-auth/logout", {
@@ -17,7 +17,7 @@ export function POST(req: Request) {
         body: JSON.stringify({ refreshToken: rt }),
       }).catch(() => null);
     }
-    clearSession();
+    await clearSession();
     return new NextResponse(null, { status: 204 });
   });
 }

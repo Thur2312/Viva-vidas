@@ -19,7 +19,7 @@ import cookieParser = require('cookie-parser')
 import compression = require('compression')
 /* eslint-enable @typescript-eslint/no-require-imports */
 import helmet from 'helmet'
-import { SafeExceptionFilter, corsOriginCheck, parseCorsOrigins, requestLogger, validateEnv } from './modules/panel-auth/security/hardening'
+import { SafeExceptionFilter, bffClientIp, corsOriginCheck, parseCorsOrigins, requestLogger, validateEnv } from './modules/panel-auth/security/hardening'
 
 async function bootstrap() {
   const logger = new Logger('Boot')
@@ -40,6 +40,7 @@ async function bootstrap() {
   app.set('trust proxy', (ip: string) => isTrustedProxyIp(ip))
 
   app.disable('x-powered-by')
+  app.use(bffClientIp()) // IP real do usuario vindo do BFF autenticado (throttler e auditoria usam req.ip)
   app.use(requestLogger()) // so metodo/caminho/status/duracao: nunca corpo, query, Authorization ou telefone.
   app.use(
     helmet({
@@ -101,7 +102,11 @@ async function bootstrap() {
   process.on('SIGTERM', () => shutdown('SIGTERM'))
 }
 
-process.on('uncaughtException', (err) => console.error('[FATAL] uncaughtException:', err))
+// Apos uma excecao nao tratada o estado do processo e incerto: registra e encerra, para o gerenciador (PM2/plataforma) reiniciar limpo.
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] uncaughtException:', err)
+  process.exit(1)
+})
 process.on('unhandledRejection', (reason) => console.error('[FATAL] unhandledRejection:', reason))
 
 bootstrap().catch((err) => {

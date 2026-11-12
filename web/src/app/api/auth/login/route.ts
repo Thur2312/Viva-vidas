@@ -22,7 +22,7 @@ export function POST(req: Request) {
     const j = await res.json().catch(() => null);
     const tokens = parseTokens(j);
     if (!tokens) throw new UpstreamError(502, "login_invalid_response");
-    setSession(tokens);
+    await setSession(tokens);
     return NextResponse.json({ user: (j as { user?: unknown }).user ?? null });
   });
 }

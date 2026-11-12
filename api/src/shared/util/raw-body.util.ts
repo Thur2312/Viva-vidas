@@ -22,6 +22,12 @@ import { createHash } from 'crypto'
 export const WEBHOOK_RAW_BODY_PREFIXES: readonly string[] = [
   '/api/meta-leads',
   '/api/whatsapp-meta',
+  // Rotas servidor a servidor do chat, assinadas por x-pilot-signature (PILOT_SIGNING_REQUIRED).
+  '/pilot/leads',
+  '/pilot/ingest',
+  '/pilot/events',
+  '/pilot/shadow',
+  '/pilot/broadcasts/webhook',
 ]
 
 /** Header com o sha256 que a borda anuncia ter enviado. */

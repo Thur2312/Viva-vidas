@@ -1,6 +1,6 @@
-import { UnauthorizedException } from '@nestjs/common'
+import { ConflictException, UnauthorizedException } from '@nestjs/common'
 import { FakePg } from 'test/panel-auth/fake-pg'
-import { PanelAuthService, MAX_FAILED_ATTEMPTS } from './panel-auth.service'
+import { PanelAuthService, MAX_FAILED_ATTEMPTS, REUSE_GRACE_SECONDS } from './panel-auth.service'
 import { verifyAccessToken } from './tokens.util'
 
 const PASS = 'Zebra-Lunar-4421-ok'
@@ -74,9 +74,20 @@ describe('PanelAuthService', () => {
     expect(pg.tokens[1].revoked_at).toBeNull()
   })
 
+  const envelhecer = () => pg.tokens.forEach((t) => t.revoked_at && (t.revoked_at = new Date(Date.now() - (REUSE_GRACE_SECONDS + 1) * 1000)))
+
+  it('reuso dentro da janela de tolerancia devolve 409 e NAO derruba a familia', async () => {
+    const a = await svc.login('ana@exemplo.com', PASS)
+    const b = await svc.refresh(a.refreshToken)
+    await expect(svc.refresh(a.refreshToken)).rejects.toThrow(ConflictException) // requisicao simultanea
+    expect(pg.tokens[1].revoked_at).toBeNull()
+    await expect(svc.refresh(b.refreshToken)).resolves.toBeDefined()
+  })
+
   it('reuso de refresh antigo revoga a familia inteira', async () => {
     const a = await svc.login('ana@exemplo.com', PASS)
     const b = await svc.refresh(a.refreshToken)
+    envelhecer()
     await expect(svc.refresh(a.refreshToken)).rejects.toThrow(UnauthorizedException) // reuso
     expect(pg.tokens.every((t) => t.revoked_at)).toBe(true)
     await expect(svc.refresh(b.refreshToken)).rejects.toThrow(UnauthorizedException) // o novo tambem caiu
@@ -86,6 +97,7 @@ describe('PanelAuthService', () => {
     const a = await svc.login('ana@exemplo.com', PASS)
     const other = await svc.login('ana@exemplo.com', PASS)
     const a2 = await svc.refresh(a.refreshToken)
+    envelhecer()
     await svc.refresh(a.refreshToken).catch(() => 0)
     await expect(svc.refresh(other.refreshToken)).resolves.toBeDefined()
     expect(a2).toBeDefined()

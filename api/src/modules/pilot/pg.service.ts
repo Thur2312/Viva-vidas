@@ -20,10 +20,21 @@ export class PgService implements Db, OnModuleDestroy {
       this.pool = new Pool({
         connectionString: url,
         max: Number(process.env.PILOT_DB_POOL_MAX ?? 5),
-        ssl: /supabase\.(co|com)|sslmode=require/.test(url) ? { rejectUnauthorized: false } : undefined,
+        ssl: /supabase\.(co|com)|sslmode=require/.test(url) ? this.sslOptions() : undefined,
       })
     }
     return this.pool
+  }
+
+  /**
+   * Em producao o certificado do banco e VERIFICADO (evita MITM). Se o provedor usar uma CA que o Node nao conhece
+   * (caso do Supabase), baixe a CA e ponha o PEM em PILOT_DB_CA. Fora de producao segue sem verificar, para nao travar o dev.
+   */
+  private sslOptions() {
+    if (process.env.NODE_ENV !== 'production') return { rejectUnauthorized: false }
+    // PEM em uma linha so no .env: as quebras de linha vem escritas como \n.
+    const ca = process.env.PILOT_DB_CA?.replace(/\\n/g, '\n')
+    return { rejectUnauthorized: true, ...(ca ? { ca } : {}) }
   }
 
   query<T = any>(text: string, params?: any[]) {

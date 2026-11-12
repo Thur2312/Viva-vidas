@@ -26,15 +26,15 @@ function opts(maxAge: number) {
   return { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge };
 }
 
-export function setSession(t: Tokens) {
-  const jar = cookies();
+export async function setSession(t: Tokens) {
+  const jar = await cookies();
   const days = Number(process.env.REFRESH_COOKIE_DAYS) || 14;
   jar.set(AT, t.accessToken, opts(Math.max(30, t.expiresIn - 10)));
   jar.set(RT, t.refreshToken, opts(60 * 60 * 24 * days));
 }
 
-export function clearSession() {
-  const jar = cookies();
+export async function clearSession() {
+  const jar = await cookies();
   jar.set(AT, "", opts(0));
   jar.set(RT, "", opts(0));
 }

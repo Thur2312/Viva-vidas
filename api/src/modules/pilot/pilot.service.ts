@@ -6,6 +6,7 @@ import { ConsentService, GrantInput } from './compliance/consent.service'
 import { CryptoService } from './compliance/crypto.service'
 import { LearningService } from './compliance/learning.service'
 import { maskPhone, normalizePhone } from './compliance/phone'
+import { RESTRICTED_TEXT } from './compliance/content-access'
 import { flagSensitive } from './compliance/redaction'
 import { markBroadcastReply } from './broadcasts/broadcast-reply'
 
@@ -355,7 +356,7 @@ export class PilotService {
     return { data, meta: { page, pageSize: size, totalItems: total, totalPages: Math.ceil(total / size) } }
   }
 
-  async getLead(id: string, ctx: RequestCtx = SYSTEM_CTX) {
+  async getLead(id: string, ctx: RequestCtx = SYSTEM_CTX, content = true) {
     const lead = (await this.pg.query(`SELECT * FROM horizon_agent.leads WHERE id = $1 AND tenant = $2`, [id, this.tenant])).rows[0]
     if (!lead) throw new NotFoundException('Lead não encontrado')
     delete lead.phone_hash
@@ -376,11 +377,13 @@ export class PilotService {
       )
     ).rows
     await this.audit.log({ ...ctx, action: 'lead.read', entity: 'lead', entityId: id, details: { messages: messages.length, drafts: drafts.length } })
+    // Sem permissao de conteudo: telefone mascarado e textos substituidos (a leitura continua auditada acima).
+    if (!content) lead.phone = maskPhone(lead.phone)
     return {
       lead,
       events,
-      messages: messages.map((m) => ({ ...m, body: this.crypto.decrypt(m.body) })),
-      drafts: drafts.map((d) => ({ ...d, draft_body: this.crypto.decrypt(d.draft_body) })),
+      messages: messages.map((m) => ({ ...m, body: content ? this.crypto.decrypt(m.body) : RESTRICTED_TEXT })),
+      drafts: drafts.map((d) => ({ ...d, draft_body: content ? this.crypto.decrypt(d.draft_body) : RESTRICTED_TEXT })),
     }
   }
 

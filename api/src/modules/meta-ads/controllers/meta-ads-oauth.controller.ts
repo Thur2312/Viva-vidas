@@ -2,10 +2,12 @@ import { Controller, Get, Post, Delete, Query, Param, Res, UseGuards } from '@ne
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { Response } from 'express'
 import { JwtAuthGuard } from 'src/modules/auth/jwt-auth.guard'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { Public } from 'src/modules/auth/public.decorator'
 import { MetaAdsOAuthService } from '../services/meta-ads-oauth.service'
 
 @ApiTags('Meta ADS')
+@Roles('owner')
 @Controller(['meta-ads', 'api/meta-ads'])
 export class MetaAdsOAuthController {
   constructor(

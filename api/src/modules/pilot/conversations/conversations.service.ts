@@ -1,4 +1,5 @@
 import { BadGatewayException, BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
+import { RESTRICTED_TEXT } from '../compliance/content-access'
 import { Db, PgService } from '../pg.service'
 import { AuditService, RequestCtx, SYSTEM_CTX } from '../compliance/audit.service'
 import { ConsentService } from '../compliance/consent.service'
@@ -135,7 +136,7 @@ export class ConversationsService {
   }
 
   // ───────────── Mensagens (conteúdo descriptografado, com auditoria) ─────────────
-  async messages(id: string, opts: { before?: string; limit?: number } = {}, ctx: RequestCtx = SYSTEM_CTX) {
+  async messages(id: string, opts: { before?: string; limit?: number } = {}, ctx: RequestCtx = SYSTEM_CTX, content = true) {
     const limit = Math.min(100, Math.max(1, opts.limit ?? 40))
     await this.findConversation(id)
 
@@ -176,13 +177,13 @@ export class ConversationsService {
         id: Number(m.id),
         direction: m.direction,
         author: m.author,
-        body: this.crypto.decrypt(m.body),
+        body: content ? this.crypto.decrypt(m.body) : RESTRICTED_TEXT,
         created_at: m.created_at,
         ...(d
           ? {
               draft: {
                 id: Number(d.id),
-                draft_body: this.crypto.decrypt(d.draft_body),
+                draft_body: content ? this.crypto.decrypt(d.draft_body) : RESTRICTED_TEXT,
                 similarity: num(d.similarity),
                 human_action: d.human_action ?? null,
                 stage_guess: d.stage_guess ?? null,

@@ -1,9 +1,9 @@
-import { corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
+import { bffClientIp, corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
 import { buildTenantBaseUrl } from 'src/shared/util/tenant-url.utils'
 import { buildPublicUrl, getStorageConfig } from 'src/modules/files/config/storage.config'
 
 describe('validateEnv', () => {
-  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', SECRETKEY: k, ...extra } as any)
+  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', PILOT_ONLY: 'true', SECRETKEY: k, ...extra } as any)
   it('producao recusa ausente, curta e placeholder', () => {
     expect(prod(undefined)).not.toEqual([])
     expect(prod('curta')).not.toEqual([])
@@ -15,6 +15,12 @@ describe('validateEnv', () => {
     expect(prod('q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja')).toEqual([])
     expect(validateEnv({ SECRETKEY: 'curta' } as any)).toEqual([])
     expect(validateEnv({} as any)).not.toEqual([])
+  })
+  it('producao exige PILOT_ONLY ou TENANT_GUARD_ENFORCE e recusa o kill-switch de assinatura', () => {
+    const k = 'q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja'
+    expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k } as any)).not.toEqual([])
+    expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k, TENANT_GUARD_ENFORCE: 'true' } as any)).toEqual([])
+    expect(prod(k, { WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED: 'true' })).not.toEqual([])
   })
   it('recusa CORS * em producao', () => {
     expect(prod('q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja', { CORS_ORIGINS: '*' })).not.toEqual([])
@@ -63,5 +69,22 @@ describe('defaults HDM neutralizados', () => {
     expect(c.bucket).toBe('')
     expect(c.endpoint).toBe('')
     expect(buildPublicUrl(c, 'k')).not.toMatch(/hdm/)
+  })
+})
+
+describe('bffClientIp', () => {
+  const run = (headers: Record<string, string>, secret: string | undefined = 'chave-do-bff') => {
+    const req: any = { headers, ip: '203.0.113.9' }
+    bffClientIp(secret)(req, {} as any, () => undefined)
+    return req.ip
+  }
+  it('aceita o IP do usuario so com a chave certa', () => {
+    expect(run({ 'x-bff-key': 'chave-do-bff', 'x-bff-client-ip': '198.51.100.7' })).toBe('198.51.100.7')
+    expect(run({ 'x-bff-key': 'errada', 'x-bff-client-ip': '198.51.100.7' })).toBe('203.0.113.9')
+    expect(run({ 'x-bff-client-ip': '198.51.100.7' })).toBe('203.0.113.9')
+  })
+  it('ignora tudo sem a env e recusa valor que nao e IP', () => {
+    expect(run({ 'x-bff-key': 'x', 'x-bff-client-ip': '198.51.100.7' }, undefined)).toBe('203.0.113.9')
+    expect(run({ 'x-bff-key': 'chave-do-bff', 'x-bff-client-ip': "1.2.3.4'; DROP" })).toBe('203.0.113.9')
   })
 })

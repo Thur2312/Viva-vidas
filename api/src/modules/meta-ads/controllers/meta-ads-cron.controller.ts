@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Body, Param, ParseIntPipe } from '@nestjs/common'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger'
 import { MetaAdsCronService } from '../services/meta-ads-cron.service'
 import { UpdateCronSettingsDto } from '../dto/fetch-insights.dto'
 
 @ApiTags('Meta ADS')
+@Roles('owner')
 @Controller('meta-ads')
 export class MetaAdsCronController {
   constructor(

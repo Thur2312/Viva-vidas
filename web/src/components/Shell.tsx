@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  BarChart3, Bot, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
+  BarChart3, Bot, Scale, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
 } from "lucide-react";
 import { Wordmark } from "./Brand";
 import { TopProgress } from "./Block";
@@ -28,6 +28,7 @@ const nav: Category[] = [
           { title: "Funil", path: "/funil", icon: Kanban },
         ],
       },
+      { title: "Decisão do piloto", icon: Scale, path: "/decisao" },
     ],
   },
   {
@@ -50,6 +51,7 @@ const nav: Category[] = [
 const titles: Record<string, string> = {
   "/dashboard": "Visão geral",
   "/funil": "Funil",
+  "/decisao": "Decisão do piloto",
   "/conversas": "Conversas",
   "/voz": "Voz",
   "/origem": "Origem e anúncios",

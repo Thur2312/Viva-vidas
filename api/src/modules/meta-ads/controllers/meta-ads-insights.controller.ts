@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
 import { MetaAdsService } from '../services/meta-ads.service'
 import { MetaInsightData, MetaCampaignInsight, MetaAdSetInsight, SyncResult, BreakdownSyncResult } from '../interfaces/meta-ads.interfaces'
 import { DatePreset, SyncMetaInsightsDto, SyncBreakdownsDto } from '../dto/fetch-insights.dto'
 
 @ApiTags('Meta ADS')
+@Roles('owner')
 @Controller('meta-ads')
 export class MetaAdsInsightsController {
   constructor(

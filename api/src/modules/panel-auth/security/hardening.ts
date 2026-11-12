@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import type { NextFunction, Request, Response } from 'express'
-import { randomUUID } from 'crypto'
+import { createHash, randomUUID, timingSafeEqual } from 'crypto'
+import { isIP } from 'net'
 
 // ───────────── Validacao de ambiente (fail-fast) ─────────────
 const PLACEHOLDER_RE = /^(change.?me|your[-_ ]?|placeholder|example|secret|secretkey|password|senha|xxx+|test|dev|default|todo|jwt[-_]?secret|insecure)/i
@@ -16,7 +17,33 @@ export function validateEnv(env: NodeJS.ProcessEnv): string[] {
     if (PLACEHOLDER_RE.test(key) || /^(.)\1+$/.test(key)) errors.push('SECRETKEY parece um placeholder; gere um segredo aleatorio')
   }
   if (prod && (env.CORS_ORIGINS ?? '').split(',').some((o) => o.trim() === '*')) errors.push('CORS_ORIGINS nao pode conter "*"')
+  if (prod) {
+    // Modulos herdados (meta-ads, tracking...) isolam tenant pelo TenantGuard, que por padrao LIBERA rota sem companyId.
+    // Em producao: ou sobe so o piloto (PILOT_ONLY) ou liga o modo estrito.
+    if (env.PILOT_ONLY !== 'true' && env.TENANT_GUARD_ENFORCE !== 'true') errors.push('producao exige PILOT_ONLY=true ou TENANT_GUARD_ENFORCE=true')
+    // Kill-switch que desliga a assinatura do webhook do WhatsApp: nunca em producao.
+    if (env.WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED === 'true') errors.push('WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED=true nao e permitido em producao')
+  }
   return errors
+}
+
+// ───────────── IP real do usuario quando o BFF (Next) esta na frente ─────────────
+const sha = (v: string) => createHash('sha256').update(v).digest()
+
+/**
+ * O BFF chama a API de um IP publico e unico (o do servidor Next), entao `req.ip` vira sempre o mesmo para todo mundo:
+ * o limite de login por IP vira um balde unico e a auditoria grava o IP errado. O BFF manda o IP do usuario em
+ * `x-bff-client-ip`, junto com `x-bff-key`. So com a chave certa (BFF_SHARED_KEY) o IP e aceito; sem a env, nada muda.
+ */
+export function bffClientIp(secret = process.env.BFF_SHARED_KEY) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const key = req.headers['x-bff-key']
+    const ip = req.headers['x-bff-client-ip']
+    if (secret && typeof key === 'string' && typeof ip === 'string' && timingSafeEqual(sha(key), sha(secret)) && isIP(ip.trim())) {
+      Object.defineProperty(req, 'ip', { value: ip.trim(), configurable: true })
+    }
+    next()
+  }
 }
 
 // ───────────── Redacao de logs ─────────────

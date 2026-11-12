@@ -1,9 +1,11 @@
 import { Controller, Get, Post, Put, Delete, Body, Query, Param, ParseIntPipe, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger'
+import { Roles } from 'src/modules/panel-auth/roles.decorator'
 import { JwtAuthGuard } from 'src/modules/auth/jwt-auth.guard'
 import { MetaLeadFormsService, MetaLeadFormMappingDto } from '../services/meta-lead-forms.service'
 
 @ApiTags('Meta ADS')
+@Roles('owner')
 @Controller('meta-ads')
 export class MetaLeadFormsController {
   constructor(
