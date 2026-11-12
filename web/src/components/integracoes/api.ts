@@ -1,7 +1,7 @@
 "use client";
 // Cliente das integrações (CRM e agenda). Fala só com o BFF (/api/pilot/crm e /api/pilot/calendar); nenhum token passa por aqui.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getJson } from "@/lib/client";
+import { getJson, goLogin } from "@/lib/client";
 import { DEMO } from "@/lib/flags";
 import { ActionError } from "@/components/disparos/api";
 
@@ -46,7 +46,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   } catch {
     throw new ActionError(0, "network", "Sem conexão com o servidor. Nada foi feito.");
   }
-  if (res.status === 401 && typeof window !== "undefined") window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+  if (res.status === 401) goLogin();
   if (!res.ok) {
     let msg = "";
     let code = `http_${res.status}`;

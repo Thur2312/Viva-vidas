@@ -30,7 +30,7 @@ function Row({ c, active, hide, onOpen }: { c: ConversationRow; active: boolean;
         aria-current={active ? "true" : undefined}
         className={`flex min-h-[44px] w-full gap-3 border-b border-line px-4 py-3 text-left transition-colors hover:bg-ink/[0.04] ${active ? "bg-brand/10 shadow-[inset_3px_0_0_rgb(var(--brand))]" : ""}`}
       >
-        <span aria-hidden="true" className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-deep text-sm font-bold text-white dark:bg-[#1d4380]">
+        <span aria-hidden="true" className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-deep text-sm font-bold text-white dark:bg-bubble">
           {name.trim()[0]?.toUpperCase() ?? "?"}
         </span>
         <span className="min-w-0 flex-1">

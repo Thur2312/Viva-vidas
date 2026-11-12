@@ -149,7 +149,7 @@ export default function Dashboard() {
                             {prev !== null && <p className="text-xs text-mute">{prev === 0 ? "sem base" : `${pct(ratio(v, prev))} da etapa anterior`}</p>}
                           </div>
                           <div className="h-9 rounded-md bg-deep/[0.06] dark:bg-white/10">
-                            <div className={`tabular flex h-full items-center rounded-md px-3 text-sm font-semibold ${s === "venda" ? "bg-brand text-deep" : "bg-deep text-white dark:bg-[#1d4380]"}`} style={{ width: `max(${(v / max) * 100}%, 3.5rem)` }}>
+                            <div className={`tabular flex h-full items-center rounded-md px-3 text-sm font-semibold ${s === "venda" ? "bg-brand text-on-brand" : "bg-deep text-white dark:bg-bubble"}`} style={{ width: `max(${(v / max) * 100}%, 3.5rem)` }}>
                               {num(v)}
                             </div>
                           </div>

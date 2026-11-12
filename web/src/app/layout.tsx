@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { IBM_Plex_Mono, Instrument_Serif, Schibsted_Grotesk } from "next/font/google";
+import { brand } from "@/lib/brand";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display" });
+const sans = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const display = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-display", display: "swap" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Horizon Agente",
-  description: "Painel do agente comercial por IA",
+  title: brand.name,
+  description: brand.description,
   robots: { index: false, follow: false },
 };
 
@@ -16,7 +18,7 @@ const themeScript = `try{var t=localStorage.getItem('hz-theme');if(!t){t=matchMe
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
+    <html lang="pt-BR" className={`${sans.variable} ${display.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

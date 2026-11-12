@@ -6,38 +6,61 @@
 html, body { height: 100%; overflow: hidden; }
 
 :root {
-  --brand: 255 106 0;
-  --brand-ink: 184 71 0;
-  --deep: 10 31 68;
-  --paper: 246 247 250;
-  --card: 255 255 255;
-  --line: 221 226 236;
-  --ink: 10 31 68;
-  --mute: 82 96 122;
-  --ok: 23 121 74;
-  --warn: 154 91 0;
-  --bad: 179 38 30;
+  /* Prontuário (docs/design-system.md). Valores em "R G B" para aceitar opacidade no Tailwind. */
+  --brand: 199 54 39;        /* ação: botão primário, links (#C73627, AA com branco) */
+  --on-brand: 255 255 255;   /* texto sobre --brand */
+  --brand-ink: 179 41 28;    /* texto de destaque sobre o papel (#B3291C, AA) */
+  --deep: 20 35 31;          /* tinta: texto principal e superfícies escuras (#14231F) */
+  --paper: 244 239 230;      /* fundo da página (#F4EFE6) */
+  --card: 251 248 242;       /* superfícies elevadas (#FBF8F2) */
+  --line: 217 209 193;       /* divisórias (#D9D1C1) */
+  --ink: 20 35 31;
+  --mute: 86 99 96;          /* texto secundário (#566360, AA) */
+  --ok: 43 106 82;
+  --warn: 138 90 0;
+  --bad: 168 38 27;
+  --sinal: 229 72 58;        /* gráficos e pulso (#E5483A): nunca texto */
+  --menta: 127 181 160;      /* só decoração (#7FB5A0): não passa em texto */
+  --bubble: 20 35 31;        /* balão do agente/equipe no chat */
+  --petroleo: 11 43 43;      /* cena de entrada (login) */
+  --limao: 200 241 105;      /* realce na cena de entrada */
+  --osso: 237 230 216;       /* texto sobre o petróleo: FIXO, não muda com o tema (#EDE6D8) */
+  --r-seco: 2px;
+  --r-acao: 10px;
 }
 
 :root[data-theme="dark"] {
-  --brand: 255 138 61;
-  --brand-ink: 255 165 102;
-  --deep: 5 14 32;
-  --paper: 8 20 43;
-  --card: 15 34 68;
-  --line: 34 54 96;
-  --ink: 234 240 251;
-  --mute: 159 176 204;
-  --ok: 94 209 154;
-  --warn: 242 184 75;
+  --brand: 255 122 107;
+  --on-brand: 16 26 23;
+  --brand-ink: 255 165 150;
+  --deep: 9 16 14;
+  --paper: 16 26 23;
+  --card: 23 36 31;
+  --line: 42 58 52;
+  --ink: 237 230 216;
+  --mute: 167 179 173;
+  --ok: 143 209 181;
+  --warn: 240 185 85;
   --bad: 255 143 134;
+  --sinal: 255 122 107;
+  --menta: 143 209 181;
+  --bubble: 31 58 49;
 }
 
-html { color-scheme: light; }
+html { color-scheme: light; font-synthesis: none; } /* fontes de peso único (serifa dos títulos): nada de negrito falso */
 html[data-theme="dark"] { color-scheme: dark; }
 body { background: rgb(var(--paper)); color: rgb(var(--ink)); font-family: var(--font-sans), system-ui, sans-serif; }
 :focus-visible { outline: 3px solid rgb(var(--brand)); outline-offset: 2px; border-radius: 4px; }
 .tabular { font-variant-numeric: tabular-nums; }
+.font-display { font-weight: 400; letter-spacing: -0.01em; }
+
+/* Fita de ECG: a linha viva do cabeçalho e da entrada. Parada quando há redução de movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  .ecg-run { stroke-dasharray: 220 380; animation: ecg-run 3.6s linear infinite; }
+  @keyframes ecg-run { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
+  .layer-breathe { animation: layer-breathe 5.5s ease-in-out infinite; }
+  @keyframes layer-breathe { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+}
 ::selection { background: rgb(var(--brand) / 0.3); }
 
 @media (prefers-reduced-motion: no-preference) {

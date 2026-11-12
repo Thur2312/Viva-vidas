@@ -57,7 +57,7 @@ export function RangePicker({ value, onChange, deferCustom = true }: { value: Ra
             <input id={`${id}-ate`} type="date" value={shown.to} min={shown.from || undefined} onChange={(e) => setDates({ to: e.target.value })} className="min-h-[44px] rounded-lg border border-line bg-card px-3 text-sm" />
           </div>
           {deferCustom && (
-            <button type="button" disabled={!valid} onClick={() => onChange(draft)} className="min-h-[44px] rounded-full bg-brand px-5 text-sm font-bold text-deep disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" disabled={!valid} onClick={() => onChange(draft)} className="min-h-[44px] rounded-full bg-brand px-5 text-sm font-bold text-on-brand disabled:cursor-not-allowed disabled:opacity-50">
               Aplicar
             </button>
           )}

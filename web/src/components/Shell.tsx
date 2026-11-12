@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import {
   BarChart3, Bot, Plug, Scale, ChevronDown, Kanban, LayoutDashboard, LogOut, Megaphone, Menu, MessageSquare, Moon, PanelLeft, Phone, Send, Sun, X,
 } from "lucide-react";
-import { Wordmark } from "./Brand";
+import { Ecg, Wordmark } from "./Brand";
+import { brand } from "@/lib/brand";
 import { TopProgress } from "./Block";
 import { useMe } from "@/lib/hooks";
 import { DEMO } from "@/lib/flags";
@@ -78,7 +79,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const path = usePathname();
   const [open, setOpen] = useState<string[]>(["Dashboard"]);
 
-  const active = "bg-white/12 text-white font-medium shadow-[0_0_20px_-6px_rgba(255,106,0,0.35)] ring-1 ring-white/10";
+  const active = "bg-white/12 text-white font-medium shadow-[0_0_20px_-6px_rgb(var(--sinal)/0.35)] ring-1 ring-white/10";
   const idle = "text-white/70 hover:bg-white/8 hover:text-white";
   const base = "group flex min-h-[44px] items-center rounded-lg text-sm transition-colors";
 
@@ -192,7 +193,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen flex-col">
-      <a href="#conteudo" className="sr-only z-50 rounded-md bg-brand px-4 py-2 font-semibold text-deep focus:not-sr-only focus:absolute focus:left-3 focus:top-3">Pular para o conteúdo</a>
+      <a href="#conteudo" className="sr-only z-50 rounded-md bg-brand px-4 py-2 font-semibold text-on-brand focus:not-sr-only focus:absolute focus:left-3 focus:top-3">Pular para o conteúdo</a>
       <TopProgress />
       {/* TopBar */}
       <header className="z-20 flex h-16 shrink-0 items-center justify-between border-b border-line bg-card/85 px-3 backdrop-blur-md sm:px-4 lg:px-6">
@@ -201,13 +202,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Menu size={20} aria-hidden="true" />
           </button>
           <div className="mr-5 hidden w-52 items-center border-r border-line pr-5 lg:flex">
-            <Wordmark />
+            <Wordmark compact />
           </div>
           <button type="button" className={`${iconBtn} mr-2 hidden lg:inline-flex`} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} onClick={toggleCollapsed}>
             <PanelLeft size={20} aria-hidden="true" />
           </button>
-          <p className="font-display text-sm font-semibold tracking-tight">{titles[path] ?? "Painel"}</p>
+          <p className="font-display text-xl leading-none">{titles[path] ?? brand.short}</p>
         </div>
+        <Ecg className="mx-6 hidden h-6 min-w-0 flex-1 md:block" />
         <div className="flex items-center gap-1">
           <button type="button" className={iconBtn} aria-label={theme === "dark" ? "Usar tema claro" : "Usar tema escuro"} onClick={toggle}>
             {theme === "dark" ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
@@ -216,7 +218,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-deep text-xs font-bold text-white" aria-hidden="true">{initials}</span>
             <span className="hidden text-left leading-tight sm:block">
               <span className="block max-w-[180px] truncate text-sm font-semibold">{userName || (me.isError ? "Sessão indisponível" : "Carregando…")}</span>
-              <span className="block max-w-[180px] truncate text-xs text-mute">{me.data?.email ?? "Piloto"}</span>
+              <span className="block max-w-[180px] truncate text-xs text-mute">{me.data?.email ?? brand.short}</span>
             </span>
             <button type="button" className={iconBtn} aria-label="Sair" title="Sair" onClick={logout}>
               <LogOut size={19} aria-hidden="true" />
@@ -229,7 +231,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {/* Sidebar desktop */}
         <aside className={`hidden shrink-0 flex-col bg-deep text-white transition-[width] duration-200 lg:flex ${collapsed ? "w-[72px]" : "w-64"}`}>
           <SidebarNav collapsed={collapsed} />
-          {!collapsed && <p className="px-6 pb-5 text-xs text-white/40">Horizon · piloto de 20 dias</p>}
+          {!collapsed && <p className="px-6 pb-5 text-xs text-white/40">{brand.footer}</p>}
         </aside>
 
         {/* Sidebar mobile */}
@@ -238,7 +240,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <button type="button" className="absolute inset-0 bg-black/50" aria-label="Fechar menu" onClick={() => setDrawer(false)} />
             <aside className="relative flex h-full w-72 flex-col bg-deep text-white">
               <div className="flex h-16 items-center justify-between px-4">
-                <Wordmark light />
+                <Wordmark light compact />
                 <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-white/80 hover:bg-white/10" aria-label="Fechar menu" onClick={() => setDrawer(false)}>
                   <X size={20} aria-hidden="true" />
                 </button>
@@ -251,7 +253,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <main id="conteudo" className="min-w-0 flex-1 overflow-y-auto px-4 pb-24 pt-8 sm:px-8 lg:px-10">
           {children}
           <footer className="mt-12 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4 text-xs text-mute">
-            <span>Horizon · painel do piloto</span>
+            <span>{brand.footer}</span>
             <Link href="/privacidade" className="inline-flex min-h-[44px] items-center underline underline-offset-2 hover:text-ink">Privacidade e dados pessoais (LGPD)</Link>
           </footer>
         </main>
@@ -264,7 +266,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Abrir conversas"
-          className="fixed bottom-5 right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-deep shadow-lg transition-transform hover:-translate-y-0.5"
+          className="fixed bottom-5 right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-on-brand shadow-lg transition-transform hover:-translate-y-0.5"
         >
           <MessageSquare size={20} aria-hidden="true" />
           <span className="hidden sm:inline">Conversas</span>
@@ -275,7 +277,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <Link
             href="/conversas"
             aria-label="Abrir conversas"
-            className="fixed bottom-5 right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-deep shadow-lg transition-transform hover:-translate-y-0.5"
+            className="fixed bottom-5 right-5 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-on-brand shadow-lg transition-transform hover:-translate-y-0.5"
           >
             <MessageSquare size={20} aria-hidden="true" />
             <span className="hidden sm:inline">Conversas</span>

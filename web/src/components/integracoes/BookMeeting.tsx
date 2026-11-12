@@ -46,7 +46,7 @@ export function BookMeeting({ leadId, blocked, alreadyBooked }: { leadId: string
               {slots.data?.slots.map((s) => <option key={s.start} value={s.start}>{slotLabel(s.start, tz)}</option>)}
             </select>
           </label>
-          <button type="submit" disabled={!start || book.isPending} className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-deep disabled:opacity-60">
+          <button type="submit" disabled={!start || book.isPending} className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-on-brand disabled:opacity-60">
             <CalendarPlus size={16} aria-hidden="true" />
             {book.isPending ? "Marcando…" : "Marcar"}
           </button>

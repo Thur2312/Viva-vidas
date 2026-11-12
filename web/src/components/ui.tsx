@@ -74,7 +74,7 @@ export function KpiCard({
               </span>
             )}
           </div>
-          <p className="tabular mt-2 font-display text-3xl font-semibold leading-none tracking-tight">{value}</p>
+          <p className="tabular mt-2 font-mono text-[1.75rem] font-medium leading-none tracking-tight">{value}</p>
           {(TrendIcon || sub) && (
             <div className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-mute">
               {TrendIcon && trend !== undefined && (

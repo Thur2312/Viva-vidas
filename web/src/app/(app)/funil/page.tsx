@@ -54,7 +54,7 @@ function StageColumn({
 
   return (
     <section id={`col-${stage}`} aria-labelledby={`h-${stage}`} className={`w-full shrink-0 md:w-72 ${visibleMobile ? "" : "hidden md:block"}`}>
-      <div className={`mb-3 rounded-xl px-4 py-3 ${last ? "bg-brand text-deep" : "bg-deep text-white dark:bg-[#12306a]"}`}>
+      <div className={`mb-3 rounded-xl px-4 py-3 ${last ? "bg-brand text-on-brand" : "bg-deep text-white dark:bg-bubble"}`}>
         <div className="flex items-baseline justify-between gap-2">
           <h2 id={`h-${stage}`} className="text-sm font-semibold">{STAGE_META[stage].nome}</h2>
           <span className="tabular font-display text-2xl font-semibold" aria-label={total === null ? "total indisponível" : `${total} no período`}>{total === null ? "—" : num(total)}</span>

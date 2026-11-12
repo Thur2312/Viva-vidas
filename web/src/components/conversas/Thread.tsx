@@ -49,7 +49,7 @@ function Bubble({ m, blur, pendingLabel }: { m: Pick<ThreadMessage, "author" | "
     ? "mr-auto bg-card ring-1 ring-line rounded-bl-sm"
     : m.author === "agente"
       ? "ml-auto bg-brand/20 ring-1 ring-brand/50 rounded-br-sm"
-      : "ml-auto bg-deep text-white dark:bg-[#1d4380] rounded-br-sm";
+      : "ml-auto bg-deep text-white dark:bg-bubble rounded-br-sm";
   const sub = m.author === "humano" ? "text-white/70" : "text-mute";
   return (
     <div className={`w-fit max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${tone}`}>
@@ -232,7 +232,7 @@ export function ConversationThread({ conversationId }: { conversationId: string 
               {text.length.toLocaleString("pt-BR")} / {MAX.toLocaleString("pt-BR")}
             </p>
           </div>
-          <button type="button" onClick={() => void submit()} disabled={!!blockedReason || t.sending || !text.trim()} aria-label="Enviar mensagem" className="mb-6 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-deep disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={() => void submit()} disabled={!!blockedReason || t.sending || !text.trim()} aria-label="Enviar mensagem" className="mb-6 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-on-brand disabled:cursor-not-allowed disabled:opacity-50">
             {t.sending ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Send size={18} aria-hidden="true" />}
           </button>
         </div>

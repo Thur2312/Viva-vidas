@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { brand } from "@/lib/brand";
 import Link from "next/link";
 import { Wordmark } from "@/components/Brand";
 
-export const metadata: Metadata = { title: "Privacidade · Horizon Agente" };
+export const metadata: Metadata = { title: `Privacidade · ${brand.name}` };
 
 type Parties = { controlador?: string; operador?: string; encarregado?: string; contato?: string };
 

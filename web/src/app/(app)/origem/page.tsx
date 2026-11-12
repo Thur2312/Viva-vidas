@@ -73,7 +73,7 @@ export default function Origem() {
             <label htmlFor="q" className="mb-1 block text-xs font-medium text-mute">Campanha contém</label>
             <input id="q" value={draft.q} onChange={(e) => setDraft((d) => ({ ...d, q: e.target.value }))} placeholder="Ex.: PME" className="min-h-[44px] w-full rounded-lg border border-line bg-card px-3 text-sm" />
           </div>
-          <button type="submit" disabled={!valid || !dirty} className="min-h-[44px] rounded-full bg-brand px-6 text-sm font-bold text-deep disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="submit" disabled={!valid || !dirty} className="min-h-[44px] rounded-full bg-brand px-6 text-sm font-bold text-on-brand disabled:cursor-not-allowed disabled:opacity-50">
             Aplicar
           </button>
         </div>
@@ -93,7 +93,7 @@ export default function Origem() {
                 <legend className="sr-only">Colunas visíveis</legend>
                 {COLS.map((c) => (
                   <label key={c.id} className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-md px-2 text-sm hover:bg-ink/5">
-                    <input type="checkbox" className="h-4 w-4 accent-[#FF6A00]" checked={cols.includes(c.id)} onChange={(e) => setCols((cur) => (e.target.checked ? [...cur, c.id] : cur.filter((x) => x !== c.id)))} />
+                    <input type="checkbox" className="h-4 w-4 accent-brand" checked={cols.includes(c.id)} onChange={(e) => setCols((cur) => (e.target.checked ? [...cur, c.id] : cur.filter((x) => x !== c.id)))} />
                     {c.label}
                   </label>
                 ))}

@@ -10,7 +10,7 @@ import type { Range } from "@/lib/range";
 import { duration } from "./common";
 
 const SERIES = [
-  { key: "leads_in", label: "Cliente", cls: "text-deep dark:text-[#6f9be0]", dot: "bg-deep dark:bg-[#6f9be0]" },
+  { key: "leads_in", label: "Cliente", cls: "text-deep dark:text-menta", dot: "bg-deep dark:bg-menta" },
   { key: "humano_out", label: "Equipe", cls: "text-brand", dot: "bg-brand" },
   { key: "agente_out", label: "Agente", cls: "text-ok", dot: "bg-ok" },
 ] as const;
@@ -71,7 +71,7 @@ function PeakHours({ rows }: { rows: ConversationStats["horarios_pico"] }) {
       <div className="flex h-32 items-end gap-[3px]" role="img" aria-label={`Mensagens por hora do dia (horário de Brasília). ${rows.map((r) => `${r.hora}h: ${r.mensagens}`).join("; ")}`}>
         {rows.map((r) => (
           <div key={r.hora} title={`${r.hora}h: ${r.mensagens} mensagens`} className="flex h-full min-w-0 flex-1 items-end">
-            <div className={`w-full rounded-t ${r.hora === peak?.hora && r.mensagens > 0 ? "bg-brand" : "bg-deep/70 dark:bg-[#6f9be0]/70"}`} style={{ height: `${Math.max(r.mensagens ? 4 : 1, (r.mensagens / max) * 100)}%` }} />
+            <div className={`w-full rounded-t ${r.hora === peak?.hora && r.mensagens > 0 ? "bg-brand" : "bg-deep/70 dark:bg-menta/70"}`} style={{ height: `${Math.max(r.mensagens ? 4 : 1, (r.mensagens / max) * 100)}%` }} />
           </div>
         ))}
       </div>
