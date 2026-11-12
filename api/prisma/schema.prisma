@@ -1,0 +1,1375 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Companies {
+  id              String        @id @default(uuid())
+  ownerId         String?
+  companyName     String?
+  status          CompanyStatus @default(ACTIVE)
+  subdomain       String
+  imageUrl        String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt
+  deleted_at      DateTime?     @map("deleted_at")
+  cnpj            String?
+  cnpjData        Json?         @map("cnpj_data")
+  cnpjSyncedAt    DateTime?     @map("cnpj_synced_at")
+  address         String?
+  cep             String?
+  country         String?
+  cpf             String?
+  deliveryAddress String?
+  deliveryCep     String?
+  deliveryUf      String?
+  fiscalAddress   String?
+  fiscalCep       String?
+  fiscalUf        String?
+  private         Boolean?      @default(false)
+  repCPF          String?       @default("")
+  repName         String?       @default("")
+  rep_phone       String?       @default("")
+  tags            String?
+  uf              String?
+  planId          String?
+  timezone        String        @default("America/Sao_Paulo")
+  secretKey       String?       @map("secret_key")
+  subdomainStatus String?       @map("subdomain_status")
+
+  /// Hierarquia de grupo empresarial. Forma garantida pelo trigger
+  /// companies_enforce_group_shape (20270805130000_companies_group_hierarchy):
+  ///   raiz : parentId = null, groupId = id
+  ///   filha: parentId != null, groupId = parent.groupId, e o pai e raiz
+  /// Profundidade maxima 2, entao ancestrais(c) = {c.id, c.parentId}.
+  ///
+  /// groupId e nullable so para nao obrigar os caminhos de criacao existentes a
+  /// pre-gerar UUID — o trigger sempre preenche. Ler via effectiveGroupId().
+  parentId     String?     @map("parent_id")
+  groupId      String?     @map("group_id")
+  /// A empresa entra nos NUMEROS do painel consolidado do grupo? Quem liga e
+  /// desliga e o dono da matriz; quem concede a empresa ao grupo e a HDM, entao
+  /// desativar NUNCA tira a empresa da lista.
+  ///
+  /// NAO afeta a COTA: leads, transacoes, storage, triggers e assentos somam
+  /// todas as empresas do grupo, ativas ou nao — a empresa esta vinculada e o
+  /// gasto sai do mesmo balde. Tambem nao afeta acesso.
+  ///
+  /// Default true preserva as filhas que ja existiam; vinculo NOVO nasce false,
+  /// gravado explicitamente por attachCompanyToGroup e createSubCompany.
+  groupActive  Boolean     @default(true) @map("group_active")
+  parent       Companies?  @relation("CompanyHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Companies[] @relation("CompanyHierarchy")
+  groupRoot    Companies?  @relation("CompanyGroup", fields: [groupId], references: [id], onDelete: Restrict)
+  groupMembers Companies[] @relation("CompanyGroup")
+
+  Campaigns                 Campaigns[]
+  companyMember             CompanyMember[]
+  GenericDnd                GenericDnd[]
+  Integrations              Integrations[]
+  Leads                     Leads[]
+  events                    Events[]
+  Tracking                  Tracking[]
+  trackingActionConfigs     TrackingActionConfig[]
+  trackingActionConfigChanges TrackingActionConfigChange[]
+  adsPerformance            AdsPerformance[]
+  adsBreakdownPerformance   AdsBreakdownPerformance[]
+  adCreativeAnalysis        AdCreativeAnalysis[]
+  triggerTrackingEvents     TriggerTrackingEvent[]
+  metaOAuthStates           MetaOAuthState[]
+  whatsappMessages          WhatsappMessage[]
+  whatsappStatusUpdates     WhatsappStatusUpdate[]
+  metaLeadFormMappings      MetaLeadFormMapping[]
+
+  /// Indice do consolidado do grupo (WHERE group_id = $1). Declarado aqui com o
+  /// `map` do nome real para Prisma e banco nao divergirem. O indice de parent_id
+  /// e PARCIAL e fica so no SQL da migration — Prisma nao expressa indice parcial.
+  @@index([groupId], map: "idx_companies_group_id")
+  /// Escopo de visibilidade (WHERE status = $1 AND deleted_at IS NULL), o
+  /// predicado padrao desde que empresa inativa passou a sumir das telas e a ter
+  /// o acesso cortado. Ver src/shared/constants/company-scope.ts.
+  @@index([status, deleted_at], map: "idx_companies_status_deleted_at")
+}
+
+model Contacts {
+  id             Int       @id @default(autoincrement())
+  organizationId String?
+  leadId         Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+  remark         String    @default("")
+  role           String    @default("")
+  type           String    @default("")
+  email          String    @default("")
+  name           String    @default("")
+  phone          String    @default("")
+  deleted_at     DateTime? @map("deleted_at")
+
+  // CS/Relationship fields (Tier 1.1 — habilita eventos client.*)
+  status          String? @db.VarChar(50)
+  onboardingStage String? @db.VarChar(80)
+  healthScore     Int?
+  nps             Int?
+  /// Users.id — TEXT, e NAO uuid (ver UserNotification.userId).
+  ownerId         String?
+
+  // Dados pessoais (form)
+  photoUrl   String? @map("photo_url")
+  birthDay   String? @map("birth_day")
+  birthMonth String? @map("birth_month")
+
+  // Endereço
+  address    String?
+  city       String?
+  uf         String?
+  cep        String?
+  obsEntrega String? @map("obs_entrega")
+
+  // Contato de emergência
+  emergencyName     String? @map("emergency_name")
+  emergencyRelation String? @map("emergency_relation")
+  emergencyPhone    String? @map("emergency_phone")
+
+  // Preferências
+  foods            String[] @default([])
+  drinksAlcohol    Boolean? @map("drinks_alcohol")
+  intolerances     String[] @default([])
+  dietRestrictions String[] @default([]) @map("diet_restrictions")
+  otherRestriction String?  @map("other_restriction")
+  favoriteColor    String?  @map("favorite_color")
+  musicGenres      String[] @default([]) @map("music_genres")
+  movieGenres      String[] @default([]) @map("movie_genres")
+
+  // Tamanhos
+  shirtSize  String? @map("shirt_size")
+  pantsSize  String? @map("pants_size")
+  shoeSize   String? @map("shoe_size")
+  sandalSize String? @map("sandal_size")
+
+  // Relações
+  contactOrganizationId String?                 @map("contact_organization_id")
+  lead                  Leads?                  @relation(fields: [leadId], references: [id])
+}
+
+model CompanyMember {
+  id                        Int                        @id @default(autoincrement())
+  userId                    String?
+  companyId                 String
+  role                      CompanyRole                @default(SELLER)
+  contractDueDate           DateTime?
+  invitedEmail              String?
+  status                    CompanyMemberStatus        @default(INVITED)
+  username                  String?
+  contractStartDate         DateTime?
+  createdAt                 DateTime                   @default(now()) @map("created_at")
+  updatedAt                 DateTime                   @default(now()) @updatedAt
+  deleted_at                DateTime?                  @map("deleted_at")
+  plan                      PlanCompanyType?           @default(COMPLETE)
+  ramal                     String?
+  /// OWN = vale so para esta empresa (comportamento historico, default de toda
+  /// linha existente). SUBTREE = vale para esta empresa e todas as filhas dela.
+  scope                     CompanyMemberScope         @default(OWN)
+  /// Membro não-admin pode conectar/gerir o PRÓPRIO número de WhatsApp (conexões
+  /// atribuídas a ele). Só OWNER/ADMIN/SUPERADMIN liga; admin conecta sempre.
+  canConnectWhatsapp        Boolean                    @default(false) @map("can_connect_whatsapp")
+  company                   Companies                  @relation(fields: [companyId], references: [id])
+
+  @@unique([userId, companyId])
+}
+
+model Platforms {
+  id              String            @id @default(uuid())
+  platformName    String
+  details         String?
+  image           String?
+  testUrl         String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @default(now()) @updatedAt
+  deleted_at      DateTime?         @map("deleted_at")
+  type            String?           @default("payment")
+  Events          Events[]
+  Integrations    Integrations[]
+}
+
+model Integrations {
+  id                      Int              @id @default(autoincrement())
+  platformsId             String
+  companiesId             String
+  apiKey                  String?
+  hottok                  String?
+  clientId                String?
+  clientSecret            String?
+  basic                   String?
+  details                 String?
+  status                  GeneralStatus    @default(ACTIVE)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @default(now()) @updatedAt
+  hotSubdomain            String?
+  deleted_at              DateTime?        @map("deleted_at")
+  smtpFrom                String?
+  smtpHost                String?
+  smtpPassword            String?
+  smtpPort                String?
+  smtpUsername            String?
+  platformMemberId        String?
+  webhook                 String?
+  webhook2                String?
+  metaAccessToken         String?
+  metaAppId               String?
+  metaAppSecret           String?
+  metaCronEnabled         Boolean?         @default(false)
+  metaCronInterval        Int?             @default(24)
+  metaLastSync            DateTime?
+  metaFacebookUserId      String?
+  metaFacebookName        String?
+  metaFacebookEmail       String?
+  metaTokenExpiresAt      DateTime?
+  metaOAuthConnectedAt    DateTime?
+  metaOAuthMethod         MetaOAuthMethod? @default(MANUAL)
+  /// Token revogado pelo provedor (OAuthException 190, ex.: troca de senha) — distinto
+  /// de expirado por data. Setado na 1ª falha de auth; limpo ao regravar o token.
+  metaTokenInvalidAt      DateTime?
+  metaTokenInvalidReason  String?
+  metaLeadsVerifyToken    String?
+  metaLeadsAppSecret      String?
+  metaLeadsWebhookEnabled Boolean?         @default(false)
+  whatsappVerifyToken     String?
+  whatsappAppSecret       String?
+  whatsappWebhookEnabled  Boolean?         @default(false)
+  webinarApiKey           String?
+  imapHost                String?
+  imapPort                String?
+  imapUsername            String?
+  imapPassword            String?
+  imapEnabled             Boolean?         @default(false)
+  imapLastSync            DateTime?
+  fonetalkLastSync        DateTime?
+  onvoxLastSync           DateTime?
+  /// Sincronização agendada do Asaas. Intervalo em HORAS; o cron confere o cursor em
+  /// código (lastSync + intervalo) em vez de usar expressão fixa, o que permite intervalo
+  /// arbitrário, escalona as empresas naturalmente e recupera janela perdida após queda.
+  asaasCronEnabled        Boolean?         @default(true)
+  asaasCronInterval       Int?             @default(1)
+  asaasLastSync           DateTime?
+  webhookSecret           String?
+  company                 Companies        @relation(fields: [companiesId], references: [id])
+  platform                Platforms        @relation(fields: [platformsId], references: [id])
+}
+
+model Events {
+  id               Int              @id @default(autoincrement())
+  platformsId      String?
+  platformData     Json
+  createdAt        DateTime         @default(now())
+  deleted_at       DateTime?        @map("deleted_at")
+  companyId        String?
+  platformMemberId String?
+  platform         Platforms?       @relation(fields: [platformsId], references: [id])
+  company          Companies?       @relation(fields: [companyId], references: [id])
+}
+
+model Customers {
+  customerId         Int       @id @default(autoincrement())
+  name               String?
+  email              String
+  phoneNumber        String?
+  address            String?
+  document           String?
+  city               String?
+  state              String?
+  country            String?
+  zipcode            String?
+  street             String?
+  addressNumber      String?
+  neighborhood       String?
+  complement         String?
+  externalCustomerId String?
+  companyId          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now()) @updatedAt
+  deleted_at         DateTime? @map("deleted_at")
+  Leads              Leads[]
+
+  @@index([companyId])
+  @@index([email, companyId])
+  @@index([phoneNumber, companyId])
+}
+
+model Campaigns {
+  campaignId           String                @id @default(uuid())
+  name                 String?
+  slug                 String?
+  startDate            DateTime?
+  endDate              DateTime?
+  description          String?
+  tags                 String?
+  token                String?
+  companyId            String
+  imageUrl             String?
+  billetTotals         Int?                  @default(0)
+  cardTotal            Int?                  @default(0)
+  hibridTotals         Int?                  @default(0)
+  numberSell           Int?                  @default(0)
+  receipts             Int?                  @default(0)
+  totalApproved        Int?                  @default(0)
+  billetsPaid          Int?                  @default(0)
+  billetsToday         Int?                  @default(0)
+  offersIds            String[]
+  prodIds              String[]
+  liveUrl              String?
+  sellsMonth           Int                   @default(0)
+  sellsMonthValue      Float                 @default(0)
+  sellsToday           Int                   @default(0)
+  sellsTodayValue      Float                 @default(0)
+  sellsWeek            Int                   @default(0)
+  sellsWeekValue       Float                 @default(0)
+  sellsRecovery        Int                   @default(0)
+  sellsRecoveryValue   Float                 @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @default(now()) @updatedAt
+  pixPaid              Int?                  @default(0)
+  deleted_at           DateTime?             @map("deleted_at")
+  leadProptAI          String?               @default("")
+  leadPromptManager    String?               @default("")
+  leadAiAgentId        String?               @map("lead_ai_agent_id")
+  managerAiAgentId     String?               @map("manager_ai_agent_id")
+  countRecurrenceType  String                @default("SALES_ONLY")
+  rankingMetric        String                @default("COUNT")
+  totalAmount          Decimal               @default(0) @db.Decimal(10, 2)
+  slugFilter           Boolean               @default(false)
+  showLeadStatsOnTeams Boolean               @default(true)
+  columnSetId          String?
+  clientesColumnSetId  String?
+  csColumnSetId        String?
+  trackingApiKey       String?               @unique @map("tracking_api_key")
+  leadsApiKey          String?               @unique @map("leads_api_key")
+  metaPixelId          String?
+  metaLeadsVerifyToken String?               @map("meta_leads_verify_token")
+  hdmMetaLeadToken     String?               @unique @map("hdm_meta_lead_token")
+  adsLastUpdatedAt     DateTime?             @map("ads_last_updated_at") @db.Timestamptz(6)
+  company              Companies             @relation(fields: [companyId], references: [id])
+  leads                Leads[]
+  Tracking             Tracking[]
+  dnd                  dnd[]
+  adsPerformance       AdsPerformance[]
+  metaLeadFormMappings MetaLeadFormMapping[]
+}
+
+model MetaLeadFormMapping {
+  id          Int       @id @default(autoincrement())
+  formId      String    @map("form_id")
+  formName    String?   @map("form_name")
+  pageId      String?   @map("page_id")
+  pageName    String?   @map("page_name")
+  verifyToken String?   @map("verify_token")
+  campaignId  String    @map("campaign_id")
+  companyId   String    @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  deleted_at  DateTime? @map("deleted_at")
+
+  campaign Campaigns @relation(fields: [campaignId], references: [campaignId], onDelete: Cascade)
+  company  Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, companyId])
+  @@index([campaignId])
+  @@index([companyId])
+  @@map("meta_lead_form_mapping")
+}
+
+model TrackingActionConfig {
+  id String @id @default(uuid())
+
+  companyId String @map("company_id")
+
+  /// Escopo da linha. `""` e o padrao da empresa; qualquer outro valor e o
+  /// `campaignId` que sobrescreve esse padrao, campo a campo.
+  ///
+  /// SENTINELA e nao NULL, de proposito: em indice unico do Postgres um NULL nao
+  /// conflita com outro, entao daria para inserir DOIS padroes da mesma acao e
+  /// quebrar em silencio a invariante "um padrao por acao". O PG 15 tem
+  /// `NULLS NOT DISTINCT`, mas o Prisma nao declara isso no `@@unique` (o indice
+  /// ficaria em drift) e o `upsert` compara com `=`, que nunca casa com NULL.
+  ///
+  /// O preco e nao ter FK para `Campaigns`. Aceitavel: campanha usa soft delete,
+  /// entao orfao praticamente nao acontece, e a tela so lista campanha viva.
+  campaignId String @default("") @map("campaign_id")
+
+  /// Valor CRU de `Tracking.action`, sempre em minusculo. A tabela convive com
+  /// `OPTIN` e `optin` (so 1 dos 5 caminhos de escrita chama normalizeAction),
+  /// entao a chave e normalizada aqui e o lookup baixa a caixa antes.
+  action String
+
+  /// Rotulo amigavel para as telas. Sem isto, a UI cai no prettifyActionName.
+  label String?
+
+  /// Nome enviado no `event_name` da Meta. NUNCA entra no `event_id`: o hash usa
+  /// o nome observado, senao trocar o mapeamento reenviaria toda conversao ja
+  /// enviada.
+  metaEventName String? @map("meta_event_name")
+
+  /// Peso em BRL que vai como `custom_data.value`. Tracking nao tem preco, entao
+  /// sem isto o evento chega na Meta sem valor nenhum e o algoritmo nao aprende
+  /// que "assistiu 90%" vale mais que "assistiu 10%".
+  eventValue Float? @map("event_value")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, campaignId, action])
+  @@index([companyId])
+  @@index([companyId, campaignId])
+  @@map("tracking_action_config")
+}
+
+model TrackingActionConfigChange {
+  id String @id @default(uuid())
+
+  companyId String @map("company_id")
+
+  /// Mesmo escopo da linha editada: `""` e o padrao da empresa, qualquer outro
+  /// valor e o `campaignId`. Sem FK para `Campaigns` pelo mesmo motivo da
+  /// tabela de config — a sentinela `''` nao tem campanha correspondente. O nome
+  /// da campanha sai do `labelFor` no cliente.
+  campaignId String @default("") @map("campaign_id")
+
+  /// Acao editada, na mesma forma normalizada da `tracking_action_config`.
+  action String
+
+  /// CREATED | UPDATED | DELETED.
+  changeType String @map("change_type")
+
+  /// `{ campo: { before, after } }`, so com os campos que realmente mudaram.
+  /// Mesmo contrato do `TransactionAuditLog.changedFields`.
+  changedFields Json @default("{}") @map("changed_fields")
+
+  /// Desnormalizados de proposito, como no `TriggerBodyChangeLog`: usuario
+  /// removido nao pode apagar o rastro de quem editou.
+  userId    String? @map("user_id")
+  userName  String? @map("user_name")
+  userEmail String? @map("user_email")
+
+  /// `ip_address` vem do `resolveClientIp`, que varre o `X-Forwarded-For` da
+  /// direita para a esquerda. Ler a ponta esquerda deixaria qualquer um forjar
+  /// o IP no historico.
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Companies @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([companyId, action, createdAt(sort: Desc)])
+  @@map("tracking_action_config_changes")
+}
+
+model Leads {
+  id              Int       @id @default(autoincrement())
+  name            String
+  email           String?
+  phone           String?
+  campaignId      String?
+  interested      Boolean   @default(false)
+  status          String?   @db.VarChar(50) // Tier 1.2: ciclo de vida do lead (NEW, QUALIFIED, DISQUALIFIED, CONVERTED, ...)
+  state           String?
+  city            String?
+  leadIp          String?
+  sellerId        Int?
+  /// Quando `sellerId` passou a valer o que vale hoje. Base do SLA de primeiro toque e
+  /// do "atribuído há X min" no painel. Nulo em todo lead que nunca teve dono.
+  assignedAt      DateTime? @db.Timestamptz(6)
+  /// Primeira interação do dono com o lead depois de recebê-lo. Enquanto for nulo e
+  /// `assignedAt` estiver vencido, o SLA devolve o lead.
+  firstTouchAt    DateTime? @db.Timestamptz(6)
+  dndColumnId     String?
+  dndColumnOrder  Int?
+  customerId      Int
+  isStudent       Boolean   @default(false)
+  utms            String?
+  utm_campaign    String?
+  utm_content     String?
+  fbc             String?
+  gclid           String?
+  utm_medium      String?
+  utm_source      String?
+  utm_term        String?
+  utm_var1        String?
+  created_at      DateTime? @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+  companyId       String?
+  deleted_at      DateTime? @map("deleted_at")
+  atendente       String?
+  canal           String?
+  link_chat       String?
+  externalUserId  String?
+  source          String?
+  organizationId  String?
+  data_agendada   String?
+  meet_link       String?
+  analysis        String?
+  analysisManager String?
+  analyzedDomain  String?
+  analyzedCountry String?
+  instagramUrl    String?
+  linkedinUrl     String?
+  facebookUrl     String?
+  youtubeUrl      String?
+  history_details String?
+  var             Boolean   @default(false)
+
+  // Dados do diagnóstico
+  fbclid         String?
+  fbp            String? // Facebook Browser Pixel ID (cookie _fbp)
+  empresa        String?
+  cargo          String?
+  source_url     String?
+  /// Quando o titular se opos ao tratamento dos dados dele (LGPD, art. 18).
+  ///
+  /// Preenchido vira `opt_out: true` no evento Meta CAPI: a Meta passa a usar a
+  /// conversao SO para atribuicao, nunca para otimizacao de campanha nem para
+  /// publico. O evento continua sendo enviado e continua contando no relatorio —
+  /// a pessoa e que deixa de virar alvo.
+  ///
+  /// NAO confundir com Limited Data Use (`data_processing_options`), que e
+  /// mecanismo de leis da California, Colorado e Connecticut e nao se aplica a
+  /// base brasileira.
+  optOutAt       DateTime? @map("opt_out_at")
+  /// Quem registrou a oposicao. Nulo quando veio de script ou do proprio titular.
+  optOutBy       String?   @map("opt_out_by")
+  origin_url     String? // Origem observada pelo servidor (header Referer/Origin) — separada de source_url (declarada pelo cliente)
+  origin_type    String? // Camada que resolveu a origem: web | api | webhook
+  faturamento    String?
+  score_total    String?
+  perda_mensal   String?
+  perda_anual    String?
+  visit_count    String?
+  first_visit_at String?
+  last_visit_at  String?
+  notes          String? @db.Text
+  ai_analysis    String? @db.Text
+
+  // Dados detalhados (JSONB)
+  diagnostic_data Json? @db.JsonB
+  geo_data        Json? @db.JsonB
+  browser_data    Json? @db.JsonB
+
+  adset_id    String?
+  adset_name  String?
+  ad_id       String?
+  ad_name     String?
+  page_id     String?
+  page_name   String?
+  form_id     String?
+  form_name   String?
+  form_locale String?
+  form_status String?
+
+  // Meta Lead Ads — campos extras
+  street_address              String?  @db.Text
+  zip_code                    String?
+  country                     String?
+  date_of_birth               String?
+  gender                      String?
+  cpf                         String?
+  marital_status              String?
+  first_name                  String?
+  last_name                   String?
+  work_email                  String?
+  work_phone_number           String?
+  meta_campaign_id            String?
+  meta_campaign_name          String?
+  is_organic                  Boolean? @default(false)
+  meta_created_time           String?
+  custom_disclaimer_responses Json?    @db.JsonB
+  military_status             String?
+  relationship_status         String?
+
+  contacts        Contacts[]
+  card            GenericDndCard?
+  campaign        Campaigns?            @relation(fields: [campaignId], references: [campaignId])
+  company         Companies?            @relation(fields: [companyId], references: [id])
+  custumer        Customers             @relation(fields: [customerId], references: [customerId])
+  dndColumn       dndColumn?            @relation(fields: [dndColumnId], references: [id])
+
+  @@unique([email, campaignId, companyId])
+  @@unique([phone, campaignId, companyId])
+  @@index([companyId])
+  @@index([campaignId])
+  @@index([sellerId])
+  @@index([companyId, campaignId])
+  @@index([companyId, campaignId, sellerId])
+  @@index([email])
+  @@index([phone])
+  @@index([created_at])
+  @@index([dndColumnId])
+  @@index([companyId, campaignId, created_at])
+  @@index([companyId, campaignId, sellerId, created_at])
+  @@index([source])
+  @@index([origin_type])
+  @@index([companyId, ad_id, created_at], map: "Leads_companyId_ad_id_created_at_idx")
+}
+
+model AdsPerformance {
+  idRecord BigInt @id @default(autoincrement()) @map("id_record")
+
+  reportStartDate DateTime @map("report_start_date") @db.Date
+  reportEndDate   DateTime @map("report_end_date") @db.Date
+
+  // ✅ FK interna do HDM (coluna no banco: campaignId)
+  campaignId String?
+  campaign   Campaigns? @relation(fields: [campaignId], references: [campaignId], onDelete: SetNull, onUpdate: Cascade)
+
+  // ✅ apenas string (coluna no banco: externalCampaignId)
+  externalCampaignId String?
+
+  // Identificacao Meta
+  accountId       String? @map("account_id")
+  accountName     String? @map("account_name")
+  accountCurrency String? @map("account_currency")
+
+  campaignName String? @map("campaign_name")
+  adSetId      String? @map("adset_id")
+  adSetName    String? @map("adset_name")
+  adId         String? @map("ad_id")
+  adName       String? @map("ad_name")
+
+  deliveryStatus String? @map("delivery_status")
+  conversionType String? @map("conversion_type")
+
+  // Metadata da campanha (v24.0)
+  objective          String? @map("objective")
+  optimizationGoal   String? @map("optimization_goal")
+  buyingType         String? @map("buying_type")
+  attributionSetting String? @map("attribution_setting")
+  metaCreatedTime    String? @map("meta_created_time")
+  metaUpdatedTime    String? @map("meta_updated_time")
+
+  // Metricas de alcance
+  reach               BigInt?  @map("reach")
+  impressions         BigInt?  @map("impressions")
+  frequency           Decimal? @map("frequency") @db.Decimal(12, 6)
+  frequencyValue      String?  @map("frequency_value")
+  fullViewImpressions BigInt?  @map("full_view_impressions")
+  fullViewReach       BigInt?  @map("full_view_reach")
+
+  // Metricas de cliques
+  linkClicks             BigInt? @map("link_clicks")
+  clicks                 BigInt? @map("clicks")
+  inlinePostEngagement   BigInt? @map("inline_post_engagement")
+  uniqueClicks           BigInt? @map("unique_clicks")
+  uniqueInlineLinkClicks BigInt? @map("unique_inline_link_clicks")
+  outboundClicks         Json?   @map("outbound_clicks") @db.JsonB
+  uniqueOutboundClicks   Json?   @map("unique_outbound_clicks") @db.JsonB
+
+  // Taxas (CTR)
+  ctr                     Decimal? @map("ctr") @db.Decimal(12, 6)
+  uniqueCtr               Decimal? @map("unique_ctr") @db.Decimal(12, 6)
+  inlineLinkClickCtr      Decimal? @map("inline_link_click_ctr") @db.Decimal(12, 6)
+  uniqueLinkClicksCtr     Decimal? @map("unique_link_clicks_ctr") @db.Decimal(12, 6)
+  outboundClicksCtr       Json?    @map("outbound_clicks_ctr") @db.JsonB
+  uniqueOutboundClicksCtr Json?    @map("unique_outbound_clicks_ctr") @db.JsonB
+  websiteCtr              Json?    @map("website_ctr") @db.JsonB
+
+  // Metricas de custo
+  amountSpent                    Decimal? @map("amount_spent") @db.Decimal(18, 6)
+  campaignTotalAdsSpent          Decimal? @map("campaign_total_ads_spent") @db.Decimal(18, 6)
+  cpc                            Decimal? @map("cpc") @db.Decimal(18, 6)
+  cpm                            Decimal? @map("cpm") @db.Decimal(18, 6)
+  costPer1kReach                 Decimal? @map("cost_per_1k_reached") @db.Decimal(18, 6)
+  costPerInlineLinkClick         Decimal? @map("cost_per_inline_link_click") @db.Decimal(18, 6)
+  costPerInlinePostEngagement    Decimal? @map("cost_per_inline_post_engagement") @db.Decimal(18, 6)
+  costPerUniqueClick             Decimal? @map("cost_per_unique_click") @db.Decimal(18, 6)
+  costPerUniqueInlineLinkClick   Decimal? @map("cost_per_unique_inline_link_click") @db.Decimal(18, 6)
+  costPerThruplay                Json?    @map("cost_per_thruplay") @db.JsonB
+  costPerUniqueActionType        Json?    @map("cost_per_unique_action_type") @db.JsonB
+  costPerUniqueConversion        Json?    @map("cost_per_unique_conversion") @db.JsonB
+  costPerOutboundClick           Json?    @map("cost_per_outbound_click") @db.JsonB
+  costPerUniqueOutboundClick     Json?    @map("cost_per_unique_outbound_click") @db.JsonB
+  costPerAdClick                 Json?    @map("cost_per_ad_click") @db.JsonB
+  costPer15SecVideoView          Json?    @map("cost_per_15_sec_video_view") @db.JsonB
+  costPer2SecContinuousVideoView Json?    @map("cost_per_2_sec_continuous_video_view") @db.JsonB
+  costPerOneThousandAdImpression Json?    @map("cost_per_one_thousand_ad_impression") @db.JsonB
+  costPerDdaCountbyConvs         Decimal? @map("cost_per_dda_countby_convs") @db.Decimal(18, 6)
+  costPerObjectiveResult         Json?    @map("cost_per_objective_result") @db.JsonB
+  costPerResult                  Json?    @map("cost_per_result") @db.JsonB
+
+  // Metricas de video
+  videoPlays                 BigInt?  @map("video_plays")
+  videoP25Watched            BigInt?  @map("video_p25_watched")
+  videoP50Watched            BigInt?  @map("video_p50_watched")
+  videoP75Watched            BigInt?  @map("video_p75_watched")
+  videoP95Watched            BigInt?  @map("video_p95_watched")
+  videoP100Watched           BigInt?  @map("video_p100_watched")
+  video30SecWatched          BigInt?  @map("video_30_sec_watched")
+  videoAvgTimeWatched        Decimal? @map("video_avg_time_watched") @db.Decimal(12, 6)
+  videoThruplayWatched       BigInt?  @map("video_thruplay_watched")
+  videoContinuous2SecWatched Json?    @map("video_continuous_2_sec_watched") @db.JsonB
+  videoTimeWatched           Json?    @map("video_time_watched") @db.JsonB
+  videoPlayCurveActions      Json?    @map("video_play_curve_actions") @db.JsonB
+  videoPlayRetention0To15s   Json?    @map("video_play_retention_0_to_15s") @db.JsonB
+  videoPlayRetention20To60s  Json?    @map("video_play_retention_20_to_60s") @db.JsonB
+  videoPlayRetentionGraph    Json?    @map("video_play_retention_graph") @db.JsonB
+
+  // Engajamento social
+  socialSpend Decimal? @map("social_spend") @db.Decimal(18, 6)
+
+  // Qualidade e ranking
+  qualityRanking        String? @map("quality_ranking")
+  engagementRateRanking String? @map("engagement_rate_ranking")
+  conversionRateRanking String? @map("conversion_rate_ranking")
+
+  // Conversoes e acoes (JSON)
+  actions             Json? @map("actions") @db.JsonB
+  actionValues        Json? @map("action_values") @db.JsonB
+  adClickActions      Json? @map("ad_click_actions") @db.JsonB
+  adImpressionActions Json? @map("ad_impression_actions") @db.JsonB
+  uniqueActions       Json? @map("unique_actions") @db.JsonB
+  conversions         Json? @map("conversions") @db.JsonB
+  conversionValues    Json? @map("conversion_values") @db.JsonB
+  uniqueConversions   Json? @map("unique_conversions") @db.JsonB
+  costPerActionType   Json? @map("cost_per_action_type") @db.JsonB
+  costPerConversion   Json? @map("cost_per_conversion") @db.JsonB
+  purchaseRoas        Json? @map("purchase_roas") @db.JsonB
+  websitePurchaseRoas Json? @map("website_purchase_roas") @db.JsonB
+
+  // Canvas/Instant Experience
+  canvasAvgViewPercent            Decimal? @map("canvas_avg_view_percent") @db.Decimal(12, 6)
+  canvasAvgViewTime               Decimal? @map("canvas_avg_view_time") @db.Decimal(12, 6)
+  instantExperienceClicksToOpen   BigInt?  @map("instant_experience_clicks_to_open")
+  instantExperienceClicksToStart  BigInt?  @map("instant_experience_clicks_to_start")
+  instantExperienceOutboundClicks Json?    @map("instant_experience_outbound_clicks") @db.JsonB
+
+  // Estimativas
+  estimatedAdRecallRate Decimal? @map("estimated_ad_recall_rate") @db.Decimal(12, 6)
+  estimatedAdRecallers  BigInt?  @map("estimated_ad_recallers")
+
+  // Mobile App
+  mobileAppPurchaseRoas Json? @map("mobile_app_purchase_roas") @db.JsonB
+
+  // Catalogo
+  catalogSegmentValue                    Json? @map("catalog_segment_value") @db.JsonB
+  catalogSegmentActions                  Json? @map("catalog_segment_actions") @db.JsonB
+  catalogSegmentValueMobilePurchaseRoas  Json? @map("catalog_segment_value_mobile_purchase_roas") @db.JsonB
+  catalogSegmentValueOmniPurchaseRoas    Json? @map("catalog_segment_value_omni_purchase_roas") @db.JsonB
+  catalogSegmentValueWebsitePurchaseRoas Json? @map("catalog_segment_value_website_purchase_roas") @db.JsonB
+
+  // Resultados/Objetivos (v24.0)
+  objectiveResults                 Json?   @map("objective_results") @db.JsonB
+  objectiveResultRate              Json?   @map("objective_result_rate") @db.JsonB
+  resultRate                       Json?   @map("result_rate") @db.JsonB
+  resultValuesPerformanceIndicator String? @map("result_values_performance_indicator")
+
+  // DDA (Data-Driven Attribution)
+  ddaCountbyConvs Decimal? @map("dda_countby_convs") @db.Decimal(18, 6)
+  ddaResults      Json?    @map("dda_results") @db.JsonB
+
+  // Engajamento adicional
+  interactiveComponentTap            Json?   @map("interactive_component_tap") @db.JsonB
+  instagramUpcomingEventRemindersSet BigInt? @map("instagram_upcoming_event_reminders_set")
+
+  // Landing Page
+  landingPageViewPerLinkClick Decimal? @map("landing_page_view_per_link_click") @db.Decimal(12, 6)
+  purchasePerLandingPageView  Decimal? @map("purchase_per_landing_page_view") @db.Decimal(12, 6)
+
+  // Marketing Messages
+  marketingMessagesDelivered         BigInt?  @map("marketing_messages_delivered")
+  marketingMessagesDeliveryRate      Decimal? @map("marketing_messages_delivery_rate") @db.Decimal(12, 6)
+  marketingMessagesReadRateBenchmark String?  @map("marketing_messages_read_rate_benchmark")
+
+  // Auction
+  auctionBid              Decimal? @map("auction_bid") @db.Decimal(18, 6)
+  auctionCompetitiveness  Decimal? @map("auction_competitiveness") @db.Decimal(18, 6)
+  auctionMaxCompetitorBid Decimal? @map("auction_max_competitor_bid") @db.Decimal(18, 6)
+  wishBid                 Decimal? @map("wish_bid") @db.Decimal(18, 6)
+
+  // Outros (v24.0)
+  qualifyingQuestionQualifyAnswerRate    Decimal? @map("qualifying_question_qualify_answer_rate") @db.Decimal(12, 6)
+  shopsAssistedPurchases                 String?  @map("shops_assisted_purchases")
+  totalCardView                          String?  @map("total_card_view")
+  anchorEventAttributionSetting          String?  @map("anchor_event_attribution_setting")
+  anchorEventsPerformanceIndicator       String?  @map("anchor_events_performance_indicator")
+  multiEventConversionAttributionSetting String?  @map("multi_event_conversion_attribution_setting")
+
+  // Converted Product (Catalogo/E-commerce)
+  convertedProductQuantity String? @map("converted_product_quantity")
+  convertedProductValue    Json?   @map("converted_product_value") @db.JsonB
+
+  // Reels / Instagram (v25.0)
+  reelsActivity Json? @map("reels_activity") @db.JsonB
+
+  // Import XLSX - campos adicionais do Meta Ads Manager
+  landingPageViews BigInt?   @map("landing_page_views")
+  adSetBudget      Decimal?  @map("adset_budget") @db.Decimal(18, 6)
+  adSetBudgetType  String?   @map("adset_budget_type")
+  scheduleEnd      DateTime? @map("schedule_end") @db.Timestamptz(6)
+  scheduleStart    DateTime? @map("schedule_start") @db.Timestamptz(6)
+  shopClicks       BigInt?   @map("shop_clicks")
+
+  // Localizacao (deprecated v19.0+)
+  location String? @map("location")
+
+  // Resultados (calculados)
+  results        BigInt?  @map("results")
+  cpa            Decimal? @map("cpa") @db.Decimal(18, 6)
+  conversionRate Decimal? @map("conversion_rate") @db.Decimal(12, 6)
+  leads          BigInt?  @map("leads")
+  cpl            Decimal? @map("cpl") @db.Decimal(18, 6)
+
+  // Thumbnail do criativo (image_url ou thumbnail_url do Meta Creative)
+  thumbnailUrl String? @map("thumbnail_url")
+
+  // Video URL do criativo (source do video via Meta Graph API)
+  videoUrl String? @map("video_url")
+
+  /// Id do video do criativo no Meta (no Video da Graph API).
+  ///
+  /// E a IDENTIDADE ESTAVEL da peca criativa. `videoUrl` nao serve para isso: ora e um
+  /// mp4 assinado que expira (`&oe=`), ora e a URL de embed montada a partir deste id.
+  /// O mesmo video reaparece em varios ad_id, e e por este campo que transcricao e
+  /// analise sao penduradas — ver `AdCreativeAnalysis`.
+  videoId String? @map("video_id")
+
+  companyId String?    @map("company_id")
+  company   Companies? @relation(fields: [companyId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  importedAt DateTime @default(now()) @map("imported_at") @db.Timestamptz(6)
+  sourceFile String?  @map("source_file")
+  dataSource String?  @default("excel") @map("data_source")
+
+  /// Chave canonica do grupo, computada server-side (Postgres GENERATED STORED).
+  /// Forma: 'id:<extId>' | 'name:<accountName>|<campaignName>' | 'account:<accountName>' | NULL.
+  /// Imutavel por construcao — recalculada quando externalCampaignId/campaign_name/account_name mudam.
+  /// NUNCA escrever direto: o Postgres rejeita writes na coluna gerada.
+  linkGroupKey String? @map("link_group_key")
+
+  @@index([campaignId, importedAt])
+  @@index([externalCampaignId, importedAt])
+  @@index([companyId])
+  @@index([accountId])
+  @@index([dataSource])
+  @@index([companyId, adId, reportStartDate, reportEndDate])
+  @@index([companyId, adSetId, reportStartDate])
+  @@index([companyId, externalCampaignId, reportStartDate])
+  @@index([companyId, linkGroupKey])
+  @@index([companyId, reportStartDate, adName], map: "ads_performance_company_id_report_start_date_ad_name_idx")
+  @@index([companyId, videoId])
+  @@map("ads_performance")
+}
+
+model AdCreativeAnalysis {
+  id String @id @default(uuid())
+
+  companyId String     @map("company_id")
+  company   Companies? @relation(fields: [companyId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// AdsPerformance.videoId — o no Video do Meta.
+  videoId String @map("video_id")
+
+  /// mp4 espelhado no bucket. O `source` do Meta e assinado e expira; sem copia
+  /// permanente a transcricao nao e reproduzivel e o player quebra depois de uns dias.
+  mediaUrl String? @map("media_url")
+
+  /// Texto cru devolvido pelo Whisper.
+  transcript  String? @db.Text
+  durationSec Int?    @map("duration_sec")
+
+  /// Campos estruturados: gancho, oferta, prova, cta, publico, objecoes.
+  /// Separado de `narrative` para permitir filtrar/agrupar criativos por gancho depois.
+  analysisJson Json? @map("analysis_json")
+
+  /// Prosa interpretando transcricao + metricas.
+  narrative String? @db.Text
+
+  /// Modelo que escreveu a analise (o agente da empresa, resolvido em tempo de execucao).
+  model String?
+
+  status AdCreativeAnalysisStatus @default(PENDING)
+
+  /// Mensagem do erro quando status = FAILED. Fica visivel na UI: "nao consegui" sem
+  /// motivo faz o usuario reclicar o botao e pagar de novo pelo mesmo erro.
+  error String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([companyId, videoId])
+  @@index([companyId, status])
+  @@map("ad_creative_analysis")
+}
+
+model AdsBreakdownPerformance {
+  id BigInt @id @default(autoincrement())
+
+  companyId String?    @map("company_id")
+  company   Companies? @relation(fields: [companyId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // Breakdown dimension
+  breakdownType  String @map("breakdown_type")
+  breakdownValue String @map("breakdown_value")
+
+  // Period
+  reportStartDate DateTime @map("report_start_date") @db.Date
+  reportEndDate   DateTime @map("report_end_date") @db.Date
+
+  // Identification
+  accountId          String? @map("account_id")
+  accountName        String? @map("account_name")
+  externalCampaignId String? @map("external_campaign_id")
+  campaignName       String? @map("campaign_name")
+  adSetId            String? @map("adset_id")
+  adSetName          String? @map("adset_name")
+  adId               String? @map("ad_id")
+  adName             String? @map("ad_name")
+
+  // Core metrics
+  impressions BigInt?  @map("impressions")
+  reach       BigInt?  @map("reach")
+  clicks      BigInt?  @map("clicks")
+  linkClicks  BigInt?  @map("link_clicks")
+  amountSpent Decimal? @map("amount_spent") @db.Decimal(18, 6)
+
+  // Rates
+  ctr Decimal? @map("ctr") @db.Decimal(12, 6)
+  cpc Decimal? @map("cpc") @db.Decimal(18, 6)
+  cpm Decimal? @map("cpm") @db.Decimal(18, 6)
+
+  // Conversions
+  leads   BigInt?  @map("leads")
+  results BigInt?  @map("results")
+  cpa     Decimal? @map("cpa") @db.Decimal(18, 6)
+
+  // Actions (JSON)
+  actions      Json? @map("actions") @db.JsonB
+  actionValues Json? @map("action_values") @db.JsonB
+
+  // Video core
+  videoPlays           BigInt? @map("video_plays")
+  videoThruplayWatched BigInt? @map("video_thruplay_watched")
+
+  // Meta
+  importedAt DateTime @default(now()) @map("imported_at") @db.Timestamptz(6)
+  dataSource String?  @default("meta_api_breakdown") @map("data_source")
+
+  @@unique([companyId, adId, reportStartDate, reportEndDate, breakdownType, breakdownValue])
+  @@index([companyId])
+  @@index([breakdownType])
+  @@index([companyId, reportStartDate, reportEndDate])
+  @@index([companyId, adId, reportStartDate])
+  @@map("ads_breakdown_performance")
+}
+
+model GenericDnd {
+  id         Int                   @id @default(autoincrement())
+  companyId  String
+  title      String
+  createdAt  DateTime              @default(now())
+  deleted_at DateTime?             @map("deleted_at")
+  updatedAt  DateTime              @default(now()) @updatedAt
+  type       String                @default("opportunity")
+  company    Companies             @relation(fields: [companyId], references: [id])
+  cards      GenericDndCard[]
+  columns    GenericDndColumn[]
+  columnSets GenericDndColumnSet[]
+
+  // Nao-parcial de proposito: o getDnd consulta pelo client cru, sem filtro de
+  // deleted_at, entao um indice parcial ficaria inutilizavel para essa query.
+  @@index([companyId, title], map: "idx_generic_dnd_company_title")
+}
+
+model GenericDndColumnSet {
+  id            String                   @id @default(uuid())
+  name          String
+  genericDndId  Int
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @default(now()) @updatedAt
+  deleted_at    DateTime?                @map("deleted_at")
+  cardPositions GenericDndCardPosition[]
+  columns       GenericDndColumn[]
+  genericDnd    GenericDnd               @relation(fields: [genericDndId], references: [id])
+
+  @@index([genericDndId], map: "idx_gdcs_generic_dnd")
+}
+
+model GenericDndColumn {
+  id                    String                    @id @default(uuid())
+  genericDndId          Int?
+  name                  String
+  position              Int
+  weight                Float                     @default(0)
+  createdAt             DateTime                  @default(now())
+  deleted_at            DateTime?                 @map("deleted_at")
+  updatedAt             DateTime                  @default(now()) @updatedAt
+  array_number          Int                       @default(0)
+  genericDndColumnSetId String?
+  /// Coluna fixa da jornada: RECEPTION | WIN | LOST. Nulo nas colunas comuns.
+  /// Ver src/shared/constants/journey-columns.constants.ts
+  systemType            String?                   @map("system_type")
+  genericDndCards       GenericDndCard[]
+  cardPositions         GenericDndCardPosition[]
+  columnSet             GenericDndColumnSet?      @relation(fields: [genericDndColumnSetId], references: [id])
+  genericDnd            GenericDnd?               @relation(fields: [genericDndId], references: [id])
+
+  @@unique([genericDndColumnSetId, systemType], map: "uniq_gdcol_set_systemtype")
+  @@index([genericDndColumnSetId, position])
+}
+
+model GenericDndCard {
+  id                 String                   @id @default(uuid())
+  genericDndColumnId String?
+  title              String
+  description        String?
+  metadata           String?
+  type               String                   @default("transaction")
+  color              String                   @default("gray")
+  companyId          String
+  position           Int                      @default(0)
+  createdAt          DateTime                 @default(now())
+  deleted_at         DateTime?                @map("deleted_at")
+  updatedAt          DateTime                 @default(now()) @updatedAt
+  genericDndId       Int?
+  campaignId         String?
+  leadId             Int?                     @unique
+  genericDndColumn   GenericDndColumn?        @relation(fields: [genericDndColumnId], references: [id])
+  board              GenericDnd?              @relation(fields: [genericDndId], references: [id])
+  lead               Leads?                   @relation(fields: [leadId], references: [id])
+  positions          GenericDndCardPosition[]
+
+  @@index([type, leadId])
+  @@index([companyId])
+  @@index([companyId, type])
+  @@index([leadId])
+}
+
+model GenericDndCardPosition {
+  id          String              @id @default(uuid())
+  cardId      String
+  columnId    String
+  columnSetId String
+  position    Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+  card        GenericDndCard      @relation(fields: [cardId], references: [id])
+  column      GenericDndColumn    @relation(fields: [columnId], references: [id])
+  columnSet   GenericDndColumnSet @relation(fields: [columnSetId], references: [id])
+
+  @@index([cardId])
+  @@index([columnSetId, cardId])
+  // Declarado aqui porque so existia na migration 20260115160000 — sem isto o
+  // Prisma propoe DERRUBAR o indice na proxima diff.
+  @@index([columnSetId, columnId, position], map: "idx_gdcp_columnset_column_position")
+  @@index([columnSetId, columnId, createdAt(sort: Desc)], map: "idx_gdcp_columnset_column_created")
+}
+
+model dnd {
+  id         Int         @id @default(autoincrement())
+  campaignId String
+  title      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deleted_at DateTime?   @map("deleted_at")
+  campaign   Campaigns   @relation(fields: [campaignId], references: [campaignId])
+  columns    dndColumn[]
+}
+
+model dndColumn {
+  id         String    @id @default(uuid())
+  dndId      Int
+  name       String
+  position   Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deleted_at DateTime? @map("deleted_at")
+  Leads      Leads[]
+  dnd        dnd       @relation(fields: [dndId], references: [id])
+}
+
+model Tracking {
+  id              String     @id @default(uuid())
+  ip              String?    @default("")
+  url             String?    @default("")
+  action          String     @default("")
+  campaignId      String?
+  email           String?    @default("")
+  name            String?    @default("")
+  phone           String?    @default("")
+  sessionId       String     @default("")
+  timestamp       DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  companyId       String
+  device          String?    @default("")
+  referral        String?    @default("")
+  tag             String?    @default("")
+  utm_campaign    String?
+  utm_content     String?
+  fbc             String?
+  gclid           String?
+  utm_medium      String?
+  utm_source      String?
+  utm_term        String?
+  utm_var1        String?
+  utms            String?
+  timestamp_2     Int?
+  trackingIconUrl String?    @default("")
+  trackingTitle   String?    @default("")
+  trackingObs     String?    @default("")
+  // Facebook Lead Ads fields
+  adset_id        String?
+  adset_name      String?
+  ad_id           String?
+  ad_name         String?
+  page_id         String?
+  page_name       String?
+  form_id         String?
+  form_name       String?
+  form_locale     String?
+  form_status     String?
+  campaign        Campaigns? @relation(fields: [campaignId], references: [campaignId])
+  company         Companies  @relation(fields: [companyId], references: [id])
+  // índice funcional (companyId, LOWER(email)) criado na migration 20270525120000 — não expressável em @@index
+
+  @@index([companyId, timestamp])
+  @@index([companyId, action])
+  @@index([companyId, email])
+  @@index([companyId, phone])
+}
+
+model TriggerTrackingEvent {
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
+  triggerId String? @map("trigger_id")
+
+  // Tipo do evento
+  entityType String @map("entity_type") // LEAD, TRANSACTION
+  eventType  String @map("event_type") // CREATED, UPDATED, MOVED, APPROVED, etc.
+  eventName  String @map("event_name") // Nome do evento Meta: Lead, Purchase, CompleteRegistration, etc.
+
+  // Dados do lead/customer para Advanced Matching
+  email           String?
+  phone           String?
+  firstName       String? @map("first_name")
+  lastName        String? @map("last_name")
+  city            String?
+  state           String?
+  country         String? @default("br")
+  externalId      String? @map("external_id") // lead.id ou transaction.id → Meta user_data.external_id
+  clientIpAddress String? @map("client_ip_address")
+  leadCampaignId  String? @map("lead_campaign_id") // ID da campanha HDM
+  sellerId        String? @map("seller_id") // ID do vendedor
+
+  // Dados do evento (custom_data)
+  value           Float?
+  currency        String? @default("BRL")
+  contentName     String? @map("content_name") // Meta custom_data.content_name
+  contentCategory String? @map("content_category") // Meta custom_data.content_category
+  contentIds      String? @map("content_ids") // JSON array string → Meta custom_data.content_ids
+
+  // UTM tracking
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+
+  // Click IDs (NÃO são UTMs — são identificadores de click de plataformas de ads)
+  fbc   String? @map("fbc") // Facebook Click ID (formato: fb.1.{ts}.{fbclid}) → Meta user_data.fbc
+  gclid String? @map("gclid") // Google Click ID
+
+  // Advanced Matching - dados extras para Meta CAPI
+  zipCode         String? @map("zip_code")
+  dateOfBirth     String? @map("date_of_birth") // YYYYMMDD com ano real (Meta rejeita ano < 1900)
+  birthMonthDay   String? @map("birth_month_day") // MMDD quando o ano e desconhecido → so dobm/dobd
+  gender          String? // m ou f
+  fbp             String? // Facebook Browser Pixel ID → Meta user_data.fbp
+  clientUserAgent String? @map("client_user_agent")
+  fbLeadgenId     String? @map("fb_leadgen_id") // Meta Lead Ads leadgen_id (ID único da submissão, NÃO form_id) → Meta user_data.lead_id
+  fbPageId        String? @map("fb_page_id") // Meta Page ID → Meta user_data.page_id
+  eventSourceUrl  String? @map("event_source_url") // URL onde o evento ocorreu (obrigatorio para action_source=website)
+
+  // Enterprise Meta CAPI - campos extras para EMQ supremo
+  orderId        String? @map("order_id") // transactionCode → Meta custom_data.order_id (deduplicação Purchase)
+  subscriptionId String? @map("subscription_id") // subscriberCode de recorrência → Meta user_data.subscription_id
+  ctwaClid       String? @map("ctwa_clid") // Click-to-WhatsApp Click ID → Meta user_data.ctwa_clid
+  predictedLtv   Float?  @map("predicted_ltv") // Valor preditivo do lead → Meta custom_data.predicted_ltv
+  leadScore      Int?    @map("lead_score") // Score calculado do lead (0-165) para analytics
+  contentType    String? @map("content_type") // "product" ou "product_group" → Meta custom_data.content_type
+  igAccountId    String? @map("ig_account_id") // Instagram Account ID → Meta user_data.ig_account_id
+  /// Congelado no momento da emissao, nao lido no envio: o evento tem que
+  /// refletir a vontade do titular QUANDO o fato aconteceu. Ler no envio faria
+  /// uma oposicao registrada hoje reescrever eventos de ontem que ja sairam.
+  optOut         Boolean @default(false) @map("opt_out") // → Meta opt_out
+
+  // Facebook Ads data
+  adsetId    String? @map("adset_id")
+  adsetName  String? @map("adset_name")
+  adId       String? @map("ad_id")
+  adName     String? @map("ad_name")
+  campaignId String? @map("campaign_id")
+
+  // Meta send control
+  pixelId       String?   @map("pixel_id") // Meta Pixel ID para envio CAPI
+  eventId       String?   @unique @map("event_id") // hash determinístico da ocorrência (dedup Meta + idempotência)
+  status        String    @default("PENDING") // PENDING, SENT, FAILED, EXPIRED
+  attempts      Int       @default(0) // tentativas de envio já feitas (retry com backoff)
+  nextAttemptAt DateTime? @map("next_attempt_at") // backoff: não reenviar antes deste instante
+  sentAt        DateTime? @map("sent_at")
+  errorMessage  String?   @map("error_message")
+  metaResponse  Json?     @map("meta_response") @db.JsonB // Resposta da Meta API (events_received, fbtrace_id, messages, warnings)
+  sentPayload   Json?     @map("sent_payload") @db.JsonB // Payload user_data enviado (para debug, SEM access_token)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Companies @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@index([companyId, status])
+  @@index([companyId, eventName])
+  @@map("trigger_tracking_event")
+}
+
+model MetaOAuthState {
+  id        Int       @id @default(autoincrement())
+  companyId String
+  state     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  company   Companies @relation(fields: [companyId], references: [id])
+
+  @@index([expiresAt])
+  @@map("meta_oauth_states")
+}
+
+model WhatsappMessage {
+  id                 String                   @id @default(uuid())
+  companyId          String                   @map("company_id")
+  wabaId             String?                  @map("waba_id")
+  phoneNumberId      String                   @map("phone_number_id")
+  displayPhoneNumber String?                  @map("display_phone_number")
+  wamid              String                   @unique
+  direction          WhatsAppMessageDirection @default(INBOUND)
+  fromNumber         String                   @map("from_number")
+  toNumber           String?                  @map("to_number")
+  contactName        String?                  @map("contact_name")
+  contactWaId        String?                  @map("contact_wa_id")
+  messageType        String                   @default("text") @map("message_type")
+  content            String?
+  rawPayload         Json?                    @map("raw_payload")
+  contextMessageId   String?                  @map("context_message_id")
+  contextFrom        String?                  @map("context_from")
+  status             WhatsAppMessageStatus?   @default(SENT)
+  timestamp          DateTime
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @default(now()) @updatedAt @map("updated_at")
+  deletedAt          DateTime?                @map("deleted_at")
+  company            Companies                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([wamid])
+  @@index([fromNumber])
+  @@index([phoneNumberId])
+  @@index([timestamp])
+  @@index([direction])
+  @@index([contactWaId])
+  @@map("whatsapp_messages")
+}
+
+model WhatsappStatusUpdate {
+  id                    String                @id @default(uuid())
+  companyId             String                @map("company_id")
+  wamid                 String
+  status                WhatsAppMessageStatus
+  recipientId           String                @map("recipient_id")
+  phoneNumberId         String                @map("phone_number_id")
+  displayPhoneNumber    String?               @map("display_phone_number")
+  wabaId                String?               @map("waba_id")
+  billable              Boolean?              @default(false)
+  pricingModel          String?               @map("pricing_model")
+  pricingCategory       String?               @map("pricing_category")
+  pricingType           String?               @map("pricing_type")
+  bizOpaqueCallbackData String?               @map("biz_opaque_callback_data")
+  timestamp             DateTime
+  createdAt             DateTime              @default(now()) @map("created_at")
+  deletedAt             DateTime?             @map("deleted_at")
+  company               Companies             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([wamid])
+  @@index([status])
+  @@index([recipientId])
+  @@index([timestamp])
+  @@map("whatsapp_status_updates")
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CompanyRole {
+  SUPERADMIN
+  OWNER
+  ADMIN
+  SELLER
+  CLIENT
+  CS
+  TEAMLEADER
+}
+
+enum CompanyMemberStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+  BLOCKED
+}
+
+enum PlanCompanyType {
+  COMPLETE
+  HDM_PAY
+}
+
+enum CompanyMemberScope {
+  OWN
+  SUBTREE
+}
+
+enum GeneralStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum MetaOAuthMethod {
+  MANUAL
+  OAUTH
+}
+
+enum AdCreativeAnalysisStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum WhatsAppMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WhatsAppMessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}

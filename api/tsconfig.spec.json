@@ -1,0 +1,17 @@
+{
+  // tsconfig usado SOMENTE pelo ts-jest (transform em package.json > jest).
+  //
+  // Existe por causa de uma unica flag: `isolatedModules`. Com ela o ts-jest usa
+  // `transpileModule` — traduz arquivo a arquivo, sem construir o programa de tipos. O
+  // type-check NAO se perde: o job `unit` da CI ja roda `pnpm typecheck` (tsc --noEmit) num
+  // passo separado ANTES dos testes, entao o checking que o ts-jest fazia por arquivo, em
+  // cada worker, era trabalho duplicado — e era o custo dominante da suite.
+  //
+  // Por que um arquivo separado em vez de ligar a flag no tsconfig.json: em tsconfig.json,
+  // `isolatedModules` tambem passa a valer para o `tsc --noEmit` e vira uma restricao de
+  // codigo (re-export de tipo exige `export type`, etc.). Aqui ele fica escopado ao transform.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "isolatedModules": true
+  }
+}
