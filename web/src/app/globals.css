@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Como no HDM: o body não rola, a área de conteúdo rola por dentro do shell. */
+html, body { height: 100%; overflow: hidden; }
+
+:root {
+  --brand: 255 106 0;
+  --brand-ink: 184 71 0;
+  --deep: 10 31 68;
+  --paper: 246 247 250;
+  --card: 255 255 255;
+  --line: 221 226 236;
+  --ink: 10 31 68;
+  --mute: 82 96 122;
+  --ok: 23 121 74;
+  --warn: 154 91 0;
+  --bad: 179 38 30;
+}
+
+:root[data-theme="dark"] {
+  --brand: 255 138 61;
+  --brand-ink: 255 165 102;
+  --deep: 5 14 32;
+  --paper: 8 20 43;
+  --card: 15 34 68;
+  --line: 34 54 96;
+  --ink: 234 240 251;
+  --mute: 159 176 204;
+  --ok: 94 209 154;
+  --warn: 242 184 75;
+  --bad: 255 143 134;
+}
+
+html { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+body { background: rgb(var(--paper)); color: rgb(var(--ink)); font-family: var(--font-sans), system-ui, sans-serif; }
+:focus-visible { outline: 3px solid rgb(var(--brand)); outline-offset: 2px; border-radius: 4px; }
+.tabular { font-variant-numeric: tabular-nums; }
+::selection { background: rgb(var(--brand) / 0.3); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise { animation: rise .45s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .topbar-run { animation: topbar-run 1.1s ease-in-out infinite; }
+  @keyframes topbar-run { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+}
+@media (prefers-reduced-motion: reduce) { .topbar-run { width: 100%; opacity: .6; } }
+.sensitive { filter: blur(6px); user-select: none; }
