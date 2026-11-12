@@ -1,3 +1,5 @@
+import { DEMO } from "./flags";
+
 // Cliente do navegador: fala só com o BFF (/api/*). Nenhum token passa por aqui (cookies httpOnly).
 export class ApiError extends Error {
   constructor(public status: number, public code: string) {
@@ -6,11 +8,15 @@ export class ApiError extends Error {
 }
 
 let redirecting = false;
-function goLogin() {
-  if (redirecting || typeof window === "undefined") return;
+/**
+ * Sessão inválida: volta ao login. No modo demonstração não existe sessão (o login não cria cookie), então um 401 só
+ * significa "esta tela não tem dados de demonstração" e NÃO pode expulsar a pessoa do painel.
+ */
+export function goLogin(next?: string) {
+  if (DEMO || redirecting || typeof window === "undefined") return;
   redirecting = true;
-  const next = window.location.pathname + window.location.search;
-  window.location.assign(`/login?next=${encodeURIComponent(next)}`);
+  const to = next ?? window.location.pathname + window.location.search;
+  window.location.assign(`/login?next=${encodeURIComponent(to)}`);
 }
 
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {

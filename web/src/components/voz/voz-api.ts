@@ -2,7 +2,7 @@
 // Cliente da área de Voz. Fala só com o BFF (/api/pilot/voice/...); nenhum token passa por aqui.
 // Helpers próprios (não toca em lib/hooks.ts, que é compartilhado).
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ApiError, getJson } from "@/lib/client";
+import { ApiError, getJson, goLogin } from "@/lib/client";
 
 export type CallState = "queued" | "ringing" | "in_progress" | "completed" | "busy" | "no_answer" | "failed" | "canceled";
 export type TranscriptState = "none" | "pending" | "done" | "failed" | "disabled";
@@ -120,7 +120,7 @@ export async function placeCall(leadId: string): Promise<PlaceResult> {
   const j = await res.json().catch(() => null);
   if (res.ok) return typeof j?.id === "string" ? { ok: true, id: j.id } : { ok: false, status: res.status, code: "invalid", message: "Resposta inesperada do servidor." };
   if (res.status === 401) {
-    if (typeof window !== "undefined") window.location.assign(`/login?next=${encodeURIComponent("/voz")}`);
+    goLogin("/voz");
     return { ok: false, status: 401, code: "unauthenticated", message: "Sessão expirada." };
   }
   const code = typeof j?.error === "string" ? j.error : `http_${res.status}`;

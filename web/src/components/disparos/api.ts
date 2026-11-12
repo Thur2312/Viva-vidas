@@ -2,7 +2,7 @@
 // Cliente da área de Disparos. Fala só com o BFF (/api/pilot/broadcasts/...); nenhum token passa por aqui.
 // Helpers próprios: não toca em lib/hooks.ts nem em lib/types.ts (arquivos compartilhados).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getJson } from "@/lib/client";
+import { getJson, goLogin } from "@/lib/client";
 
 export type BStatus = "draft" | "scheduled" | "running" | "paused" | "completed" | "cancelled" | "failed";
 export type RStatus = "pending" | "queued" | "sent" | "delivered" | "read" | "replied" | "failed" | "skipped";
@@ -93,7 +93,7 @@ export async function act<T = unknown>(method: "POST" | "PATCH", path: string, b
   } catch {
     throw new ActionError(0, "network", "Sem conexão com o servidor. Nada foi feito.");
   }
-  if (res.status === 401 && typeof window !== "undefined") window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+  if (res.status === 401) goLogin();
   if (!res.ok) {
     let code = `http_${res.status}`;
     let msg = "";
