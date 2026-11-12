@@ -3,6 +3,7 @@
 // Helpers próprios (não toca em lib/hooks.ts, que é compartilhado).
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ApiError, getJson, goLogin } from "@/lib/client";
+import { DEMO } from "@/lib/flags";
 
 export type CallState = "queued" | "ringing" | "in_progress" | "completed" | "busy" | "no_answer" | "failed" | "canceled";
 export type TranscriptState = "none" | "pending" | "done" | "failed" | "disabled";
@@ -59,10 +60,43 @@ export const VOZ_PAGE_SIZE = 15;
 const qs = (o: Record<string, string | number | undefined>) =>
   new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])).toString();
 
+// ───── Demonstração (sem API): a ligação percorre os estados para dar para ver cada animação. Não é dado real. ─────
+const demoStatus: VoiceStatus = {
+  telephony: { provider: "demo", configured: true, ready: true, missing: [] },
+  tts: { provider: "demo", configured: false, ready: false, missing: [] },
+  stt: { provider: "demo", configured: true, ready: true, missing: [] },
+  recording: { announcementConfigured: true, retentionDays: 30 },
+  dnc: { enabled: false, configured: false },
+  callWindow: { days: [1, 2, 3, 4, 5], start: "09:00", end: "18:00", tz: "America/Sao_Paulo" },
+  webhookUrl: null,
+  canPlaceCalls: true,
+};
+const demoRow = (id: string, name: string, phone: string, status: CallState, agoMin: number, dur: number | null): CallRow => {
+  const at = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+  return {
+    id, lead_id: `lead-${id}`, lead_name: name, phone_masked: phone, direction: "outbound", status, failure_reason: null,
+    requested_at: at(agoMin), started_at: at(agoMin), answered_at: status === "completed" || status === "in_progress" ? at(agoMin) : null,
+    ended_at: status === "completed" ? at(agoMin - 4) : null, duration_sec: dur, has_recording: status === "completed", recording_consent: true,
+    transcript_status: status === "completed" ? "done" : "none", retention_until: null, cost_cents: null,
+  };
+};
+function demoCalls(): CallsPage {
+  // Ciclo de 7 s por etapa: na fila, tocando, em andamento (x3), encerrada.
+  const phase = Math.floor(Date.now() / 7000) % 6;
+  const live: CallState = phase === 0 ? "queued" : phase === 1 ? "ringing" : phase <= 4 ? "in_progress" : "completed";
+  const data = [
+    { ...demoRow("d0", "Roberto F.", "(83) 9••••-9014", live, live === "in_progress" ? 0.6 : 0.1, live === "completed" ? 212 : null) },
+    demoRow("d1", "Júlio R.", "(81) 9••••-7731", "completed", 95, 318),
+    demoRow("d2", "Débora M.", "(84) 9••••-3308", "no_answer", 240, null),
+    demoRow("d3", "Felipe A.", "(83) 9••••-2275", "completed", 1500, 141),
+  ];
+  return { data, meta: { page: 1, pageSize: 15, totalItems: data.length, totalPages: 1 } };
+}
+
 export function useVoiceStatus() {
   return useQuery({
     queryKey: ["voz", "status"],
-    queryFn: ({ signal }) => getJson<VoiceStatus>("/api/pilot/voice/status", signal),
+    queryFn: ({ signal }) => (DEMO ? Promise.resolve(demoStatus) : getJson<VoiceStatus>("/api/pilot/voice/status", signal)),
     staleTime: 30_000,
   });
 }
@@ -70,9 +104,11 @@ export function useVoiceStatus() {
 export function useCalls(f: { page: number; status: string }) {
   return useQuery({
     queryKey: ["voz", "calls", f.page, f.status],
-    queryFn: ({ signal }) => getJson<CallsPage>(`/api/pilot/voice/calls?${qs({ page: f.page, pageSize: VOZ_PAGE_SIZE, status: f.status })}`, signal),
+    queryFn: ({ signal }) => (DEMO ? Promise.resolve(demoCalls()) : getJson<CallsPage>(`/api/pilot/voice/calls?${qs({ page: f.page, pageSize: VOZ_PAGE_SIZE, status: f.status })}`, signal)),
     placeholderData: keepPreviousData,
     staleTime: 15_000,
+    // Enquanto houver ligação ativa, a lista se atualiza sozinha (4 s); sem ligação ativa, não consulta à toa.
+    refetchInterval: (q) => (q.state.data?.data.some((c) => c.status === "queued" || c.status === "ringing" || c.status === "in_progress") ? 4000 : false),
   });
 }
 
@@ -106,6 +142,7 @@ const BLOCK_MESSAGES: Record<string, string> = {
 };
 
 export async function placeCall(leadId: string): Promise<PlaceResult> {
+  if (DEMO) return { ok: true, id: `demo-${leadId}` }; // demonstração: nada é ligado
   let res: Response;
   try {
     res = await fetch("/api/pilot/voice/calls", {
@@ -128,5 +165,6 @@ export async function placeCall(leadId: string): Promise<PlaceResult> {
   return { ok: false, status: res.status, code, message };
 }
 
-export const isManager = (role: string | undefined) => role === "manager" || role === "owner";
+// No modo demonstração não há papel real: libera a tela inteira para dar para ver (o pedido de ligação abaixo é simulado).
+export const isManager = (role: string | undefined) => DEMO || role === "manager" || role === "owner";
 export { ApiError };

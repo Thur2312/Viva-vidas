@@ -92,7 +92,7 @@ Regras: a animação serve à narrativa; sempre respeita `prefers-reduced-motion
 | **Entrada (assinatura)** | Funil vivo: 800 pontos em vórtice por seis anéis, coral no fundo; ao autenticar o funil se abre e dissolve. SVG estático equivalente como reserva. | R3F (shader de pontos) + GSAP |
 | **Gráficos** | Funil do dashboard desenha a linha ao carregar; barras mudam de altura com transição suave ao trocar o período. | GSAP / CSS |
 | **Botões** | Resposta ao clique (leve afundamento) e estados de carregando; param com redução de movimento. | CSS |
-| **Microfone (Voz)** | Onda sonora e pulso durante a ligação (a projetar). | CSS / canvas leve |
+| **Microfone (Voz)** | Indica o **estado** da ligação, não o áudio (a chamada é pelo telefone): na fila o microfone respira; tocando emite ondas; em ligação aparecem barras de voz e o cronômetro; encerrada, para. Botão Ligar pulsa 3 vezes ao aparecer. Parado com redução de movimento. | CSS |
 | ~~Fita de ECG, contagem animada, entrada de página~~ | **Removidos** do painel: competiam com o dado (revisão de 12/11/2026). | — |
 
 **Fallback obrigatório** (sem WebGL, celular fraco ou `prefers-reduced-motion`): a mesma composição como SVG estático, com o painel já aberto. O 3D carrega sob demanda (`dynamic import`, `Suspense`, placeholder), e o painel funciona sem ele. Orçamento: o 3D não pode entrar no bundle das telas de trabalho.

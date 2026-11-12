@@ -6,6 +6,7 @@ import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
 import { Panel } from "@/components/ui";
 import { dateTime, num } from "@/lib/format";
 import { CallDrawer } from "./CallDrawer";
+import { MicWave } from "./MicWave";
 import { STATE_LABEL, STATE_TONE, TRANSCRIPT_LABEL, duration } from "./labels";
 import { useCalls, type CallRow, type CallState } from "./voz-api";
 
@@ -38,7 +39,10 @@ function Table({ rows, onOpen }: { rows: CallRow[]; onOpen: (id: string) => void
                 <p className="tabular text-xs text-mute">{c.phone_masked ?? ""}</p>
               </td>
               <td className="py-2.5 pr-3">
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATE_TONE[c.status]}`}>{STATE_LABEL[c.status]}</span>
+                <span className="inline-flex items-center gap-2">
+                  {(c.status === "queued" || c.status === "ringing" || c.status === "in_progress") && <MicWave state={c.status} size={22} />}
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATE_TONE[c.status]}`}>{STATE_LABEL[c.status]}</span>
+                </span>
               </td>
               <td className="tabular py-2.5 pr-3 text-mute">{dateTime(c.requested_at)}</td>
               <td className="tabular py-2.5 pr-3">{duration(c.duration_sec)}</td>

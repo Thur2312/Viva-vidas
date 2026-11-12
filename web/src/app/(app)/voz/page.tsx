@@ -6,6 +6,7 @@ import { QueryBlock, Skeleton } from "@/components/Block";
 import { KpiCard, PageHeader } from "@/components/ui";
 import { CallDialog } from "@/components/voz/CallDialog";
 import { CallsTable } from "@/components/voz/CallsTable";
+import { LiveCall, isActive } from "@/components/voz/LiveCall";
 import { ComplianceCard } from "@/components/voz/ComplianceCard";
 import { StatusPanel } from "@/components/voz/StatusPanel";
 import { isManager, useCalls, useVoiceStatus, type VoiceStatus } from "@/components/voz/voz-api";
@@ -28,6 +29,7 @@ export default function Voz() {
   const calls = useCalls({ page: 1, status: "" });
   const [dialog, setDialog] = useState(false);
   const manager = isManager(me.data?.role);
+  const activeCall = calls.data?.data.find(isActive);
 
   return (
     <>
@@ -40,6 +42,7 @@ export default function Voz() {
           const reason = blockedReason(s, manager);
           return (
             <div className="space-y-6">
+              {activeCall && <LiveCall call={activeCall} canSeeTranscript={manager} />}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
                   title="Telefonia"
@@ -76,7 +79,7 @@ export default function Voz() {
                   disabled={!!reason}
                   onClick={() => setDialog(true)}
                   aria-describedby={reason ? "ligar-motivo" : undefined}
-                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-deep px-6 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-brand dark:text-deep"
+                  className={`inline-flex min-h-[44px] items-center gap-2 rounded-full bg-deep px-6 text-sm font-semibold text-white shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-brand dark:text-deep ${activeCall ? "" : "btn-pulse"}`}
                 >
                   <Phone size={16} aria-hidden="true" />
                   Ligar para um lead
