@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common'
 import { Pool } from 'pg'
+import { pgSsl } from '../pg.service'
 
 /**
  * Trava consultiva de SESSÃO do Postgres (pg_try_advisory_lock) para que só uma instância rode o worker.
@@ -16,7 +17,7 @@ export class AdvisoryLockService implements OnModuleDestroy {
       if (!url) throw new Error('PILOT_DATABASE_URL (ou DATABASE_URL) não configurada')
       this.pool = new Pool({
         connectionString: url, max: 1,
-        ssl: /supabase\.(co|com)|sslmode=require/.test(url) ? { rejectUnauthorized: false } : undefined,
+        ssl: pgSsl(url),
       })
     }
     return this.pool
