@@ -44,9 +44,9 @@ const PUT_ROUTES: Route[] = [{ re: /^voice\/settings$/, params: [], base: "/voic
 // voice/... -> /voice/...  |  demais -> /pilot/...
 const target = (route: Route, path: string) => (route.base ? `${route.base}/${path.replace(/^voice\//, "")}` : `/pilot/${path}`);
 
-export function GET(req: Request, { params }: { params: { path: string[] } }) {
+export function GET(req: Request, ctx: { params: Promise<{ path: string[] }> }) {
   return guard(async () => {
-    const path = params.path.join("/");
+    const path = (await ctx.params).path.join("/");
     const route = GET_ROUTES.find((r) => r.re.test(path));
     if (!route) throw new UpstreamError(404, "not_found");
     const src = new URL(req.url).searchParams;
@@ -70,9 +70,9 @@ const passthrough = (path: string, status: number) =>
   status === 422 || status === 503 || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status));
 
 function mutate(method: Method, routes: Route[]) {
-  return (req: Request, { params }: { params: { path: string[] } }) =>
+  return (req: Request, ctx: { params: Promise<{ path: string[] }> }) =>
     guard(async () => {
-      const path = params.path.join("/");
+      const path = (await ctx.params).path.join("/");
       const route = routes.find((r) => r.re.test(path));
       if (!route) throw new UpstreamError(404, "not_found");
       if (!sameOrigin(req)) throw new UpstreamError(403, "forbidden_origin");
