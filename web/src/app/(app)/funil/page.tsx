@@ -22,22 +22,37 @@ function useDebounced<T>(v: T, ms: number) {
   return d;
 }
 
+/** Dias sem movimento (3 ou mais) em lead que ainda não fechou: o que precisa de atenção no funil. */
+const IDLE_DAYS = 3;
+function idleDays(l: LeadRow): number | null {
+  if (l.stage === "venda" || l.stage === "perdido" || l.opt_out) return null;
+  const t = new Date(l.last_at ?? l.created_at).getTime();
+  if (!Number.isFinite(t)) return null;
+  const d = Math.floor((Date.now() - t) / 86_400_000);
+  return d >= IDLE_DAYS ? d : null;
+}
+
 function LeadCard({ l, hide, onOpen }: { l: LeadRow; hide: boolean; onOpen: (id: string) => void }) {
+  const idle = idleDays(l);
   return (
     <li>
-      <button type="button" onClick={() => onOpen(l.id)} aria-haspopup="dialog" className="block min-h-[44px] w-full rounded-xl border border-line bg-card p-4 text-left transition-shadow hover:shadow-md">
+      <button type="button" onClick={() => onOpen(l.id)} aria-haspopup="dialog" className="block min-h-[44px] w-full rounded-sm border border-line bg-card p-3.5 text-left transition-colors hover:border-ink/40">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate font-semibold leading-tight">{l.name || "Sem nome"}</p>
-            <p className="tabular text-xs text-mute">{l.phone ?? ""}</p>
+            <p className="tabular font-mono text-[11px] text-mute">{l.phone ?? ""}</p>
           </div>
           {l.score !== null && l.score !== undefined && <ScoreDot score={toNum(l.score)} />}
         </div>
         {l.last_message && <p className={`mt-2 line-clamp-2 text-sm ${hide ? "sensitive" : ""}`}>{l.last_message}</p>}
-        {l.opt_out && <p className="mt-2 inline-block rounded-full bg-bad/15 px-2 py-0.5 text-xs font-semibold text-bad">Não contatar</p>}
+        {l.opt_out && <p className="mt-2 inline-block rounded-[2px] bg-bad/15 px-2 py-0.5 text-xs font-semibold text-bad">Não contatar</p>}
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-mute">
-          <span className="truncate rounded-full bg-deep/[0.06] px-2 py-0.5 dark:bg-white/10" title={l.source ?? undefined}>{l.source ?? "Origem não informada"}</span>
-          <span className="shrink-0">{relTime(l.last_at ?? l.created_at)}</span>
+          <span className="truncate" title={l.source ?? undefined}>{l.source ?? "Origem não informada"}</span>
+          {idle !== null ? (
+            <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-brand-ink"><i className="h-1.5 w-1.5 rounded-full bg-sinal" aria-hidden="true" />Parado há {idle} d</span>
+          ) : (
+            <span className="shrink-0">{relTime(l.last_at ?? l.created_at)}</span>
+          )}
         </div>
       </button>
     </li>
@@ -54,12 +69,12 @@ function StageColumn({
 
   return (
     <section id={`col-${stage}`} aria-labelledby={`h-${stage}`} className={`w-full shrink-0 md:w-72 ${visibleMobile ? "" : "hidden md:block"}`}>
-      <div className={`mb-3 rounded-xl px-4 py-3 ${last ? "bg-brand text-on-brand" : "bg-deep text-white dark:bg-bubble"}`}>
+      <div className={`mb-3 border-t-2 pt-2 ${last ? "border-sinal" : "border-ink"}`}>
         <div className="flex items-baseline justify-between gap-2">
-          <h2 id={`h-${stage}`} className="text-sm font-semibold">{STAGE_META[stage].nome}</h2>
-          <span className="tabular font-display text-2xl font-semibold" aria-label={total === null ? "total indisponível" : `${total} no período`}>{total === null ? "—" : num(total)}</span>
+          <h2 id={`h-${stage}`} className={`font-display text-xl leading-tight ${last ? "text-brand-ink" : ""}`}>{STAGE_META[stage].nome}</h2>
+          <span className="tabular font-mono text-2xl font-medium" aria-label={total === null ? "total indisponível" : `${total} no período`}>{total === null ? "—" : num(total)}</span>
         </div>
-        <p className={`text-xs ${last ? "text-deep/80" : "text-white/75"}`}>
+        <p className="text-xs text-mute">
           {prevTotal === null || total === null
             ? STAGE_META[stage].dica
             : prevTotal === 0 ? "Sem base na etapa anterior" : `${pct(ratio(total, prevTotal))} da etapa anterior`}
@@ -70,7 +85,7 @@ function StageColumn({
         {q.isPending && <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-24" /></div>}
         {q.isError && rows.length === 0 && <ErrorState error={q.error} onRetry={() => q.refetch()} compact />}
         {!q.isPending && !q.isError && rows.length === 0 && (
-          <p className="rounded-xl border border-dashed border-line p-4 text-sm text-mute">
+          <p className="rounded-sm border border-dashed border-line p-4 text-sm text-mute">
             {search || campaignId ? "Nenhum lead com esses filtros." : "Nenhum lead nesta etapa."}
           </p>
         )}

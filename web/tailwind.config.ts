@@ -28,8 +28,9 @@ const config: Config = {
       borderRadius: { md: "4px", lg: "8px", xl: "6px" },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        // Mesma família da interface: "display" e "mono" são só nomes de papel (título e número), não fontes diferentes.
+        display: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
     },
   },

@@ -47,12 +47,16 @@ html, body { height: 100%; overflow: hidden; }
   --bubble: 31 58 49;
 }
 
-html { color-scheme: light; font-synthesis: none; } /* fontes de peso único (serifa dos títulos): nada de negrito falso */
+html { color-scheme: light; font-synthesis: none; } /* nunca negrito/itálico falso: só pesos reais da fonte */
 html[data-theme="dark"] { color-scheme: dark; }
 body { background: rgb(var(--paper)); color: rgb(var(--ink)); font-family: var(--font-sans), system-ui, sans-serif; }
 :focus-visible { outline: 3px solid rgb(var(--brand)); outline-offset: 2px; border-radius: 4px; }
 .tabular { font-variant-numeric: tabular-nums; }
-.font-display { font-weight: 400; letter-spacing: -0.01em; }
+/* Papéis tipográficos. Na camada "components" para que classes de peso (font-medium, font-normal) ainda vençam. */
+@layer components {
+  .font-display { font-weight: 600; letter-spacing: -0.015em; }
+  .font-mono { font-variant-numeric: tabular-nums; } /* números em coluna alinhados */
+}
 
 /* Fita de ECG: a linha viva do cabeçalho e da entrada. Parada quando há redução de movimento. */
 @media (prefers-reduced-motion: no-preference) {

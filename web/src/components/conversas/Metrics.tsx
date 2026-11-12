@@ -1,8 +1,7 @@
 "use client";
 
-import { Clock, MessagesSquare, Reply, Sparkles } from "lucide-react";
 import { EmptyState, QueryBlock, Skeleton } from "../Block";
-import { KpiCard, Panel } from "../ui";
+import { Folio, Strip } from "../folha";
 import { useConversationStats } from "@/lib/hooks";
 import { num, pct } from "@/lib/format";
 import { STAGE_META, type ConversationStats } from "@/lib/types";
@@ -47,7 +46,7 @@ function DailyChart({ rows }: { rows: ConversationStats["mensagens"] }) {
                 if (!v) return null;
                 const h = (v / max) * ch;
                 y -= h;
-                return <rect key={s.key} x={x} y={y} width={bw} height={Math.max(1.5, h)} rx={2} className={`${s.cls} fill-current`} />;
+                return <rect key={s.key} x={x} y={y} width={bw} height={Math.max(1.5, h)} rx={1} className={`${s.cls} fill-current`} />;
               })}
               {i % every === 0 && <text x={x + bw / 2} y={H - 6} textAnchor="middle" className="fill-mute text-[10px]">{shortDay(r.dia)}</text>}
             </g>
@@ -92,7 +91,7 @@ function DraftAgreement({ d }: { d: ConversationStats["rascunhos"] }) {
   const n = d.comparados;
   return (
     <div>
-      <div className="flex h-5 overflow-hidden rounded-full bg-deep/[0.08] dark:bg-white/15" role="img" aria-label={`Rascunhos comparados: ${DRAFT_PARTS.map((p) => `${d[p.key]} ${p.label.toLowerCase()}`).join(", ")}`}>
+      <div className="flex h-4 overflow-hidden rounded-[2px] bg-ink/10" role="img" aria-label={`Rascunhos comparados: ${DRAFT_PARTS.map((p) => `${d[p.key]} ${p.label.toLowerCase()}`).join(", ")}`}>
         {n > 0 && DRAFT_PARTS.map((p) => (d[p.key] ? <div key={p.key} className={p.cls} style={{ width: `${(d[p.key] / n) * 100}%` }} title={`${p.label}: ${d[p.key]}`} /> : null))}
       </div>
       <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
@@ -110,41 +109,43 @@ function DraftAgreement({ d }: { d: ConversationStats["rascunhos"] }) {
 
 export function ConversationMetrics({ range }: { range: Range }) {
   const q = useConversationStats(range);
-  const sk = <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)}</div>;
+  const sk = <Skeleton className="h-28" />;
   const empty = (d: ConversationStats) => d.mensagens.every((m) => m.leads_in + m.humano_out + m.agente_out === 0) && d.conversas_ativas === 0;
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <QueryBlock q={q} skeleton={sk}>
         {(d) => (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard variant="primary" title="Conversas ativas" value={num(d.conversas_ativas)} icon={<MessagesSquare size={18} />} sub={`${num(d.conversas_novas)} novas no período`} tip="Conversas com pelo menos uma mensagem no período." />
-            <KpiCard title="Taxa de resposta" value={d.taxa_resposta_lead === null ? "—" : pct(d.taxa_resposta_lead)} icon={<Reply size={18} />} sub={d.taxa_resposta_equipe == null ? "Sem contatos no período" : `Equipe respondeu ${pct(d.taxa_resposta_equipe)} dos clientes`} tip="De quem a equipe ou o agente contatou no período, quantos responderam depois. Traço quando não houve contato." />
-            <KpiCard title="1ª resposta da equipe" value={duration(d.tempo_primeira_resposta_humano_seg.p50)} icon={<Clock size={18} />} sub={`p90 ${duration(d.tempo_primeira_resposta_humano_seg.p90)}${d.tempo_primeira_resposta_humano_seg.amostra ? ` · ${d.tempo_primeira_resposta_humano_seg.amostra} conversas` : ""}`} tip="Mediana (p50) do tempo entre a primeira mensagem do cliente e a primeira resposta humana. O p90 mostra os casos mais lentos: 9 em cada 10 respostas saem antes disso." />
-            <KpiCard variant="success" title="Rascunhos aproveitáveis" value={d.rascunhos.usable_rate === null ? "—" : pct(d.rascunhos.usable_rate)} icon={<Sparkles size={18} />} sub={`${num(d.rascunhos.comparados)} comparados com a equipe`} tip="Rascunhos do agente que a equipe enviou iguais ou com pequena edição, entre os já comparados com uma resposta humana." />
-          </div>
+          <Strip
+            items={[
+              { label: "Conversas ativas", value: num(d.conversas_ativas), sub: `${num(d.conversas_novas)} novas no período`, tip: "Conversas com pelo menos uma mensagem no período." },
+              { label: "Taxa de resposta", value: d.taxa_resposta_lead === null ? "—" : pct(d.taxa_resposta_lead), sub: d.taxa_resposta_equipe == null ? "Sem contatos no período" : `Equipe respondeu ${pct(d.taxa_resposta_equipe)} dos clientes`, tip: "De quem a equipe ou o agente contatou no período, quantos responderam depois. Traço quando não houve contato." },
+              { label: "1ª resposta da equipe", value: duration(d.tempo_primeira_resposta_humano_seg.p50), sub: `p90 ${duration(d.tempo_primeira_resposta_humano_seg.p90)}${d.tempo_primeira_resposta_humano_seg.amostra ? ` · ${d.tempo_primeira_resposta_humano_seg.amostra} conversas` : ""}`, tip: "Mediana (p50) do tempo entre a primeira mensagem do cliente e a primeira resposta humana. O p90 mostra os casos mais lentos: 9 em cada 10 respostas saem antes disso." },
+              { label: "Rascunhos aproveitáveis", value: d.rascunhos.usable_rate === null ? "—" : pct(d.rascunhos.usable_rate), tone: d.rascunhos.usable_rate ? "ok" : undefined, sub: `${num(d.rascunhos.comparados)} comparados com a equipe`, tip: "Rascunhos do agente que a equipe enviou iguais ou com pequena edição, entre os já comparados com uma resposta humana." },
+            ]}
+          />
         )}
       </QueryBlock>
 
-      <div className="grid gap-6 xl:grid-cols-5">
-        <Panel className="rise xl:col-span-3" title="Mensagens por dia" hint="Quem escreveu, dia a dia (horário de Brasília).">
+      <div className="grid gap-x-12 gap-y-10 xl:grid-cols-5">
+        <Folio n="a" className="xl:col-span-3" title="Mensagens por dia" hint="Quem escreveu, dia a dia (horário de Brasília).">
           <QueryBlock q={q} skeleton={<Skeleton className="h-52" />} isEmpty={empty} empty={<EmptyState title="Sem mensagens no período">Nenhuma conversa aconteceu nestas datas. Tente ampliar o período.</EmptyState>}>
             {(d) => <DailyChart rows={d.mensagens} />}
           </QueryBlock>
-        </Panel>
-        <Panel className="rise xl:col-span-2" title="Horários de pico" hint="Em que hora do dia chegam e saem mais mensagens.">
+        </Folio>
+        <Folio n="b" className="xl:col-span-2" title="Horários de pico" hint="Em que hora do dia chegam e saem mais mensagens.">
           <QueryBlock q={q} skeleton={<Skeleton className="h-44" />} isEmpty={empty} empty={<EmptyState title="Sem mensagens no período" />}>
             {(d) => <PeakHours rows={d.horarios_pico} />}
           </QueryBlock>
-        </Panel>
+        </Folio>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-5">
-        <Panel className="rise xl:col-span-2" title="Rascunhos do agente × equipe" hint="O que a equipe fez com cada rascunho.">
+      <div className="grid gap-x-12 gap-y-10 xl:grid-cols-5">
+        <Folio n="c" className="xl:col-span-2" title="Rascunhos do agente × equipe" hint="O que a equipe fez com cada rascunho.">
           <QueryBlock q={q} skeleton={<Skeleton className="h-40" />} isEmpty={(d) => d.rascunhos.total === 0} empty={<EmptyState title="Sem rascunhos no período">O agente ainda não escreveu rascunhos nestas datas.</EmptyState>}>
             {(d) => <DraftAgreement d={d.rascunhos} />}
           </QueryBlock>
-        </Panel>
-        <Panel className="rise xl:col-span-3" title="Tempo e etapas" hint="Resposta por turno e onde estão as conversas ativas.">
+        </Folio>
+        <Folio n="d" className="xl:col-span-3" title="Tempo e etapas" hint="Resposta por turno e onde estão as conversas ativas.">
           <QueryBlock q={q} skeleton={<Skeleton className="h-40" />}>
             {(d) => (
               <div className="grid gap-6 sm:grid-cols-2">
@@ -166,7 +167,7 @@ export function ConversationMetrics({ range }: { range: Range }) {
               </div>
             )}
           </QueryBlock>
-        </Panel>
+        </Folio>
       </div>
     </div>
   );

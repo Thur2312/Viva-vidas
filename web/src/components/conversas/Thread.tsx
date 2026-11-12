@@ -46,13 +46,13 @@ function DraftCard({ d, blur }: { d: DraftInfo; blur: string }) {
 function Bubble({ m, blur, pendingLabel }: { m: Pick<ThreadMessage, "author" | "body" | "created_at">; blur: string; pendingLabel?: string }) {
   const lead = m.author === "lead";
   const tone = lead
-    ? "mr-auto bg-card ring-1 ring-line rounded-bl-sm"
+    ? "mr-auto bg-card ring-1 ring-line rounded-bl-[2px]"
     : m.author === "agente"
-      ? "ml-auto bg-brand/20 ring-1 ring-brand/50 rounded-br-sm"
-      : "ml-auto bg-deep text-white dark:bg-bubble rounded-br-sm";
+      ? "ml-auto bg-brand/15 ring-1 ring-brand/50 rounded-br-[2px]"
+      : "ml-auto bg-deep text-white dark:bg-bubble rounded-br-[2px]";
   const sub = m.author === "humano" ? "text-white/70" : "text-mute";
   return (
-    <div className={`w-fit max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${tone}`}>
+    <div className={`w-fit max-w-[85%] rounded-lg px-3.5 py-2 text-sm ${tone}`}>
       <p className={`mb-0.5 text-[11px] font-semibold ${sub}`}>{AUTHOR[m.author]}</p>
       <p className={`whitespace-pre-wrap break-words ${blur}`}>{m.body}</p>
       <p className={`mt-1 text-[11px] ${sub}`}>{pendingLabel ?? hourLabel(m.created_at)}</p>

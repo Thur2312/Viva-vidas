@@ -28,14 +28,17 @@ function Row({ c, active, hide, onOpen }: { c: ConversationRow; active: boolean;
         type="button"
         onClick={() => onOpen(c.id)}
         aria-current={active ? "true" : undefined}
-        className={`flex min-h-[44px] w-full gap-3 border-b border-line px-4 py-3 text-left transition-colors hover:bg-ink/[0.04] ${active ? "bg-brand/10 shadow-[inset_3px_0_0_rgb(var(--brand))]" : ""}`}
+        className={`flex min-h-[44px] w-full gap-3 border-b border-line px-4 py-3 text-left transition-colors hover:bg-ink/[0.04] ${active ? "bg-ink/[0.07]" : ""}`}
       >
         <span aria-hidden="true" className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-deep text-sm font-bold text-white dark:bg-bubble">
           {name.trim()[0]?.toUpperCase() ?? "?"}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
-            <span className={`truncate text-sm ${c.unread_for_human ? "font-bold" : "font-semibold"} ${hide ? "sensitive" : ""}`}>{name}</span>
+            <span className={`flex min-w-0 items-center gap-2 text-sm ${c.unread_for_human ? "font-bold" : "font-semibold"} ${hide ? "sensitive" : ""}`}>
+              {c.unread_for_human && <i className="h-2 w-2 shrink-0 rounded-full bg-sinal" aria-hidden="true" />}
+              <span className="truncate">{name}</span>
+            </span>
             <span className="shrink-0 text-xs text-mute">{relTime(c.last_at)}</span>
           </span>
           <span className={`tabular block text-xs text-mute ${hide ? "sensitive" : ""}`}>{c.phone ?? ""}</span>
@@ -47,10 +50,10 @@ function Row({ c, active, hide, onOpen }: { c: ConversationRow; active: boolean;
             )}
           </span>
           <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
-            <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 text-mute">{STAGE_META[c.stage as keyof typeof STAGE_META]?.nome ?? c.stage}</span>
-            <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 text-mute">{MODE_LABEL[c.mode] ?? c.mode}</span>
-            {c.unread_for_human && <span className="rounded-full bg-brand/25 px-2 py-0.5 text-brand-ink">Aguardando resposta</span>}
-            {c.has_pending_draft && <span className="rounded-full border border-dashed border-brand/70 px-2 py-0.5 text-brand-ink">Rascunho do agente</span>}
+            <span className="rounded-[2px] bg-ink/[0.07] px-2 py-0.5 text-mute">{STAGE_META[c.stage as keyof typeof STAGE_META]?.nome ?? c.stage}</span>
+            <span className="rounded-[2px] bg-ink/[0.07] px-2 py-0.5 text-mute">{MODE_LABEL[c.mode] ?? c.mode}</span>
+            {c.unread_for_human && <span className="rounded-[2px] bg-brand/20 px-2 py-0.5 text-brand-ink">Aguardando resposta</span>}
+            {c.has_pending_draft && <span className="rounded-[2px] border border-dashed border-brand/70 px-2 py-0.5 text-brand-ink">Rascunho do agente</span>}
           </span>
         </span>
       </button>

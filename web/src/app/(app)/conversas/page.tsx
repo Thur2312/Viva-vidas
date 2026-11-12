@@ -4,6 +4,7 @@ import { ArrowLeft, MessageSquare } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback } from "react";
 import { RangePicker } from "@/components/RangePicker";
+import { Folio } from "@/components/folha";
 import { PageHeader } from "@/components/ui";
 import { ConversationList } from "@/components/conversas/ConversationList";
 import { ConversationMetrics } from "@/components/conversas/Metrics";
@@ -30,7 +31,7 @@ function Inbox() {
   const row = list.data?.pages.flatMap((p) => p.data).find((c) => c.id === active);
 
   return (
-    <section aria-label="Caixa de entrada" className="rise grid h-[calc(100vh-9rem)] min-h-[520px] overflow-hidden rounded-xl border border-line bg-card lg:grid-cols-[minmax(300px,380px)_1fr]">
+    <section aria-label="Caixa de entrada" className="rise grid h-[calc(100vh-21rem)] min-h-[520px] overflow-hidden rounded-sm border border-line bg-card lg:grid-cols-[minmax(300px,380px)_1fr]">
       {/* Mobile: lista e conversa são telas separadas. Desktop: lado a lado. */}
       <div className={`${active ? "hidden lg:flex" : "flex"} min-h-0 flex-col border-line lg:border-r`}>
         <ConversationList activeId={active} onOpen={open} />
@@ -43,7 +44,7 @@ function Inbox() {
                 <ArrowLeft size={20} aria-hidden="true" />
               </button>
               <div className="min-w-0 flex-1 px-1">
-                <h2 className="truncate font-display text-base font-semibold">{row ? row.lead_name || "Sem nome" : "Conversa"}</h2>
+                <h2 className="truncate font-display text-xl leading-tight">{row ? row.lead_name || "Sem nome" : "Conversa"}</h2>
                 {row && <p className="tabular text-xs text-mute">{row.phone}</p>}
               </div>
               <PrivacyToggle />
@@ -53,7 +54,7 @@ function Inbox() {
         ) : (
           <div className="m-auto max-w-xs p-6 text-center text-mute">
             <MessageSquare size={30} className="mx-auto" aria-hidden="true" />
-            <p className="mt-3 font-display text-lg font-semibold text-ink">Escolha uma conversa</p>
+            <p className="mt-3 font-display text-2xl text-ink">Escolha uma conversa</p>
             <p className="mt-1 text-sm">As mensagens, os rascunhos do agente e o campo de resposta aparecem aqui.</p>
           </div>
         )}
@@ -69,12 +70,16 @@ export default function ConversasPage() {
       <PageHeader eyebrow="Atendimento" title="Conversas">
         Acompanhe quem está esperando resposta, o que o agente sugeriu e como a equipe está atendendo.
       </PageHeader>
-      <div className="mb-6"><RangePicker value={range} onChange={setRange} /></div>
-      <ConversationMetrics range={range} />
-      <h2 className="mb-3 mt-8 font-display text-lg font-semibold">Caixa de entrada</h2>
-      <Suspense fallback={null}>
-        <Inbox />
-      </Suspense>
+      <Folio n="01" title="Caixa de entrada" hint="Quem está esperando resposta aparece com a marca coral. Abra uma conversa para ver os rascunhos do agente e responder.">
+        <Suspense fallback={null}>
+          <Inbox />
+        </Suspense>
+      </Folio>
+
+      <Folio n="02" title="Como está o atendimento" hint="Tempo de resposta, volume por dia e o que a equipe faz com os rascunhos do agente." className="mt-14">
+        <div className="mb-6"><RangePicker value={range} onChange={setRange} /></div>
+        <ConversationMetrics range={range} />
+      </Folio>
     </>
   );
 }

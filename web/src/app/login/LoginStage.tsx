@@ -59,7 +59,7 @@ export function LoginStage() {
         <div data-reveal className="relative"><Wordmark light /></div>
         <div className="relative max-w-lg">
           <p data-reveal className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-limao">01 · Entrar</p>
-          <h1 data-reveal className="font-display text-[clamp(2.4rem,5vw,4.5rem)] leading-[1.02]">
+          <h1 data-reveal className="font-display text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.1]">
             Cada contato, no momento certo.
           </h1>
           <p data-reveal className="mt-5 max-w-sm text-osso/80">{brand.tagline}. Sem perder ninguém no caminho.</p>

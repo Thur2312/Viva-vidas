@@ -70,9 +70,9 @@ Todo valor visual no código vem de um token. Nada de hex solto em componente.
 
 | Papel | Fonte | Observação |
 |---|---|---|
-| Títulos e manchetes | **Instrument Serif** | Peso único; tamanhos grandes. Nunca em texto corrido. |
-| Texto e interface | **Schibsted Grotesk** | 400/500/600. |
-| Números e dados | **IBM Plex Mono** | `font-variant-numeric: tabular-nums`; números grandes são a manchete. |
+| Tudo (títulos, texto, números) | **IBM Plex Sans** | Uma família só, pesos 400/500/600/700. Feita para interfaces corporativas; números tabulares (`tabular-nums`) alinham colunas de valores; acentuação completa. Títulos em 600, texto em 400, rótulos em 500. |
+
+> Revisão de 12/11/2026: a combinação inicial (Instrument Serif nos títulos e IBM Plex Mono nos números) cansava a leitura em tela de trabalho. Os papéis `font-display` (título) e `font-mono` (número) continuam existindo como classes, mas apontam para a mesma família.
 
 Carregadas com `next/font/google` (`display: swap`). Escala fluida (`clamp`): manchete numérica 3rem → 5.5rem; título de página 2rem → 3.5rem; seção 1.25rem; corpo 1rem (16 px, nunca menor que 14 px); legenda 0.8125rem. Texto corrido com no máximo 68ch.
 

@@ -7,7 +7,7 @@ export function PageHeader({ eyebrow, title, children }: { eyebrow: string; titl
     <header className="rise mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
         <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-brand-ink">{eyebrow}</p>
-        <h1 className="font-display text-[clamp(2rem,4.2vw,3.5rem)] leading-[1.05]">{title}</h1>
+        <h1 className="font-display text-[clamp(1.75rem,3vw,2.375rem)] leading-tight">{title}</h1>
         {children && <p className="mt-2 max-w-2xl text-[15px] text-mute">{children}</p>}
       </div>
       {DEMO && <DemoBadge />}
