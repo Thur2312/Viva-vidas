@@ -19,7 +19,7 @@ import cookieParser = require('cookie-parser')
 import compression = require('compression')
 /* eslint-enable @typescript-eslint/no-require-imports */
 import helmet from 'helmet'
-import { SafeExceptionFilter, bffClientIp, corsOriginCheck, parseCorsOrigins, requestLogger, validateEnv } from './modules/panel-auth/security/hardening'
+import { SafeExceptionFilter, bffClientIp, bootWarnings, corsOriginCheck, parseCorsOrigins, requestLogger, validateEnv } from './modules/panel-auth/security/hardening'
 
 async function bootstrap() {
   const logger = new Logger('Boot')
@@ -30,6 +30,7 @@ async function bootstrap() {
     for (const e of envErrors) console.error(`[FATAL] ${e}`)
     process.exit(1)
   }
+  for (const w of bootWarnings(process.env)) logger.warn(w)
   if (process.env.NODE_ENV !== 'production' && (process.env.SECRETKEY ?? '').length < 32) {
     logger.warn('SECRETKEY com menos de 32 caracteres (em producao o boot seria recusado).')
   }

@@ -3,6 +3,7 @@ import { Public } from '../../auth/public.decorator'
 import { NoTenant } from '../../auth/no-tenant.decorator'
 import { Roles } from '../../panel-auth/roles.decorator'
 import { PilotKeyGuard } from '../pilot-key.guard'
+import { IngestThrottle } from '../ingest-throttle'
 import { requestCtx } from '../compliance/audit.service'
 import { BroadcastsService } from './broadcasts.service'
 import { TemplatesService } from './templates.service'
@@ -30,10 +31,10 @@ export class BroadcastsController {
   @NoTenant() @Roles('viewer') @Get('number-health')
   numberHealth() { return this.health.overview() }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('webhook/quality')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('webhook/quality')
   quality(@Body() dto: QualityWebhookDto) { return this.health.onQualityWebhook(dto.event, dto.currentLimit) }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('webhook/status')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('webhook/status')
   status(@Body() dto: StatusWebhookDto) { return this.svc.applyStatus(dto.wid, dto.status, dto.errorCode) }
 
   @NoTenant() @Roles('manager') @Post()

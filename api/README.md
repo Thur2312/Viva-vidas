@@ -42,9 +42,11 @@ O front depende do formato das respostas desta API (`../web/src/lib/types.ts`, c
 
 - `NODE_ENV=production` e `SECRETKEY` com 32+ caracteres aleatórios (o boot é recusado se for fraca).
 - `PILOT_ONLY=true` **ou** `TENANT_GUARD_ENFORCE=true` (o boot é recusado sem um dos dois).
-- `PILOT_API_KEY` (chat → API). Sem ela as rotas de ingestão ficam fechadas.
-- `PILOT_DATA_KEY` (criptografia das mensagens, 32 bytes em base64) e `BFF_SHARED_KEY`.
+- `PILOT_API_KEY` (chat → API, 32+ caracteres) e `PILOT_DATA_KEY` (criptografia das mensagens, 32 bytes em base64): **obrigatórias em produção com `PILOT_ONLY=true`** (o boot é recusado sem elas; no modo completo não são exigidas). Sem a chave, as rotas de ingestão ficam fechadas.
+- `BFF_SHARED_KEY`.
 - `PILOT_DB_CA` se o provedor do banco usar uma CA que o Node não conhece (o certificado é verificado em produção).
+- `PILOT_REQUIRE_WID=true` só depois que o chat enviar `wid` em toda mensagem recebida (sem `wid` a deduplicação é parcial: mensagens idênticas em 10 s contam como uma). O boot lista no log o que ainda está desligado.
+- As rotas que o chat chama (ingestão, eventos e webhooks de entrega) têm limite próprio de 3000 req/min por IP, acima do global, porque o chat é um IP só.
 - `PILOT_SIGNING_REQUIRED=true` só depois que o chat passar a assinar as chamadas (`x-pilot-timestamp` + `x-pilot-signature`, HMAC-SHA256 de `timestamp.corpo`).
 - Hospedagem com **processo contínuo** (VPS, Railway, Fly): a API roda tarefas agendadas e o worker de disparos. Não use serverless.
 

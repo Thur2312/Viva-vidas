@@ -1,11 +1,12 @@
 import { BadGatewayException, HttpException, InternalServerErrorException, ServiceUnavailableException } from '@nestjs/common'
-import { SafeExceptionFilter, bffClientIp, corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
+import { SafeExceptionFilter, bffClientIp, bootWarnings, corsOriginCheck, parseCorsOrigins, safePath, scrub, validateEnv } from './hardening'
 import { buildTenantBaseUrl } from 'src/shared/util/tenant-url.utils'
 import { buildPublicUrl, getStorageConfig } from 'src/modules/files/config/storage.config'
 
 describe('validateEnv', () => {
   const BFF = 'b'.repeat(8) + 'Kq7!x2Lm9Zr4Tn6Vw1Yc3Ug5Hd0Pf8Ja'
-  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', PILOT_ONLY: 'true', BFF_SHARED_KEY: BFF, SECRETKEY: k, ...extra } as any)
+  const PILOT = { PILOT_API_KEY: 'p'.repeat(8) + 'Xq7!m2Lz9Rr4Tn6Vw1Yc3Ug5Hd0Pf8Ja', PILOT_DATA_KEY: Buffer.alloc(32, 7).toString('base64') }
+  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', PILOT_ONLY: 'true', BFF_SHARED_KEY: BFF, ...PILOT, SECRETKEY: k, ...extra } as any)
   it('producao recusa ausente, curta e placeholder', () => {
     expect(prod(undefined)).not.toEqual([])
     expect(prod('curta')).not.toEqual([])
@@ -21,6 +22,7 @@ describe('validateEnv', () => {
   it('producao exige PILOT_ONLY ou TENANT_GUARD_ENFORCE e recusa o kill-switch de assinatura', () => {
     const k = 'q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja'
     expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k } as any)).not.toEqual([])
+    // Modo completo (sem PILOT_ONLY, codigo herdado): as chaves do piloto nao sao exigidas.
     expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k, TENANT_GUARD_ENFORCE: 'true', BFF_SHARED_KEY: BFF } as any)).toEqual([])
     expect(prod(k, { WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED: 'true' })).not.toEqual([])
   })
@@ -29,6 +31,32 @@ describe('validateEnv', () => {
     expect(prod(k, { BFF_SHARED_KEY: undefined })).not.toEqual([])
     expect(prod(k, { BFF_SHARED_KEY: 'curta' })).not.toEqual([])
     expect(prod(k)).toEqual([])
+  })
+  it('piloto em producao exige PILOT_API_KEY forte e PILOT_DATA_KEY de 32 bytes', () => {
+    const k = 'q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja'
+    expect(prod(k)).toEqual([])
+    expect(prod(k, { PILOT_API_KEY: undefined })).not.toEqual([])
+    expect(prod(k, { PILOT_API_KEY: 'curta' })).not.toEqual([])
+    expect(prod(k, { PILOT_API_KEY: 'changeme-' + 'a'.repeat(40) })).not.toEqual([])
+    expect(prod(k, { PILOT_DATA_KEY: undefined })).not.toEqual([])
+    expect(prod(k, { PILOT_DATA_KEY: Buffer.alloc(16).toString('base64') })).not.toEqual([]) // 16 bytes
+    expect(prod(k, { PILOT_DATA_KEY: 'nao-e-base64-de-32-bytes' })).not.toEqual([])
+    // fora de producao nada disso e exigido
+    expect(validateEnv({ SECRETKEY: 'curta', PILOT_ONLY: 'true' } as any)).toEqual([])
+  })
+  it('nao imprime o valor das chaves nas mensagens de erro', () => {
+    const msgs = prod('q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja', { PILOT_API_KEY: 'segredo-curto', PILOT_DATA_KEY: 'chave-invalida' }).join(' ')
+    expect(msgs).not.toMatch(/segredo-curto|chave-invalida/)
+  })
+  it('bootWarnings avisa do que nao e fatal, so em producao do piloto', () => {
+    const w = bootWarnings({ NODE_ENV: 'production', PILOT_ONLY: 'true' } as any)
+    expect(w).toHaveLength(3)
+    expect(w.join(' ')).toMatch(/PILOT_SIGNING_REQUIRED/)
+    expect(w.join(' ')).toMatch(/PILOT_PHONE_SALT/)
+    expect(w.join(' ')).toMatch(/PILOT_REQUIRE_WID/)
+    expect(bootWarnings({ NODE_ENV: 'production', PILOT_ONLY: 'true', PILOT_SIGNING_REQUIRED: 'true', PILOT_PHONE_SALT: 'x', PILOT_REQUIRE_WID: 'true' } as any)).toEqual([])
+    expect(bootWarnings({ NODE_ENV: 'development', PILOT_ONLY: 'true' } as any)).toEqual([])
+    expect(bootWarnings({ NODE_ENV: 'production' } as any)).toEqual([])
   })
   it('recusa CORS * em producao', () => {
     expect(prod('q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja', { CORS_ORIGINS: '*' })).not.toEqual([])

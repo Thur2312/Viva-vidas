@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common'
 import { Db, PgService } from './pg.service'
 import { classify, similarity } from './similarity'
 import { AuditService, RequestCtx, SYSTEM_CTX } from './compliance/audit.service'
@@ -10,6 +10,7 @@ import { enqueueCrmEvent } from '../crm/crm.outbox'
 import { RESTRICTED_TEXT } from './compliance/content-access'
 import { flagSensitive } from './compliance/redaction'
 import { markBroadcastReply } from './broadcasts/broadcast-reply'
+import { fallbackWid } from './ingest-dedupe'
 
 export { normalizePhone }
 
@@ -188,6 +189,8 @@ export class PilotService {
 
   async ingestMessage(m: IngestMessage, db: Db = this.pg) {
     this.crypto.assertReady() // sem PILOT_DATA_KEY a ingestão não roda (fail closed)
+    // Antes de qualquer escrita: sem `wid` não há idempotência garantida (ver ingest-dedupe.ts). Desligado por padrão até o chat enviar `wid`.
+    if (process.env.PILOT_REQUIRE_WID === 'true' && m.direction === 'in' && !m.wid) throw new BadRequestException('wid obrigatório para mensagens recebidas')
     const lead = await this.upsertLead(
       { phone: m.phone, name: m.name, source: m.source, optInOrigin: m.optInOrigin, consents: m.consents, initiatedByLead: m.direction === 'in' && m.author === 'lead' },
       db,
@@ -217,7 +220,7 @@ export class PilotService {
        VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (conversation_id, wid) DO NOTHING
        RETURNING id`,
-      [conv.id, m.direction, m.author, this.crypto.encrypt(m.body), m.wid ?? null, flagSensitive(m.body).containsSensitive],
+      [conv.id, m.direction, m.author, this.crypto.encrypt(m.body), m.wid ?? fallbackWid(m), flagSensitive(m.body).containsSensitive],
     )
     if (!ins.rowCount) return { duplicated: true, leadId: lead.id, conversationId: conv.id }
     const messageId = Number(ins.rows[0].id)

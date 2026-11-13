@@ -3,6 +3,7 @@ import { Public } from '../auth/public.decorator'
 import { NoTenant } from '../auth/no-tenant.decorator'
 import { Roles } from '../panel-auth/roles.decorator'
 import { PilotKeyGuard } from './pilot-key.guard'
+import { IngestThrottle } from './ingest-throttle'
 import { PilotService } from './pilot.service'
 import { ShadowService } from './shadow.service'
 import { AuditService, requestCtx } from './compliance/audit.service'
@@ -30,27 +31,27 @@ export class PilotController {
   ) {}
 
   // ───── Ingestão ─────
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('leads')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('leads')
   createLead(@Body() dto: CreateLeadDto) {
     return this.pilot.upsertLead(dto)
   }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('ingest/message')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('ingest/message')
   ingest(@Body() dto: IngestMessageDto) {
     return this.pilot.ingestMessage(dto)
   }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('events')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('events')
   event(@Body() dto: EventDto) {
     return this.pilot.registerEventByPhone(dto.phone, dto.type, { value: dto.value, actor: dto.actor, payload: dto.payload })
   }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Patch('leads/:id/qualification')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Patch('leads/:id/qualification')
   qualification(@Param('id', ParseUUIDPipe) id: string, @Body() dto: QualificationDto) {
     return this.pilot.updateQualification(id, dto)
   }
 
-  @Public() @NoTenant() @UseGuards(PilotKeyGuard) @Post('shadow/run')
+  @Public() @NoTenant() @IngestThrottle() @UseGuards(PilotKeyGuard) @Post('shadow/run')
   shadowRun(@Body() dto: ShadowRunDto) {
     return this.shadow.run(dto.conversationId)
   }

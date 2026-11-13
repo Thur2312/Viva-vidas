@@ -27,7 +27,31 @@ export function validateEnv(env: NodeJS.ProcessEnv): string[] {
     // e qualquer pessoa consegue travar o login de todos.
     if ((env.BFF_SHARED_KEY ?? '').length < 32) errors.push('producao exige BFF_SHARED_KEY com 32+ caracteres (mesmo valor no web/)')
   }
+  // Piloto (PILOT_ONLY): sem estas chaves a API sobe "saudavel" mas a ingestao do chat falha em silencio. So vale para o
+  // modo piloto: o modo completo (modulos herdados) nao usa estas variaveis e nao deve ser derrubado por elas.
+  if (prod && env.PILOT_ONLY === 'true') {
+    const apiKey = env.PILOT_API_KEY ?? ''
+    if (apiKey.length < 32) errors.push('producao (piloto) exige PILOT_API_KEY com 32+ caracteres: e a unica defesa das rotas de ingestao do chat')
+    else if (PLACEHOLDER_RE.test(apiKey) || /^(.)\1+$/.test(apiKey)) errors.push('PILOT_API_KEY parece um placeholder; gere um segredo aleatorio')
+    if (Buffer.from((env.PILOT_DATA_KEY ?? '').trim(), 'base64').length !== 32) errors.push('producao (piloto) exige PILOT_DATA_KEY: 32 bytes em base64 (criptografia das mensagens)')
+  }
   return errors
+}
+
+/**
+ * Avisos de boot: situacoes arriscadas que NAO impedem subir (mudar o comportamento agora poderia quebrar o chat ou
+ * invalidar dados ja gravados). Cada item diz o que fazer.
+ */
+export function bootWarnings(env: NodeJS.ProcessEnv): string[] {
+  const warns: string[] = []
+  if (env.NODE_ENV !== 'production' || env.PILOT_ONLY !== 'true') return warns
+  if (env.PILOT_SIGNING_REQUIRED !== 'true')
+    warns.push('PILOT_SIGNING_REQUIRED desligado: a ingestao aceita so a chave estatica (vazou = escrita livre; requisicao capturada pode ser reenviada). Ligue quando o chat passar a assinar.')
+  if (!env.PILOT_PHONE_SALT)
+    warns.push('PILOT_PHONE_SALT ausente: o sal do hash do telefone e derivado de PILOT_DATA_KEY, entao rotacionar a chave de dados muda os hashes. Defina um sal proprio (so para dados novos).')
+  if (env.PILOT_REQUIRE_WID !== 'true')
+    warns.push('PILOT_REQUIRE_WID desligado: mensagens recebidas sem `wid` so tem deduplicacao parcial (janela de 10 s). Ligue quando o chat enviar `wid`.')
+  return warns
 }
 
 // ───────────── IP real do usuario quando o BFF (Next) esta na frente ─────────────
