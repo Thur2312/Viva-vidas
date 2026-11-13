@@ -41,14 +41,14 @@ export function PulseFunnel({ rows }: { rows: PulseRow[] }) {
           <div className="absolute inset-x-0 bottom-0 top-10">
             <svg viewBox={`0 0 ${n * 100} 100`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
               <line x1="0" y1="100" x2={n * 100} y2="100" stroke="rgb(var(--line))" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-              <polygon points={area} fill="rgb(var(--sinal) / 0.1)" />
-              <polyline ref={line} points={pts} pathLength={1} strokeDasharray={1} fill="none" stroke="rgb(var(--sinal))" strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              <polygon points={area} fill="rgb(var(--brand) / 0.1)" />
+              <polyline ref={line} points={pts} pathLength={1} strokeDasharray={1} fill="none" stroke="rgb(var(--brand))" strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             </svg>
             {rows.map((r, i) => {
               const last = i === n - 1;
               return (
                 <div key={r.key}>
-                  <span data-dot className={`absolute -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-paper ${last ? "h-4 w-4 bg-sinal" : "h-3 w-3 bg-ink"}`} style={{ left: `${x(i)}%`, bottom: `${y(r.v)}%` }} />
+                  <span data-dot className={`absolute -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-paper ${last ? "h-4 w-4 bg-brand" : "h-3 w-3 bg-ink"}`} style={{ left: `${x(i)}%`, bottom: `${y(r.v)}%` }} />
                   <span className={`tabular absolute -translate-x-1/2 font-mono text-sm font-medium sm:text-base ${last ? "text-brand-ink" : "text-ink"}`} style={{ left: `${x(i)}%`, bottom: `calc(${y(r.v)}% + 14px)` }}>{num(r.v)}</span>
                 </div>
               );

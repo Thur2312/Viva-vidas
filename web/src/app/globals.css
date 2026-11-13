@@ -6,45 +6,46 @@
 html, body { height: 100%; overflow: hidden; }
 
 :root {
-  /* Prontuário (docs/design-system.md). Valores em "R G B" para aceitar opacidade no Tailwind. */
-  --brand: 199 54 39;        /* ação: botão primário, links (#C73627, AA com branco) */
+  /* Azul-petróleo corporativo (docs/design-system.md). Valores em "R G B" para aceitar opacidade no Tailwind. */
+  --brand: 11 107 138;       /* ação: botão primário, links (#0B6B8A, AA com branco) */
   --on-brand: 255 255 255;   /* texto sobre --brand */
-  --brand-ink: 179 41 28;    /* texto de destaque sobre o papel (#B3291C, AA) */
-  --deep: 20 35 31;          /* tinta: texto principal e superfícies escuras (#14231F) */
-  --paper: 244 239 230;      /* fundo da página (#F4EFE6) */
-  --card: 251 248 242;       /* superfícies elevadas (#FBF8F2) */
-  --line: 217 209 193;       /* divisórias (#D9D1C1) */
-  --ink: 20 35 31;
-  --mute: 86 99 96;          /* texto secundário (#566360, AA) */
-  --ok: 43 106 82;
-  --warn: 138 90 0;
-  --bad: 168 38 27;
-  --sinal: 229 72 58;        /* gráficos e pulso (#E5483A): nunca texto */
-  --menta: 127 181 160;      /* só decoração (#7FB5A0): não passa em texto */
-  --bubble: 20 35 31;        /* balão do agente/equipe no chat */
-  --petroleo: 11 43 43;      /* cena de entrada (login) */
-  --limao: 200 241 105;      /* realce na cena de entrada */
-  --osso: 237 230 216;       /* texto sobre o petróleo: FIXO, não muda com o tema (#EDE6D8) */
+  --brand-ink: 11 107 138;   /* destaque em texto sobre o fundo (AA) */
+  --deep: 16 34 45;          /* superfícies escuras: menu lateral (#10222D) */
+  --paper: 244 247 248;      /* fundo da página (#F4F7F8) */
+  --card: 255 255 255;       /* superfícies elevadas */
+  --line: 214 222 226;       /* divisórias (#D6DEE2) */
+  --ink: 22 34 43;           /* texto principal (#16222B) */
+  --mute: 85 99 110;         /* texto secundário (#55636E, AA) */
+  --ok: 21 128 61;
+  --warn: 161 98 7;
+  --bad: 185 28 28;
+  --sinal: 194 65 12;        /* urgência: quem espera resposta, lead parado (#C2410C) */
+  --menta: 94 160 181;       /* só decoração */
+  --bubble: 16 34 45;        /* balão da equipe no chat */
+  /* Cena do login (painel sempre escuro): fixos, não mudam com o tema. contato -> conversa -> venda */
+  --cena-contato: 207 230 238;
+  --cena-conversa: 79 179 211;
+  --cena-venda: 74 222 128;
   --r-seco: 2px;
   --r-acao: 10px;
 }
 
 :root[data-theme="dark"] {
-  --brand: 255 122 107;
-  --on-brand: 16 26 23;
-  --brand-ink: 255 165 150;
-  --deep: 9 16 14;
-  --paper: 16 26 23;
-  --card: 23 36 31;
-  --line: 42 58 52;
-  --ink: 237 230 216;
-  --mute: 167 179 173;
-  --ok: 143 209 181;
-  --warn: 240 185 85;
-  --bad: 255 143 134;
-  --sinal: 255 122 107;
-  --menta: 143 209 181;
-  --bubble: 31 58 49;
+  --brand: 79 179 211;
+  --on-brand: 15 26 33;
+  --brand-ink: 125 205 228;
+  --deep: 8 15 20;
+  --paper: 15 26 33;
+  --card: 22 36 48;
+  --line: 38 56 68;
+  --ink: 230 238 242;
+  --mute: 152 168 178;
+  --ok: 74 222 128;
+  --warn: 245 190 70;
+  --bad: 252 129 129;
+  --sinal: 251 146 60;
+  --menta: 125 200 220;
+  --bubble: 28 58 74;
 }
 
 html { color-scheme: light; font-synthesis: none; } /* nunca negrito/itálico falso: só pesos reais da fonte */

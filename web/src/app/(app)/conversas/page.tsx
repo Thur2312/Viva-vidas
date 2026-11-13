@@ -70,7 +70,7 @@ export default function ConversasPage() {
       <PageHeader eyebrow="Atendimento" title="Conversas">
         Acompanhe quem está esperando resposta, o que o agente sugeriu e como a equipe está atendendo.
       </PageHeader>
-      <Folio n="01" title="Caixa de entrada" hint="Quem está esperando resposta aparece com a marca coral. Abra uma conversa para ver os rascunhos do agente e responder.">
+      <Folio n="01" title="Caixa de entrada" hint="Quem está esperando resposta aparece com um ponto laranja. Abra uma conversa para ver os rascunhos do agente e responder.">
         <Suspense fallback={null}>
           <Inbox />
         </Suspense>

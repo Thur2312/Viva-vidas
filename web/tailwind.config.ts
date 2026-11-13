@@ -20,9 +20,6 @@ const config: Config = {
         sinal: "rgb(var(--sinal) / <alpha-value>)",
         menta: "rgb(var(--menta) / <alpha-value>)",
         bubble: "rgb(var(--bubble) / <alpha-value>)",
-        petroleo: "rgb(var(--petroleo) / <alpha-value>)",
-        limao: "rgb(var(--limao) / <alpha-value>)",
-        osso: "rgb(var(--osso) / <alpha-value>)",
       },
       // Cantos menos "bolha": dados e painéis quase secos, ação com 10px, pílula só onde já era pílula.
       borderRadius: { md: "4px", lg: "8px", xl: "6px" },

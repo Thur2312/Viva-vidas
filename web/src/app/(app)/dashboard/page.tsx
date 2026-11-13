@@ -37,7 +37,7 @@ function DailyBars({ series }: { series: Overview["series"] }) {
           <div key={d.dia} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${d.dia}: ${d.c} contatos, ${d.q} qualificados`}>
             <div className="relative flex w-full flex-1 items-end">
               <div className="w-full rounded-t-[2px] bg-ink/15 transition-[height] duration-500 ease-out" style={{ height: `${(d.c / max) * 100}%` }}>
-                <div className="w-full rounded-t-[2px] bg-sinal transition-[height] duration-500 ease-out" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
+                <div className="w-full rounded-t-[2px] bg-brand transition-[height] duration-500 ease-out" style={{ height: `${d.c ? (d.q / d.c) * 100 : 0}%` }} />
               </div>
             </div>
             <span className="tabular max-w-full truncate font-mono text-[10px] text-mute">{d.dia.slice(0, 5)}</span>
@@ -148,7 +148,7 @@ export default function Dashboard() {
             </QueryBlock>
           </Folio>
 
-          <Folio n="02" title="Contatos por dia" hint="A parte coral são os leads que chegaram a qualificados.">
+          <Folio n="02" title="Contatos por dia" hint="A parte azul são os leads que chegaram a qualificados.">
             <QueryBlock q={ov} skeleton={<Skeleton className="h-44" />} isEmpty={(d) => !d.series?.length} empty={<EmptyState title="Nenhum lead ainda">Sem contatos no período selecionado.</EmptyState>}>
               {(d) => <DailyBars series={d.series} />}
             </QueryBlock>

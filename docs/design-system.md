@@ -7,10 +7,10 @@ Valores marcados *(proposta)* são decisões minhas ainda **não validadas com a
 
 ## 1. Conceito
 
-O painel é um **prontuário bem organizado**: papel quente, uma fonte única e legível e números alinhados. Quem abre o painel deve sentir calma e precisão, não "mais um dashboard".
+O painel é um **CRM sóbrio e legível**: azul-petróleo, uma fonte única e números alinhados. Quem abre o painel deve sentir calma e precisão, não "mais um dashboard".
 
 - **Assunto:** corretora de planos de saúde. Reduzir o plano do cliente sem perder cobertura é tirar camadas sem quebrar a estrutura. Daí as camadas.
-- **Momento-assinatura:** a cena de entrada é o **funil vivo**: centenas de pontos (os contatos) descem em vórtice por seis anéis (as etapas); a maioria some pelo caminho e só alguns chegam ao fundo, em coral (as vendas). Ao entrar, o funil se abre e leva ao painel. As taxas da cena são ilustrativas, não dados. Fora da entrada, o painel **não** tem efeito sobre o dado.
+- **Momento-assinatura:** o funil 3D do login (relacionado ao produto: contatos que viram vendas). Fora dele, o efeito se limita a botões, gráficos e ao microfone da Voz; nenhum efeito sobre o dado.
 - **Tom:** humano, direto, sem jargão de SaaS. "Quem respondeu hoje", não "Engagement rate".
 
 ## 2. Princípios (o que evitar e o que buscar)
@@ -30,41 +30,27 @@ Buscar:
 
 Todo valor visual no código vem de um token. Nada de hex solto em componente.
 
-### Tema claro "papel" (padrão)
+> **Revisão de 12/11/2026:** a paleta inicial (papel quente + coral) foi trocada por **azul-petróleo corporativo**, escolhida pelo cliente interno entre três candidatas com contraste calculado. O coral e a menta saíram; o laranja-queimado ficou só para **urgência**.
+
+### Tema claro
 
 | Token | Hex | Uso | Contraste |
 |---|---|---|---|
-| `--papel` | `#F4EFE6` | Fundo da página | |
-| `--cartao` | `#FBF8F2` | Superfícies elevadas | |
-| `--tinta` | `#14231F` | Texto principal | 14,21 (AAA) sobre papel |
-| `--mudo` | `#566360` | Texto secundário | 5,47 (AA) sobre papel |
-| `--linha` | `#D9D1C1` | Divisórias e bordas | só decorativo |
-| `--acao` | `#C73627` | Botão primário, links, texto de destaque | branco: 5,27; sobre papel: 4,60 (AA) |
-| `--sinal` | `#E5483A` | Gráficos, fita de ECG, pontos de alerta (nunca texto) | 3,45 (ok para gráfico) |
-| `--ok` | `#2B6A52` | Sucesso | 5,58 (AA) |
-| `--aviso` | `#8A5A00` | Atenção | 5,18 (AA) |
-| `--erro` | `#A8261B` | Erro | 6,20 (AA) |
-| `--menta` | `#7FB5A0` | **Decoração apenas** (camadas, ilustração) | 2,03 (não usar em texto) |
+| `--paper` | `#F4F7F8` | Fundo da página | |
+| `--card` | `#FFFFFF` | Superfícies elevadas | |
+| `--ink` | `#16222B` | Texto principal | 15,03 (AAA) |
+| `--mute` | `#55636E` | Texto secundário | 5,74 (AA) |
+| `--line` | `#D6DEE2` | Divisórias e bordas | decorativo |
+| `--brand` | `#0B6B8A` | Botão primário, links, dados (linhas e barras) | branco: 6,03; sobre o fundo: 5,60 |
+| `--deep` | `#10222D` | Menu lateral e superfícies escuras | branco: 16,3 |
+| `--sinal` | `#C2410C` | **Urgência**: conversa esperando resposta, lead parado | 5,18 |
+| `--ok` / `--warn` / `--bad` | `#15803D` / `#A16207` / `#B91C1C` | Sucesso, atenção, erro | 4,66 / 4,57 / 6,01 (AA) |
 
-### Tema escuro "noite"
+### Tema escuro
 
-| Token | Hex | Contraste |
-|---|---|---|
-| `--papel` | `#101A17` | |
-| `--cartao` | `#17241F` | |
-| `--tinta` | `#EDE6D8` | 14,31 (AAA) |
-| `--mudo` | `#A7B3AD` | 8,20 (AAA) |
-| `--linha` | `#2A3A34` | |
-| `--acao` | `#FF7A6B` | 6,98 (AA) |
-| `--sinal` | `#FF7A6B` | |
-| `--ok` | `#8FD1B5` | 10,11 (AAA) |
-| `--aviso` | `#F0B955` | 9,96 (AAA) |
-| `--erro` | `#FF8F86` | AA |
-| `--menta` | `#8FD1B5` | decoração |
+`--paper #0F1A21`, `--card #162430`, `--ink #E6EEF2` (15,02), `--mute #98A8B2` (7,21), `--brand #4FB3D3` (7,33; texto sobre ele `#0F1A21`), `--ok #4ADE80`, `--warn #F5BE46`, `--bad #FC8181`, `--sinal #FB923C`, `--deep #080F14`. Todos AA.
 
-### Camadas (B) — só login/onboarding, sobre fundo petróleo
-
-`--petroleo #0B2B2B` e `--limao #C8F169` (11,65 AAA) para a cena de entrada. O texto sobre ela usa `--tinta` do tema escuro (12,13 AAA).
+Regra: azul = ação e dado; laranja = precisa de atenção; verde/âmbar/vermelho = estado. Ação e sucesso nunca dividem a mesma cor.
 
 ## 4. Tipografia
 
@@ -89,7 +75,7 @@ Regras: a animação serve à narrativa; sempre respeita `prefers-reduced-motion
 
 | Momento | O que acontece | Ferramenta |
 |---|---|---|
-| **Entrada (assinatura)** | Funil vivo: 800 pontos em vórtice por seis anéis, coral no fundo; ao autenticar o funil se abre e dissolve. SVG estático equivalente como reserva. | R3F (shader de pontos) + GSAP |
+| **Entrada (login)** | Duas colunas: à esquerda o **funil do CRM** em 3D (800 contatos descem por seis anéis, a maioria some pelo caminho, poucos chegam ao fim em verde = venda; taxas ilustrativas); à direita o formulário. SVG estático equivalente no celular, em máquina fraca, sem WebGL e com movimento reduzido. | R3F (shader de pontos) |
 | **Gráficos** | Funil do dashboard desenha a linha ao carregar; barras mudam de altura com transição suave ao trocar o período. | GSAP / CSS |
 | **Botões** | Resposta ao clique (leve afundamento) e estados de carregando; param com redução de movimento. | CSS |
 | **Microfone (Voz)** | Indica o **estado** da ligação, não o áudio (a chamada é pelo telefone): na fila o microfone respira; tocando emite ondas; em ligação aparecem barras de voz e o cronômetro; encerrada, para. Botão Ligar pulsa 3 vezes ao aparecer. Parado com redução de movimento. | CSS |
@@ -112,7 +98,7 @@ Contraste AA no mínimo; foco visível; alvos ≥ 44 px; `prefers-reduced-motion
 
 ## 9. Prompts visuais (bloco de estilo comum)
 
-Para qualquer imagem, ícone ou cena 3D gerados: *"Estilo editorial clínico e caloroso, papel creme `#F4EFE6`, tinta verde-escura `#14231F`, um único acento coral `#E5483A`, detalhes em menta `#7FB5A0`. Vidro fosco translúcido em camadas finas, bordas nítidas, luz suave lateral, sem gradiente roxo/azul, sem brilho neon, sem pessoas estereotipadas, sem cruz médica clichê. Composição assimétrica com respiro."*
+Para qualquer imagem, ícone ou cena 3D gerados: *"Estilo limpo e corporativo, fundo claro #F4F7F8, tinta #16222B, um único acento azul-petróleo #0B6B8A, laranja #C2410C só para urgência. Sem gradiente roxo/azul, sem brilho neon, sem pessoas estereotipadas, sem cruz médica clichê. Composição assimétrica com respiro.
 
 Cenas: (1) funil visto de cima em 3/4, pontos luminosos descendo em vórtice, anéis finos, fundo petróleo; (2) o mesmo funil estático, em linhas e pontos, para o SVG de reserva; (3) camada vazia tracejada para estados vazios.
 

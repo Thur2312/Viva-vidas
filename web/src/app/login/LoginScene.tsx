@@ -1,6 +1,6 @@
 "use client";
 // Cena de entrada: o funil do CRM. Centenas de pontos (contatos) descem em vórtice por seis anéis (as etapas); a maioria
-// vai sumindo pelo caminho e só alguns chegam ao fundo, em coral (as vendas). As taxas abaixo são ILUSTRATIVAS, não dados.
+// vai sumindo pelo caminho e só alguns chegam ao fundo, em verde (as vendas). As taxas abaixo são ILUSTRATIVAS, não dados.
 // Geometria e shader procedurais (sem arquivo de modelo). Cores vêm dos tokens CSS. Carregada só no login, sob demanda.
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
@@ -89,7 +89,7 @@ function Funnel({ openRef }: { openRef: MutableRefObject<number> }) {
     const hullGeo = new THREE.BufferGeometry().setFromPoints(hull);
     return {
       t, theta, jit, s, spd, respawn, geo, mat, ringGeos, hullGeo,
-      osso: token("--osso"), limao: token("--limao"), sinal: token("--sinal"),
+      contato: token("--cena-contato"), conversa: token("--cena-conversa"), venda: token("--cena-venda"),
     };
   }, []);
 
@@ -126,9 +126,9 @@ function Funnel({ openRef }: { openRef: MutableRefObject<number> }) {
       const survive = smooth(0, 0.07, alive(t) - d.s[i]); // some quando a chance cai abaixo do seu sorteio
       al.setX(i, 0.7 * survive * smooth(0, 0.05, t) * (1 - o));
       sz.setX(i, 0.55 + t * 0.95); // pequenos: o brilho aditivo empilha e vira borrão se forem grandes
-      // osso (contato) -> limão (em conversa) -> coral (chegou ao fim)
-      if (t < 0.6) tmp.copy(d.osso).lerp(d.limao, t / 0.6);
-      else tmp.copy(d.limao).lerp(d.sinal, smooth(0.6, 0.95, t));
+      // contato (claro) -> em conversa (azul) -> venda (verde)
+      if (t < 0.6) tmp.copy(d.contato).lerp(d.conversa, t / 0.6);
+      else tmp.copy(d.conversa).lerp(d.venda, smooth(0.6, 0.95, t));
       co.setXYZ(i, tmp.r, tmp.g, tmp.b);
     }
     pos.needsUpdate = al.needsUpdate = sz.needsUpdate = co.needsUpdate = true;
@@ -147,11 +147,11 @@ function Funnel({ openRef }: { openRef: MutableRefObject<number> }) {
       <points geometry={d.geo} material={d.mat} frustumCulled={false} />
       {d.ringGeos.map((g, k) => (
         <lineLoop key={k} geometry={g}>
-          <lineBasicMaterial ref={(m) => { if (m) ringMats.current[k] = m; }} color={k === RINGS - 1 ? d.sinal : d.limao} transparent opacity={0.32} />
+          <lineBasicMaterial ref={(m) => { if (m) ringMats.current[k] = m; }} color={k === RINGS - 1 ? d.venda : d.conversa} transparent opacity={0.32} />
         </lineLoop>
       ))}
       <lineSegments geometry={d.hullGeo}>
-        <lineBasicMaterial ref={hullMat} color={d.limao} transparent opacity={0.1} />
+        <lineBasicMaterial ref={hullMat} color={d.conversa} transparent opacity={0.1} />
       </lineSegments>
     </group>
   );

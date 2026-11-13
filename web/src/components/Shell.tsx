@@ -79,7 +79,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const path = usePathname();
   const [open, setOpen] = useState<string[]>(["Dashboard"]);
 
-  const active = "bg-white/12 text-white font-medium shadow-[0_0_20px_-6px_rgb(var(--sinal)/0.35)] ring-1 ring-white/10";
+  const active = "bg-white/12 text-white font-medium ring-1 ring-white/10";
   const idle = "text-white/70 hover:bg-white/8 hover:text-white";
   const base = "group flex min-h-[44px] items-center rounded-lg text-sm transition-colors";
 

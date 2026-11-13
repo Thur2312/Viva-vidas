@@ -6,4 +6,6 @@ export const brand = {
   tagline: "Funil, conversas e agenda em um só lugar",
   description: "CRM do agente comercial por IA: funil, conversas, disparos, voz e agenda",
   footer: process.env.NEXT_PUBLIC_BRAND_FOOTER || "CRM do agente comercial",
+  /** Como falar com quem administra o painel (opcional): e-mail, telefone ou nome. Aparece em "Esqueci a senha". */
+  support: process.env.NEXT_PUBLIC_SUPPORT_CONTACT || "",
 } as const;

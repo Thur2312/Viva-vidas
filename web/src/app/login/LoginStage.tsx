@@ -2,16 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { Suspense, useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
 import { Wordmark } from "@/components/Brand";
 import { brand } from "@/lib/brand";
 import { LoginFallback } from "./LoginFallback";
 import { LoginForm } from "./LoginForm";
 
-gsap.registerPlugin(useGSAP);
-
-const Scene = dynamic(() => import("./LoginScene"), { ssr: false, loading: () => <LoginFallback className="absolute inset-0 h-full w-full" /> });
+const Scene = dynamic(() => import("./LoginScene"), { ssr: false, loading: () => null });
 
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -28,50 +24,53 @@ function can3D(): boolean {
   }
 }
 
-export function LoginStage() {
-  const root = useRef<HTMLElement>(null);
-  const openRef = useRef(0);
-  const [mode, setMode] = useState<"pending" | "3d" | "flat">("pending");
+const POINTS = [
+  "Funil e conversas num só lugar",
+  "Quem espera resposta aparece primeiro",
+  "Dados tratados conforme a LGPD",
+];
 
+/**
+ * Login em duas colunas. À esquerda, o funil do CRM em movimento: contatos descem por seis etapas, a maioria sai pelo
+ * caminho e poucos chegam ao fim como venda (taxas ilustrativas). À direita, o formulário. Sem 3D (celular, máquina
+ * fraca, sem WebGL ou movimento reduzido) entra o mesmo funil em SVG estático.
+ */
+export function LoginStage() {
+  const openRef = useRef(0); // a cena aceita "abrir"; aqui fica sempre fechada
+  const [mode, setMode] = useState<"pending" | "3d" | "flat">("pending");
   useEffect(() => setMode(can3D() ? "3d" : "flat"), []);
 
-  // Entrada: os textos sobem em sequência. O conteúdo existe no HTML; a animação só o revela.
-  useGSAP(() => {
-    if (reducedMotion()) return;
-    gsap.from("[data-reveal]", { autoAlpha: 0, y: 18, duration: 0.8, stagger: 0.1, ease: "power3.out" });
-  }, { scope: root });
-
-  /** As camadas se abrem (revelando o painel) antes de navegar. Sem 3D ou com redução de movimento: imediato. */
-  const open = () =>
-    new Promise<void>((resolve) => {
-      if (mode !== "3d") return resolve();
-      gsap.to(openRef, { current: 1, duration: 1.1, ease: "power3.inOut", onComplete: resolve });
-    });
-
   return (
-    <main ref={root} className="grid min-h-screen lg:h-screen lg:grid-cols-[1.3fr_1fr] lg:overflow-hidden">
-      <section className="relative flex min-h-[320px] flex-col justify-between gap-6 overflow-hidden bg-petroleo p-8 text-osso sm:p-12 lg:min-h-0">
+    <main className="grid min-h-screen lg:h-screen lg:grid-cols-[1.25fr_1fr] lg:overflow-hidden">
+      <section className="relative flex min-h-[340px] flex-col justify-between gap-6 overflow-hidden bg-deep p-8 text-white sm:p-12 lg:min-h-0">
         {mode === "3d" ? (
           <Suspense fallback={null}><Scene openRef={openRef} /></Suspense>
         ) : (
           <LoginFallback className="pointer-events-none absolute inset-y-0 right-[-14%] hidden h-full w-[78%] opacity-90 lg:block" />
         )}
-        <div data-reveal className="relative"><Wordmark light /></div>
+
+        <div className="relative"><Wordmark light compact /></div>
+
         <div className="relative max-w-lg">
-          <p data-reveal className="mb-4 font-mono text-xs uppercase tracking-[0.18em] text-limao">01 · Entrar</p>
-          <h1 data-reveal className="font-display text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.1]">
-            Cada contato, no momento certo.
-          </h1>
-          <p data-reveal className="mt-5 max-w-sm text-osso/80">{brand.tagline}. Sem perder ninguém no caminho.</p>
+          <h1 className="font-display text-[clamp(1.9rem,3.2vw,3rem)] leading-[1.1]">Cada contato, no momento certo.</h1>
+          <ul className="mt-6 space-y-2.5 text-sm text-white/80 sm:text-base">
+            {POINTS.map((p) => (
+              <li key={p} className="flex items-center gap-3">
+                <i className="h-1.5 w-1.5 shrink-0 rounded-full bg-[rgb(var(--cena-conversa))]" aria-hidden="true" />
+                {p}
+              </li>
+            ))}
+          </ul>
         </div>
+
         {mode !== "3d" && <LoginFallback className="relative mx-auto h-40 w-full max-w-xs lg:hidden" />}
-        <p data-reveal className="relative text-xs text-osso/70">{brand.footer}</p>
+        <p className="relative text-xs text-white/60">{brand.footer}</p>
       </section>
 
-      <section className="flex items-center justify-center bg-paper p-8 lg:overflow-y-auto">
-        <div data-reveal className="w-full max-w-sm">
+      <section className="flex items-center justify-center bg-paper p-6 sm:p-10 lg:overflow-y-auto">
+        <div className="w-full max-w-sm rounded-md border border-line bg-card p-6 shadow-sm sm:p-8">
           <Suspense fallback={null}>
-            <LoginForm onAuthenticated={open} />
+            <LoginForm />
           </Suspense>
         </div>
       </section>

@@ -49,7 +49,7 @@ function LeadCard({ l, hide, onOpen }: { l: LeadRow; hide: boolean; onOpen: (id:
         <div className="mt-3 flex items-center justify-between gap-2 text-xs text-mute">
           <span className="truncate" title={l.source ?? undefined}>{l.source ?? "Origem não informada"}</span>
           {idle !== null ? (
-            <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-brand-ink"><i className="h-1.5 w-1.5 rounded-full bg-sinal" aria-hidden="true" />Parado há {idle} d</span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-sinal"><i className="h-1.5 w-1.5 rounded-full bg-sinal" aria-hidden="true" />Parado há {idle} d</span>
           ) : (
             <span className="shrink-0">{relTime(l.last_at ?? l.created_at)}</span>
           )}
@@ -69,7 +69,7 @@ function StageColumn({
 
   return (
     <section id={`col-${stage}`} aria-labelledby={`h-${stage}`} className={`w-full shrink-0 md:w-72 ${visibleMobile ? "" : "hidden md:block"}`}>
-      <div className={`mb-3 border-t-2 pt-2 ${last ? "border-sinal" : "border-ink"}`}>
+      <div className={`mb-3 border-t-2 pt-2 ${last ? "border-brand" : "border-ink"}`}>
         <div className="flex items-baseline justify-between gap-2">
           <h2 id={`h-${stage}`} className={`font-display text-xl leading-tight ${last ? "text-brand-ink" : ""}`}>{STAGE_META[stage].nome}</h2>
           <span className="tabular font-mono text-2xl font-medium" aria-label={total === null ? "total indisponível" : `${total} no período`}>{total === null ? "—" : num(total)}</span>

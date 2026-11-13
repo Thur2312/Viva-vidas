@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Protege todas as rotas do app. Só confere a PRESENÇA do cookie de sessão;
 // a validade é verificada (e renovada) pelo BFF a cada chamada de dados.
-const PUBLIC = ["/login", "/privacidade", "/api/auth/login", "/api/auth/logout"];
+const PUBLIC = ["/login", "/esqueci-senha", "/privacidade", "/api/auth/login", "/api/auth/logout"];
 
 export function middleware(req: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO === "true") return NextResponse.next();

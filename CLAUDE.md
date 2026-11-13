@@ -10,10 +10,10 @@ Monorepo com duas pastas: `api/` (NestJS) e `web/` (Next.js). O front só fala c
 
 Direção **Prontuário** (editorial, calor humano) com o exploded view de **camadas** só no login e no onboarding. Documento completo, com tokens, tipografia, movimento e fases: [`docs/design-system.md`](docs/design-system.md).
 
-- **Conceito:** o painel como prontuário bem organizado; reduzir plano é tirar camadas sem perder cobertura.
-- **Paleta (proposta, a validar com a marca do cliente):** papel `#F4EFE6`, tinta `#14231F`, ação `#C73627`, sinal `#E5483A` (só gráficos), menta `#7FB5A0` (só decoração); tema escuro `#101A17`.
+- **Conceito:** CRM sóbrio e legível. Efeito só em botões, gráficos e no microfone da Voz.
+- **Paleta (azul-petróleo, escolhida em 12/11/2026):** fundo `#F4F7F8`, tinta `#16222B`, ação `#0B6B8A`, menu `#10222D`, urgência `#C2410C`; tema escuro `#0F1A21`. Contraste AA calculado em `docs/design-system.md`.
 - **Fonte:** IBM Plex Sans em tudo (títulos 600, texto 400, números tabulares). Sem Inter e sem serifa decorativa: é um CRM, legibilidade primeiro.
-- **Momento-assinatura:** o funil vivo na entrada (contatos que descem em vórtice; poucos chegam ao fundo, em coral). Fora da entrada, **sem efeito sobre o dado**: efeito só em botões, gráficos e na animação do microfone (Voz).
+- **Login:** duas colunas com o funil 3D do CRM (relacionado ao produto) e formulário acessível (mostrar senha, aviso de Caps Lock, erro ligado aos campos). Há página `/esqueci-senha`; a senha é redefinida por quem administra (`npm run panel:reset-password`). Sem animação sobre dado.
 - **Tom:** humano e direto, em pt-BR.
 - A marca (nome, logo) é configuração (`web/src/lib/brand.ts`): ainda não foi atribuída a um cliente. **Não usar a Identidade Horizon** (laranja/azul-marinho) neste painel.
 

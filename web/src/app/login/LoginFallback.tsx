@@ -25,7 +25,7 @@ function dots() {
     const t = rnd(), a = rnd() * Math.PI * 2, s = rnd();
     if (s > alive(t)) continue;
     const rad = radius(t) * (0.72 + rnd() * 0.28);
-    const c = t > 0.8 ? "rgb(var(--sinal))" : t > 0.35 ? "rgb(var(--limao))" : "rgb(var(--osso))";
+    const c = t > 0.8 ? "rgb(var(--cena-venda))" : t > 0.35 ? "rgb(var(--cena-conversa))" : "rgb(var(--cena-contato))";
     out.push({ x: CX + Math.cos(a) * rad, y: cy(t) + Math.sin(a) * rad * 0.28, r: 1.1 + t * 1.6, c });
   }
   return out;
@@ -37,10 +37,10 @@ export function LoginFallback({ className = "" }: { className?: string }) {
   return (
     <svg viewBox="0 0 520 400" className={className} aria-hidden="true" fill="none" preserveAspectRatio="xMidYMid meet">
       {[-1, 1].map((side) => (
-        <path key={side} d={rings.map((t, i) => `${i ? "L" : "M"}${q(CX + side * radius(t))} ${q(cy(t))}`).join(" ")} stroke="rgb(var(--limao))" strokeOpacity="0.18" strokeWidth="1" />
+        <path key={side} d={rings.map((t, i) => `${i ? "L" : "M"}${q(CX + side * radius(t))} ${q(cy(t))}`).join(" ")} stroke="rgb(var(--cena-conversa))" strokeOpacity="0.18" strokeWidth="1" />
       ))}
       {rings.map((t, k) => (
-        <ellipse key={k} cx={CX} cy={q(cy(t))} rx={q(radius(t))} ry={q(radius(t) * 0.28)} stroke={k === RINGS - 1 ? "rgb(var(--sinal))" : "rgb(var(--limao))"} strokeOpacity={k === RINGS - 1 ? 0.8 : 0.35} strokeWidth="1.2" />
+        <ellipse key={k} cx={CX} cy={q(cy(t))} rx={q(radius(t))} ry={q(radius(t) * 0.28)} stroke={k === RINGS - 1 ? "rgb(var(--cena-venda))" : "rgb(var(--cena-conversa))"} strokeOpacity={k === RINGS - 1 ? 0.8 : 0.35} strokeWidth="1.2" />
       ))}
       {DOTS.map((p, i) => <circle key={i} cx={q(p.x)} cy={q(p.y)} r={p.r.toFixed(1)} fill={p.c} fillOpacity="0.85" />)}
     </svg>
