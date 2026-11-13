@@ -12,13 +12,16 @@ export class UpstreamError extends Error {
 const baseUrl = () => process.env.API_URL?.replace(/\/+$/, "");
 
 // A API só vê o IP deste servidor. Repassamos o IP do usuário com uma chave compartilhada (BFF_SHARED_KEY),
-// para o limite de login e a auditoria valerem por pessoa. Na Vercel, x-real-ip/x-forwarded-for vêm da própria borda.
+// para o limite de login e a auditoria valerem por pessoa.
+// Na Vercel, a própria borda define x-forwarded-for (o cliente não consegue forjar). Fora dela (VPS, nginx),
+// só confiamos em x-real-ip, que o proxy PRECISA sobrescrever; x-forwarded-for é do cliente e burlaria o limite.
 async function bffHeaders(): Promise<Record<string, string>> {
   const key = process.env.BFF_SHARED_KEY;
   if (!key) return {};
   try {
     const h = await headers();
-    const ip = (h.get("x-real-ip") || h.get("x-forwarded-for")?.split(",")[0] || "").trim();
+    const forwarded = process.env.VERCEL ? h.get("x-forwarded-for")?.split(",")[0] : undefined;
+    const ip = (h.get("x-real-ip") || forwarded || "").trim();
     return ip ? { "x-bff-key": key, "x-bff-client-ip": ip } : {};
   } catch {
     return {};

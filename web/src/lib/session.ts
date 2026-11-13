@@ -28,7 +28,8 @@ function opts(maxAge: number) {
 
 export async function setSession(t: Tokens) {
   const jar = await cookies();
-  const days = Number(process.env.REFRESH_COOKIE_DAYS) || 14;
+  // Mesmo prazo do refresh token na API (REFRESH_TOKEN_TTL_SECONDS = 7 dias): o cookie não deve viver mais que o token.
+  const days = Number(process.env.REFRESH_COOKIE_DAYS) || 7;
   jar.set(AT, t.accessToken, opts(Math.max(30, t.expiresIn - 10)));
   jar.set(RT, t.refreshToken, opts(60 * 60 * 24 * days));
 }

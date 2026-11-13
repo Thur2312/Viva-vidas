@@ -44,7 +44,7 @@ export class PanelAuthService {
     const pass = typeof password === 'string' && password.length <= 1024 ? password : ''
     const { rows } = mail
       ? await this.db.query(
-          `SELECT id, tenant, email, name, role, password_hash, active, locked_until
+          `SELECT id, tenant, email, name, role, password_hash, active, locked_until, token_version
              FROM horizon_agent.panel_users WHERE lower(email) = $1`,
           [mail],
         )
@@ -104,7 +104,7 @@ export class PanelAuthService {
     const { id: oldId, user_id, family_id } = claimed.rows[0]
 
     const u = await this.db.query(
-      `SELECT id, tenant, email, name, role, active, locked_until FROM horizon_agent.panel_users WHERE id = $1`,
+      `SELECT id, tenant, email, name, role, active, locked_until, token_version FROM horizon_agent.panel_users WHERE id = $1`,
       [user_id],
     )
     const user = u.rows[0]
@@ -143,7 +143,7 @@ export class PanelAuthService {
       await this.db.query(`UPDATE horizon_agent.panel_refresh_tokens SET replaced_by = $2 WHERE id = $1`, [replacesId, ins.rows[0]?.id ?? null])
     }
     return {
-      accessToken: signAccessToken({ id: user.id, tenant: user.tenant, role: user.role }),
+      accessToken: signAccessToken({ id: user.id, tenant: user.tenant, role: user.role, tokenVersion: Number(user.token_version ?? 0) }),
       refreshToken: rt.token,
       expiresIn: ACCESS_TOKEN_TTL_SECONDS,
       user: toView(user),

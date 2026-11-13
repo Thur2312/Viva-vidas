@@ -23,6 +23,9 @@ export function validateEnv(env: NodeJS.ProcessEnv): string[] {
     if (env.PILOT_ONLY !== 'true' && env.TENANT_GUARD_ENFORCE !== 'true') errors.push('producao exige PILOT_ONLY=true ou TENANT_GUARD_ENFORCE=true')
     // Kill-switch que desliga a assinatura do webhook do WhatsApp: nunca em producao.
     if (env.WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED === 'true') errors.push('WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED=true nao e permitido em producao')
+    // Sem a chave, a API enxerga um unico IP (o do BFF): o limite de login por IP vira um balde global
+    // e qualquer pessoa consegue travar o login de todos.
+    if ((env.BFF_SHARED_KEY ?? '').length < 32) errors.push('producao exige BFF_SHARED_KEY com 32+ caracteres (mesmo valor no web/)')
   }
   return errors
 }

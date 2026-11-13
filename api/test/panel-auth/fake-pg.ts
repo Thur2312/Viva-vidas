@@ -16,6 +16,7 @@ export class FakePg {
       role: p.role ?? 'viewer',
       password_hash: await hashPassword(p.password),
       active: p.active ?? true,
+      token_version: 0,
       failed_attempts: 0,
       locked_until: null as Date | null,
       last_login_at: null as Date | null,

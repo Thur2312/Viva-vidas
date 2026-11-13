@@ -1,5 +1,10 @@
 const isProd = process.env.NODE_ENV === "production";
 
+// NEXT_PUBLIC_* é embutida no bundle e o middleware libera tudo no modo demo: em produção isso abriria o painel sem login.
+if (isProd && process.env.NEXT_PUBLIC_DEMO === "true") {
+  throw new Error("NEXT_PUBLIC_DEMO=true não é permitido em produção (desliga o login). Remova a variável.");
+}
+
 // CSP: sem 'unsafe-eval' em produção. 'unsafe-inline' em script é necessário hoje para os scripts
 // inline de hidratação do Next e o script de tema; trocar por nonce (middleware) é a evolução natural.
 const csp = [

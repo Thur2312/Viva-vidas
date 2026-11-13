@@ -11,38 +11,8 @@ import 'dotenv/config'
 import { Client } from 'pg'
 import { hashPassword, passwordProblems } from '../src/modules/panel-auth/password.util'
 import { PANEL_ROLES } from '../src/modules/panel-auth/panel-roles'
-
-function arg(name: string): string | undefined {
-  const i = process.argv.indexOf(`--${name}`)
-  return i >= 0 ? process.argv[i + 1] : undefined
-}
-
-function promptHidden(question: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const stdin = process.stdin
-    if (!stdin.isTTY) return reject(new Error('Sem TTY: defina PANEL_USER_PASSWORD no ambiente.'))
-    process.stdout.write(question)
-    let value = ''
-    stdin.setRawMode(true)
-    stdin.resume()
-    stdin.setEncoding('utf8')
-    const onData = (ch: string) => {
-      for (const c of ch) {
-        if (c === '\r' || c === '\n' || c === '\u0004') {
-          stdin.setRawMode(false)
-          stdin.pause()
-          stdin.off('data', onData)
-          process.stdout.write('\n')
-          return resolve(value)
-        }
-        if (c === '\u0003') process.exit(130)
-        if (c === '\u007f' || c === '\b') value = value.slice(0, -1)
-        else value += c
-      }
-    }
-    stdin.on('data', onData)
-  })
-}
+import { pgSsl } from '../src/modules/pilot/pg.service'
+import { arg, promptHidden } from './cli-util'
 
 async function main() {
   const email = (arg('email') ?? '').trim().toLowerCase()
@@ -60,10 +30,7 @@ async function main() {
 
   const url = process.env.PILOT_DATABASE_URL || process.env.DATABASE_URL
   if (!url) throw new Error('PILOT_DATABASE_URL (ou DATABASE_URL) nao configurada')
-  const client = new Client({
-    connectionString: url,
-    ssl: /supabase\.(co|com)|sslmode=require/.test(url) ? { rejectUnauthorized: false } : undefined,
-  })
+  const client = new Client({ connectionString: url, ssl: pgSsl(url) }) // certificado verificado em producao
   await client.connect()
   try {
     const hash = await hashPassword(password)

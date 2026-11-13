@@ -22,6 +22,9 @@ const SID = 'CA' + 'a'.repeat(32)
 const LEAD = '11111111-1111-4111-8111-111111111111'
 const CALL = '22222222-2222-4222-8222-222222222222'
 
+// O JwtStrategy confere o usuario no banco: o banco falso devolve um usuario ativo para cada papel.
+const USERS = { viewer: '33333333-3333-4333-8333-000000000001', manager: '33333333-3333-4333-8333-000000000002', owner: '33333333-3333-4333-8333-000000000003' } as const
+
 class FakeDb {
   queries: { sql: string; params: any[] }[] = []
   lead: any = { id: LEAD, phone: '5583999991234', opt_out: false, anonymized_at: null }
@@ -34,6 +37,10 @@ class FakeDb {
     const sql = text.replace(/\s+/g, ' ').trim()
     this.queries.push({ sql, params })
     const ok = (rows: any[] = []) => ({ rows, rowCount: rows.length })
+    if (/FROM horizon_agent\.panel_users WHERE id = \$1/.test(sql)) {
+      const role = (Object.keys(USERS) as (keyof typeof USERS)[]).find((r) => USERS[r] === params[0])
+      return ok(role ? [{ tenant: 'alberto', role, active: true, token_version: 0 }] : [])
+    }
     if (/FROM horizon_agent\.voice_settings/.test(sql)) return ok(this.settings ? [this.settings] : [])
     if (/INSERT INTO horizon_agent\.voice_settings/.test(sql)) { this.settings = { ...(this.settings ?? {}), updated: true }; return ok() }
     if (/FROM horizon_agent\.leads WHERE id = \$1 AND tenant/.test(sql)) return ok(this.lead ? [this.lead] : [])
@@ -66,7 +73,7 @@ describe('Voz (HTTP, banco e provedor falsos)', () => {
   let fetchCalls: { url: string; body: URLSearchParams }[]
   let fetchOk = true
   const http = () => request(app.getHttpServer())
-  const tok = (role: 'viewer' | 'manager' | 'owner') => `Bearer ${signAccessToken({ id: 'u-' + role, tenant: 'alberto', role }, SECRET)}`
+  const tok = (role: 'viewer' | 'manager' | 'owner') => `Bearer ${signAccessToken({ id: USERS[role], tenant: 'alberto', role }, SECRET)}`
   const configure = () => Object.assign(process.env, {
     TWILIO_ACCOUNT_SID: 'AC' + 'b'.repeat(32), TWILIO_AUTH_TOKEN: TOKEN, TWILIO_VOICE_NUMBER: '+5511999990000',
     VOICE_WEBHOOK_BASE_URL: BASE, VOICE_OPERATOR_PHONE: '+5583988887777',

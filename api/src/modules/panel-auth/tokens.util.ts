@@ -7,6 +7,8 @@ export interface AccessClaims {
   sub: string
   tenant: string
   role: PanelRole
+  /** Versao do token do usuario (panel_users.token_version). Ausente em tokens antigos: conta como 0. */
+  tv?: number
   iss: string
   iat: number
   exp: number
@@ -14,14 +16,14 @@ export interface AccessClaims {
 
 /** JWT HS256 assinado com SECRETKEY. */
 export function signAccessToken(
-  user: { id: string; tenant: string; role: PanelRole },
+  user: { id: string; tenant: string; role: PanelRole; tokenVersion?: number },
   secret = process.env.SECRETKEY,
   now = Math.floor(Date.now() / 1000),
 ): string {
   if (!secret) throw new Error('SECRETKEY ausente')
   const header = b64u(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = b64u(
-    JSON.stringify({ sub: user.id, tenant: user.tenant, role: user.role, iss: ACCESS_TOKEN_ISSUER, iat: now, exp: now + ACCESS_TOKEN_TTL_SECONDS }),
+    JSON.stringify({ sub: user.id, tenant: user.tenant, role: user.role, tv: user.tokenVersion ?? 0, iss: ACCESS_TOKEN_ISSUER, iat: now, exp: now + ACCESS_TOKEN_TTL_SECONDS }),
   )
   const sig = createHmac('sha256', secret).update(`${header}.${payload}`).digest('base64url')
   return `${header}.${payload}.${sig}`
@@ -46,6 +48,7 @@ export function verifyAccessToken(token: string, secret = process.env.SECRETKEY,
     if (typeof c.exp !== 'number' || c.exp <= now) return null
     if (c.iss !== ACCESS_TOKEN_ISSUER) return null
     if (typeof c.sub !== 'string' || typeof c.tenant !== 'string' || !isPanelRole(c.role)) return null
+    if (c.tv !== undefined && !Number.isInteger(c.tv)) return null
     return c as AccessClaims
   } catch {
     return null

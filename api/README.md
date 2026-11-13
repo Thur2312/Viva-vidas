@@ -15,6 +15,8 @@ copy .env.example .env   # preencha os valores; nunca commite o .env
 npm run start:pilot      # sobe so o piloto (PILOT_ONLY=true), sem Redis/RabbitMQ
 ```
 
+Redefinir a senha de alguém (quem administra o servidor): `npm run panel:reset-password -- --email a@b.com`. Grava a senha nova, libera a conta bloqueada, revoga os refresh tokens e aumenta `token_version` (as sessões abertas caem em poucos segundos: a API confere a versão a cada requisição, com cache de `PANEL_SESSION_CACHE_MS`, padrão 5000 ms; exige a migration `009_panel_token_version.sql`) e registra na auditoria com o usuário do sistema que rodou o script. Pelo prompt, a senha é pedida duas vezes. Entregue a senha nova por um canal seguro. Não há recuperação por e-mail: o painel não tem envio de e-mail.
+
 Criar o primeiro usuário do painel: `npm run panel:create-user -- --email a@b.com --name "Fulano" --role owner`.
 
 Migrations SQL em `db/migrations/` (aplicar na ordem; não alterar schema pelo painel do banco).
@@ -34,7 +36,7 @@ npm audit --omit=dev
 
 O front depende do formato das respostas desta API (`../web/src/lib/types.ts`, copiado à mão). Mudou o formato? Atualize os dois no mesmo commit.
 
-`BFF_SHARED_KEY` precisa ter o **mesmo valor** aqui e no `web/`.
+`BFF_SHARED_KEY` precisa ter o **mesmo valor** aqui e no `web/`. Em produção é **obrigatória** (32+ caracteres): sem ela a API não sobe. Fora da Vercel, o proxy deve sobrescrever o `x-real-ip` (o BFF só confia nele).
 
 ## Produção: o que não pode faltar
 

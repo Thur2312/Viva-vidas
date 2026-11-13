@@ -56,6 +56,7 @@ describe('panel-auth (HTTP, PgService falso)', () => {
   const http = () => request(app.getHttpServer())
   beforeAll(async () => {
     process.env.SECRETKEY = SECRET
+    process.env.PANEL_SESSION_CACHE_MS = '0' // sem cache: cada teste enxerga o banco falso na hora
     ;({ app, pg } = await build())
     await pg.addUser({ email: 'viewer@x.com', password: PASS, role: 'viewer' })
     await pg.addUser({ email: 'mgr@x.com', password: PASS, role: 'manager' })
@@ -138,6 +139,55 @@ describe('panel-auth (HTTP, PgService falso)', () => {
     const t = (await login('viewer@x.com')).body.accessToken
     const r = await http().get('/pilot/readiness').set('Authorization', `Bearer ${t}`)
     expect([401, 403]).not.toContain(r.status)
+  })
+
+  describe('revogacao imediata do access token (token_version)', () => {
+    const get = (t: string) => http().get('/probe/manager').set('Authorization', `Bearer ${t}`)
+    const user = (email: string) => pg.users.find((u) => u.email === email)
+
+    it('aumentar token_version (reset de senha) derruba o token ja emitido; novo login funciona', async () => {
+      await pg.addUser({ email: 'reset@x.com', password: PASS, role: 'manager' })
+      const old = (await login('reset@x.com')).body.accessToken
+      await get(old).expect(200)
+      user('reset@x.com').token_version += 1 // o que o script panel:reset-password faz
+      await get(old).expect(401)
+      const fresh = (await login('reset@x.com')).body.accessToken
+      await get(fresh).expect(200)
+    })
+
+    it('usuario desativado perde o acesso na hora, mesmo com token valido', async () => {
+      await pg.addUser({ email: 'off@x.com', password: PASS, role: 'manager' })
+      const t = (await login('off@x.com')).body.accessToken
+      await get(t).expect(200)
+      user('off@x.com').active = false
+      await get(t).expect(401)
+    })
+
+    it('o papel vem do banco: rebaixar vale na hora (o JWT ainda diz manager)', async () => {
+      await pg.addUser({ email: 'down@x.com', password: PASS, role: 'manager' })
+      const t = (await login('down@x.com')).body.accessToken
+      await get(t).expect(200)
+      user('down@x.com').role = 'viewer'
+      await get(t).expect(403)
+    })
+
+    it('token antigo sem `tv` vale como versao 0; usuario inexistente e sub invalido sao 401', async () => {
+      const u = await pg.addUser({ email: 'old@x.com', password: PASS, role: 'manager' })
+      const now = Math.floor(Date.now() / 1000)
+      const head = b64u({ alg: 'HS256', typ: 'JWT' })
+      const sign = (claims: any) => {
+        const body = b64u(claims)
+        return `${head}.${body}.${createHmac('sha256', SECRET).update(`${head}.${body}`).digest('base64url')}`
+      }
+      const base = { tenant: 'alberto', role: 'manager', iss: 'horizon-agent-panel', exp: now + 600 }
+      await get(sign({ ...base, sub: u.id })).expect(200) // sem tv
+      u.token_version = 3
+      await get(sign({ ...base, sub: u.id })).expect(401) // versao do banco avancou
+      await get(sign({ ...base, sub: u.id, tv: 3 })).expect(200)
+      await get(sign({ ...base, sub: u.id, tv: 'x' })).expect(401)
+      await get(sign({ ...base, sub: '00000000-0000-4000-8000-0000000fffff', tv: 0 })).expect(401) // nao existe
+      await get(sign({ ...base, sub: "x'; DROP TABLE panel_users;--", tv: 0 })).expect(401) // nem chega ao banco
+    })
   })
 
   it('5xx nao vaza mensagem interna', async () => {

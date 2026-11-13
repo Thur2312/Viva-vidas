@@ -4,7 +4,8 @@ import { buildTenantBaseUrl } from 'src/shared/util/tenant-url.utils'
 import { buildPublicUrl, getStorageConfig } from 'src/modules/files/config/storage.config'
 
 describe('validateEnv', () => {
-  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', PILOT_ONLY: 'true', SECRETKEY: k, ...extra } as any)
+  const BFF = 'b'.repeat(8) + 'Kq7!x2Lm9Zr4Tn6Vw1Yc3Ug5Hd0Pf8Ja'
+  const prod = (k?: string, extra: any = {}) => validateEnv({ NODE_ENV: 'production', PILOT_ONLY: 'true', BFF_SHARED_KEY: BFF, SECRETKEY: k, ...extra } as any)
   it('producao recusa ausente, curta e placeholder', () => {
     expect(prod(undefined)).not.toEqual([])
     expect(prod('curta')).not.toEqual([])
@@ -20,8 +21,14 @@ describe('validateEnv', () => {
   it('producao exige PILOT_ONLY ou TENANT_GUARD_ENFORCE e recusa o kill-switch de assinatura', () => {
     const k = 'q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja'
     expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k } as any)).not.toEqual([])
-    expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k, TENANT_GUARD_ENFORCE: 'true' } as any)).toEqual([])
+    expect(validateEnv({ NODE_ENV: 'production', SECRETKEY: k, TENANT_GUARD_ENFORCE: 'true', BFF_SHARED_KEY: BFF } as any)).toEqual([])
     expect(prod(k, { WHATSAPP_META_WEBHOOK_SIGNATURE_DISABLED: 'true' })).not.toEqual([])
+  })
+  it('producao exige BFF_SHARED_KEY forte (senao o limite de login por IP vira um balde global)', () => {
+    const k = 'q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja'
+    expect(prod(k, { BFF_SHARED_KEY: undefined })).not.toEqual([])
+    expect(prod(k, { BFF_SHARED_KEY: 'curta' })).not.toEqual([])
+    expect(prod(k)).toEqual([])
   })
   it('recusa CORS * em producao', () => {
     expect(prod('q8Zr!v3Lm0Xc9Tn2Bw7Ye5Ug1Hd4Pf6Ja', { CORS_ORIGINS: '*' })).not.toEqual([])
