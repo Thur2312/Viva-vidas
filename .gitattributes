@@ -1,0 +1,2 @@
+# Scripts de shell rodam em Linux: fim de linha CRLF (Windows) quebraria com "\r: command not found".
+*.sh text eol=lf
