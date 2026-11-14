@@ -2,7 +2,10 @@
 // Cliente da área de Disparos. Fala só com o BFF (/api/pilot/broadcasts/...); nenhum token passa por aqui.
 // Helpers próprios: não toca em lib/hooks.ts nem em lib/types.ts (arquivos compartilhados).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getJson, goLogin } from "@/lib/client";
+import { ActionError, getJson, sendJson, type ActionMessages } from "@/lib/client";
+
+// Mantido aqui para os componentes que importam ActionError de "./api" (o tipo vive em lib/client.ts).
+export { ActionError };
 
 export type BStatus = "draft" | "scheduled" | "running" | "paused" | "completed" | "cancelled" | "failed";
 export type RStatus = "pending" | "queued" | "sent" | "delivered" | "read" | "replied" | "failed" | "skipped";
@@ -66,12 +69,6 @@ const B = "/api/pilot/broadcasts";
 const qs = (o: Record<string, string | number | undefined>) =>
   new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])).toString();
 
-export class ActionError extends Error {
-  constructor(public status: number, public code: string, public userMessage: string) {
-    super(code);
-  }
-}
-
 const FALLBACK: Record<number, string> = {
   400: "Algum campo não é válido. Confira os dados e tente de novo.",
   401: "Sua sessão expirou. Entre de novo.",
@@ -82,30 +79,11 @@ const FALLBACK: Record<number, string> = {
   503: "O chat ainda não está configurado. Nada foi enviado.",
 };
 
-/** Chamada de escrita ao BFF. Mostra a mensagem do servidor (pt-BR) quando existe; nunca inventa sucesso. */
-export async function act<T = unknown>(method: "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(path ? `${B}/${path}` : B, {
-      method, credentials: "same-origin", headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify(body ?? {}),
-    });
-  } catch {
-    throw new ActionError(0, "network", "Sem conexão com o servidor. Nada foi feito.");
-  }
-  if (res.status === 401) goLogin();
-  if (!res.ok) {
-    let code = `http_${res.status}`;
-    let msg = "";
-    try {
-      const j = await res.json();
-      if (typeof j?.error === "string") code = j.error;
-      if (typeof j?.message === "string") msg = j.message;
-      else if (Array.isArray(j?.message)) msg = j.message.join(" ");
-    } catch { /* corpo vazio */ }
-    throw new ActionError(res.status, code, msg || FALLBACK[res.status] || "Não foi possível concluir a ação.");
-  }
-  return (await res.json().catch(() => ({}))) as T;
+const MESSAGES: ActionMessages = { network: "Sem conexão com o servidor. Nada foi feito.", fallback: "Não foi possível concluir a ação.", byStatus: FALLBACK };
+
+/** Chamada de escrita ao BFF (lib/client.ts: sendJson). Mostra a mensagem do servidor (pt-BR) quando existe; nunca inventa sucesso. */
+export function act<T = unknown>(method: "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
+  return sendJson<T>(method, path ? `${B}/${path}` : B, body, MESSAGES);
 }
 
 export function useBroadcasts() {

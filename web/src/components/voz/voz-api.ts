@@ -2,7 +2,7 @@
 // Cliente da área de Voz. Fala só com o BFF (/api/pilot/voice/...); nenhum token passa por aqui.
 // Helpers próprios (não toca em lib/hooks.ts, que é compartilhado).
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ApiError, getJson, goLogin } from "@/lib/client";
+import { ActionError, ApiError, getJson, sendJson, type ActionMessages } from "@/lib/client";
 import { DEMO } from "@/lib/flags";
 
 export type CallState = "queued" | "ringing" | "in_progress" | "completed" | "busy" | "no_answer" | "failed" | "canceled";
@@ -141,28 +141,22 @@ const BLOCK_MESSAGES: Record<string, string> = {
   forbidden_origin: "Pedido recusado por segurança. Recarregue a página.",
 };
 
+const CALL_MESSAGES: ActionMessages = {
+  network: "Sem conexão com o servidor. Nada foi ligado.",
+  fallback: "Não foi possível ligar agora.",
+  byStatus: { 401: "Sessão expirada." },
+  byCode: BLOCK_MESSAGES, // aqui a tradução é por CÓDIGO de bloqueio (DNC, janela de horário, ligação em andamento...)
+};
+
 export async function placeCall(leadId: string): Promise<PlaceResult> {
   if (DEMO) return { ok: true, id: `demo-${leadId}` }; // demonstração: nada é ligado
-  let res: Response;
   try {
-    res = await fetch("/api/pilot/voice/calls", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ leadId }),
-    });
-  } catch {
-    return { ok: false, status: 0, code: "network", message: "Sem conexão com o servidor. Nada foi ligado." };
+    const j = await sendJson<{ id?: unknown }>("POST", "/api/pilot/voice/calls", { leadId }, CALL_MESSAGES, { loginNext: "/voz" });
+    return typeof j?.id === "string" ? { ok: true, id: j.id } : { ok: false, status: 200, code: "invalid", message: "Resposta inesperada do servidor." };
+  } catch (e) {
+    if (e instanceof ActionError) return { ok: false, status: e.status, code: e.code, message: e.userMessage };
+    return { ok: false, status: 0, code: "unknown", message: CALL_MESSAGES.fallback };
   }
-  const j = await res.json().catch(() => null);
-  if (res.ok) return typeof j?.id === "string" ? { ok: true, id: j.id } : { ok: false, status: res.status, code: "invalid", message: "Resposta inesperada do servidor." };
-  if (res.status === 401) {
-    goLogin("/voz");
-    return { ok: false, status: 401, code: "unauthenticated", message: "Sessão expirada." };
-  }
-  const code = typeof j?.error === "string" ? j.error : `http_${res.status}`;
-  const message = BLOCK_MESSAGES[code] ?? (typeof j?.message === "string" ? j.message : "Não foi possível ligar agora.");
-  return { ok: false, status: res.status, code, message };
 }
 
 // No modo demonstração não há papel real: libera a tela inteira para dar para ver (o pedido de ligação abaixo é simulado).

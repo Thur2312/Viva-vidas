@@ -1,9 +1,8 @@
 "use client";
 // Cliente das integrações (CRM e agenda). Fala só com o BFF (/api/pilot/crm e /api/pilot/calendar); nenhum token passa por aqui.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getJson, goLogin } from "@/lib/client";
+import { getJson, sendJson, type ActionMessages } from "@/lib/client";
 import { DEMO } from "@/lib/flags";
-import { ActionError } from "@/components/disparos/api";
 
 export type CrmStatus = {
   enabled: boolean;
@@ -39,26 +38,9 @@ const FALLBACK: Record<number, string> = {
   503: "A integração ainda não está configurada. Nada foi feito.",
 };
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`/api/pilot/${path}`, { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify(body ?? {}) });
-  } catch {
-    throw new ActionError(0, "network", "Sem conexão com o servidor. Nada foi feito.");
-  }
-  if (res.status === 401) goLogin();
-  if (!res.ok) {
-    let msg = "";
-    let code = `http_${res.status}`;
-    try {
-      const j = await res.json();
-      if (typeof j?.error === "string") code = j.error;
-      if (typeof j?.message === "string") msg = j.message;
-    } catch { /* corpo vazio */ }
-    throw new ActionError(res.status, code, msg || FALLBACK[res.status] || "Não foi possível concluir a ação.");
-  }
-  return (await res.json().catch(() => ({}))) as T;
-}
+const MESSAGES: ActionMessages = { network: "Sem conexão com o servidor. Nada foi feito.", fallback: "Não foi possível concluir a ação.", byStatus: FALLBACK };
+
+const post = <T>(path: string, body: unknown) => sendJson<T>("POST", `/api/pilot/${path}`, body, MESSAGES);
 
 export function useRetryDead() {
   const qc = useQueryClient();

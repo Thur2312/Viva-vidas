@@ -42,6 +42,59 @@ export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> 
   return (await res.json()) as T;
 }
 
+/** Erro de uma ação de escrita (POST/PATCH/PUT), com a mensagem já pronta para mostrar na tela. */
+export class ActionError extends Error {
+  constructor(public status: number, public code: string, public userMessage: string) {
+    super(code);
+  }
+}
+
+/** Textos de uma ação: sem rede, texto padrão, e traduções por status HTTP ou por código de erro do servidor. */
+export type ActionMessages = {
+  network: string;
+  fallback: string;
+  byStatus?: Record<number, string>;
+  byCode?: Record<string, string>;
+};
+
+/**
+ * Único ponto de escrita do painel no BFF (POST/PATCH/PUT). Lança ActionError; nunca inventa sucesso.
+ * Mensagem mostrada, por prioridade: tradução por código > texto do servidor (o Nest manda texto ou lista) >
+ * tradução por status > texto padrão. 401 leva ao login (`loginNext` volta para a página certa).
+ */
+export async function sendJson<T = unknown>(
+  method: "POST" | "PATCH" | "PUT",
+  url: string,
+  body: unknown,
+  msgs: ActionMessages,
+  opts: { loginNext?: string } = {},
+): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      credentials: "same-origin",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(body ?? {}),
+    });
+  } catch {
+    throw new ActionError(0, "network", msgs.network);
+  }
+  if (res.status === 401) goLogin(opts.loginNext);
+  if (!res.ok) {
+    let code = `http_${res.status}`;
+    let server = "";
+    try {
+      const j = await res.json();
+      if (typeof j?.error === "string") code = j.error;
+      if (typeof j?.message === "string") server = j.message;
+      else if (Array.isArray(j?.message)) server = j.message.filter((m: unknown) => typeof m === "string").join(" ");
+    } catch { /* corpo vazio */ }
+    throw new ActionError(res.status, code, msgs.byCode?.[code] ?? (server || msgs.byStatus?.[res.status] || msgs.fallback));
+  }
+  return (await res.json().catch(() => ({}))) as T;
+}
+
 export function describeError(e: unknown): { title: string; detail: string } {
   const err = e instanceof ApiError ? e : null;
   if (err?.code === "api_unreachable" || err?.code === "network" || err?.status === 502)
