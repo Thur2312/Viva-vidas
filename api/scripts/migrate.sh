@@ -22,6 +22,8 @@ set -Eeuo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 DIR=db/migrations
 export PGHOST="${PGHOST:-127.0.0.1}" PGPORT="${PGPORT:-5432}" PGUSER="${PGUSER:-horizon_owner}" PGDATABASE="${PGDATABASE:-horizon}"
+# Esconde os NOTICE ("ja existe, pulando") de CREATE ... IF NOT EXISTS; avisos (WARNING) e erros continuam aparecendo.
+export PGOPTIONS="${PGOPTIONS:-} -c client_min_messages=warning"
 
 die() { echo "ERRO: $*" >&2; exit 1; }
 sql() { psql -X -q -v ON_ERROR_STOP=1 "$@"; }
