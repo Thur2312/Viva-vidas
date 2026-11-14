@@ -7,7 +7,7 @@ import { Folio, Marginalia, type MarginItem } from "@/components/folha";
 import { useCalendarStatus, useCrmStatus } from "@/components/integracoes/api";
 import { PageHeader } from "@/components/ui";
 import { useVoiceStatus } from "@/components/voz/voz-api";
-import { SEM_LEITURA, TOM, estadoIntegracao, estadoTemplate, faltando, leitura, type Estado } from "@/lib/agente-estados";
+import { SEM_LEITURA, TOM, contagemTemplates, estadoIntegracao, estadoTemplate, faltando, leitura, type Estado } from "@/lib/agente-estados";
 import { pct } from "@/lib/format";
 import { useReadiness } from "@/lib/hooks";
 import { playbookRef } from "@/lib/playbook";
@@ -64,7 +64,7 @@ export default function Agente() {
       nome: "Provedor de IA (modo sombra)",
       monitorada: true,
       estado: leitura(rd, (r) =>
-        r.shadow.enabled ? { tom: "ok", rotulo: "Ativo", detalhe: r.shadow.mode ? `modo ${r.shadow.mode}` : undefined }
+        r.shadow.enabled ? { tom: "ok", rotulo: "Ativo", detalhe: r.shadow.mode && r.shadow.mode !== "shadow" ? `modo ${r.shadow.mode}` : undefined }
         : { tom: "warn", rotulo: "Aguardando a chave do provedor de IA" }),
     },
     // Sem leitura de verdade no piloto: aparece só com a nota do projeto, sem inventar estado.
@@ -79,7 +79,7 @@ export default function Agente() {
   const carregandoConexoes = lidas.length < monitoradas.length;
 
   const planejados = playbookRef.templates;
-  const aprovados = tpl.data ? planejados.filter((t) => tpl.data.data.find((r) => r.name === t.nome)?.status === "APPROVED").length : 0;
+  const ct = contagemTemplates(tpl, planejados);
 
   const resumo: MarginItem[] = [
     {
@@ -88,17 +88,12 @@ export default function Agente() {
       tone: carregandoConexoes ? undefined : ligadas === monitoradas.length ? "ok" : "warn",
       sub: `Meta Ads não é monitorado${semLeitura ? ` · ${semLeitura} sem leitura` : ""}`,
     },
-    {
-      label: "Templates aprovados",
-      value: tpl.isPending ? "—" : tpl.isError ? "sem leitura" : `${aprovados} de ${planejados.length}`,
-      tone: tpl.data ? (aprovados === planejados.length ? "ok" : "warn") : undefined,
-      sub: "Os planejados no playbook, cruzados com a Meta",
-    },
+    { label: "Templates aprovados", value: ct.valor, tone: ct.tom, sub: ct.sub },
     {
       label: "Modo sombra",
       value: rd.isPending ? "—" : rd.data ? (rd.data.shadow.enabled ? "Ativo" : "Pendente") : "sem leitura",
       tone: rd.data ? (rd.data.shadow.enabled ? "ok" : "warn") : undefined,
-      sub: rd.data?.shadow.mode ? `modo ${rd.data.shadow.mode}` : undefined,
+      sub: rd.data && !rd.data.shadow.enabled ? "aguardando a chave do provedor de IA" : undefined,
     },
   ];
 
@@ -153,18 +148,20 @@ export default function Agente() {
               {conexoes.map((c) => {
                 const nota = notaDe(c.ref);
                 return (
-                  <li key={c.nome} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 py-3">
+                  <li key={c.nome} className="grid grid-cols-1 gap-x-4 gap-y-1 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <div className="min-w-0">
                       <p className="font-medium">{c.nome}</p>
                       {c.estado?.detalhe && <p className="mt-0.5 break-words text-sm text-mute">{c.estado.detalhe}</p>}
                       {nota && c.estado?.tom !== "ok" && <p className="mt-0.5 text-xs text-mute">Nota do projeto: {nota}</p>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 sm:justify-end">
                       {c.href && (
-                        <Link href={c.href} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-medium text-brand-ink underline underline-offset-2">
+                        <Link href={c.href} className="inline-flex min-h-[44px] items-center text-sm font-medium text-brand-ink underline underline-offset-2">
                           Ver em {c.destino}
                         </Link>
                       )}
+                      <Selo estado={c.estado} />
                     </div>
-                    <Selo estado={c.estado} />
                   </li>
                 );
               })}

@@ -45,3 +45,16 @@ export function estadoTemplate(nome: string, q: Pick<UseQueryResult<TemplatesLid
   if (!q.data.chat.configured) return { tom: TOM.mute, rotulo: "Sem leitura: chat não configurado" };
   return { tom: TEMPLATE_STATUS.NAO_CRIADO.tone, rotulo: TEMPLATE_STATUS.NAO_CRIADO.label };
 }
+
+/** "Templates aprovados X de N" SEM afirmar o que não se sabe: sem chat configurado e nada sincronizado, o número é "sem leitura", não "0". */
+export function contagemTemplates(
+  q: Pick<UseQueryResult<TemplatesLidos>, "isPending" | "isError" | "data">,
+  planejados: { nome: string }[],
+): { valor: string; tom?: "ok" | "warn"; sub: string } {
+  if (q.isPending) return { valor: "—", sub: "lendo…" };
+  if (q.isError || !q.data) return { valor: "sem leitura", sub: "o servidor não respondeu" };
+  const { chat, data } = q.data;
+  if (!chat.configured && data.length === 0) return { valor: "sem leitura", sub: "chat não configurado: nada foi sincronizado com a Meta" };
+  const aprovados = planejados.filter((p) => data.find((r) => r.name === p.nome)?.status === "APPROVED").length;
+  return { valor: `${aprovados} de ${planejados.length}`, tom: aprovados === planejados.length ? "ok" : "warn", sub: "Os planejados no playbook, cruzados com a Meta" };
+}
