@@ -130,6 +130,22 @@ Cuidado: comandos `sudo -u horizon` rodados de dentro de `/root` falham com `EAC
 - **Servidor:** SSH só por chave, `ufw` liberando 22/80/443, `fail2ban` ativo, Postgres sem porta pública.
 - **Não faça:** alterar o código no servidor (o deploy recusa), rodar a API como root, abrir a porta 5432, editar o `.env` de outros projetos.
 
-## 11. Pendências conhecidas
+## 11. Testes de integração (banco real)
+
+A suíte local pula 79 testes que precisam de um Postgres de verdade (LGPD, autenticação, voz, conversas, disparos e as migrations). Na VPS existe o banco descartável `horizon_test` (**nunca** rode isto apontando para o `horizon`). Cada teste roda numa transação desfeita (`ROLLBACK`) e as suítes conferem que nada sobrou.
+
+```bash
+# 1) (só se o banco de teste estiver vazio ou desatualizado) aplicar as migrations nele
+sudo -u horizon -H bash -c 'cd /home/horizon/app/api && PGDATABASE=horizon_test bash scripts/migrate.sh'
+
+# 2) rodar as 6 suítes de integração (a senha é lida do ~/.pgpass, sem aparecer)
+sudo -u horizon -H bash -c 'cd /home/horizon/app/api && PW=$(grep ":horizon_test:" ~/.pgpass | cut -d: -f5) && PILOT_TEST_DATABASE_URL="postgres://horizon_owner:${PW}@127.0.0.1:5432/horizon_test" npx jest --runInBand --testTimeout=60000 integration 2>&1 | grep -vE "^\s+at " | tail -40'
+```
+
+Resultado de referência (14/11/2026): 6 suítes, 79 testes, 0 falhas. Rode depois de qualquer mudança em SQL, migrations ou no `PgService`. O banco precisa de SSL ligado (`show ssl` = `on`, padrão do Ubuntu), porque os testes conectam exigindo SSL.
+
+**Pool de conexões:** a API usa **um único** `PgService` (módulo `PgModule`), com `PILOT_DB_POOL_MAX` conexões (padrão 10), mais 1 da trava de sessão do worker. O teste `pg.module.spec.ts` falha se algum módulo voltar a declarar o próprio `PgService`. Para conferir em produção: `sudo -u postgres psql -Atc "select count(*) from pg_stat_activity where datname='horizon'"` (deve ficar em até ~11 com a API ociosa ou sob carga leve).
+
+## 12. Pendências conhecidas
 
 Cópia externa dos backups e alerta de falha; textos legais da `/privacidade` e atualização do ROPA (`docs/lgpd`); integrações nunca testadas com serviço real (Twilio, Anthropic, Pipedrive, Google Calendar); ligar o chat (`wid`, `PILOT_REQUIRE_WID`, assinatura); domínio próprio; senha no Redis do zyra; pacotes do `apt` por atualizar.

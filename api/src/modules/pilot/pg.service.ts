@@ -31,7 +31,8 @@ export class PgService implements Db, OnModuleDestroy {
       if (!url) throw new Error('PILOT_DATABASE_URL (ou DATABASE_URL) não configurada')
       this.pool = new Pool({
         connectionString: url,
-        max: Number(process.env.PILOT_DB_POOL_MAX ?? 5),
+        // Um pool para a API toda (PgModule). Antes eram 4 pools de 5 conexoes (20): 10 mantem a folga, com o Postgres em max_connections=50.
+        max: Number(process.env.PILOT_DB_POOL_MAX ?? 10),
         ssl: pgSsl(url),
       })
     }

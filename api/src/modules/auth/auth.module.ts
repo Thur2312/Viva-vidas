@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common'
 import { PassportModule } from '@nestjs/passport'
+import { PgModule } from '../pilot/pg.module'
 import { PgService } from '../pilot/pg.service'
 import { SessionStateService } from '../panel-auth/session-state.service'
 import { JwtStrategy } from './jwt.strategy'
 
 // Registra a estrategia 'jwt' (ver jwt.strategy.ts). Sem login/refresh/RBAC do HDM: isso vive em `panel-auth`.
-// Tem o proprio PgService (padrao do projeto: cada modulo cria o seu) para conferir o usuario no banco.
+// Usa o PgService compartilhado (PgModule, um unico pool) para conferir o usuario no banco.
 @Module({
-  imports: [PassportModule],
+  imports: [PassportModule, PgModule],
   providers: [
-    PgService,
     { provide: SessionStateService, useFactory: (pg: PgService) => new SessionStateService(pg), inject: [PgService] },
     JwtStrategy,
   ],

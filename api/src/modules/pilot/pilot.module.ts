@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ChatGatewayModule } from '../chat-gateway/chat-gateway.module'
-import { PgService } from './pg.service'
+import { PgModule } from './pg.module'
 import { PilotService } from './pilot.service'
 import { ShadowService } from './shadow.service'
 import { PilotController } from './pilot.controller'
@@ -18,13 +18,13 @@ import { CRM_PROVIDERS, CrmController } from '../crm/crm.module-parts'
 import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.module-parts'
 
 @Module({
-  imports: [ChatGatewayModule],
+  imports: [ChatGatewayModule, PgModule],
   controllers: [PilotController, BroadcastsController, ConversationsController, CrmController, CalendarController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,
     ...CALENDAR_PROVIDERS,
-    PgService, PilotService, ShadowService, PilotKeyGuard,
+    PilotService, ShadowService, PilotKeyGuard,
     CryptoService, AuditService, ConsentService, DataSubjectService, LearningService, RetentionService, ConversationsService,
   ],
   exports: [PilotService, ConsentService, AuditService],
