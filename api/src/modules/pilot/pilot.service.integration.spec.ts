@@ -64,6 +64,33 @@ d('PilotService (banco real, com rollback)', () => {
     expect(stage).toBe('respondeu')
   })
 
+  it('uma conversa por (lead, canal): mensagens seguidas reutilizam a conversa e o banco recusa duplicata (migration 010)', async () => {
+    const base = { phone: '83955554444', direction: 'in' as const, author: 'lead' as const }
+    const a = await svc.ingestMessage({ ...base, body: 'oi', wid: 'wamid.c1' }, db())
+    const b = await svc.ingestMessage({ ...base, body: 'tudo bem?', wid: 'wamid.c2' }, db())
+    expect((b as any).conversationId).toBe((a as any).conversationId)
+    const n = await client.query('SELECT count(*)::int n FROM horizon_agent.conversations WHERE lead_id = $1', [a.leadId])
+    expect(n.rows[0].n).toBe(1)
+
+    await client.query('SAVEPOINT s')
+    await expect(
+      client.query(`INSERT INTO horizon_agent.conversations (lead_id, channel) VALUES ($1, 'whatsapp')`, [a.leadId]),
+    ).rejects.toThrow(/conversations_lead_channel_uidx|duplicate key/)
+    await client.query('ROLLBACK TO s')
+    // outro canal continua permitido: a restricao e por (lead, canal), nao so por lead
+    await client.query(`INSERT INTO horizon_agent.conversations (lead_id, channel) VALUES ($1, 'email')`, [a.leadId])
+  })
+
+  it('reenviar a mesma mensagem nao mexe em updated_at da conversa (nao reordena a lista)', async () => {
+    const m = { phone: '83944443333', direction: 'in' as const, author: 'lead' as const, body: 'ola', wid: 'wamid.u1' }
+    const first = await svc.ingestMessage(m, db())
+    await client.query(`UPDATE horizon_agent.conversations SET updated_at = now() - interval '1 hour' WHERE id = $1`, [(first as any).conversationId])
+    const before = (await client.query('SELECT updated_at FROM horizon_agent.conversations WHERE id = $1', [(first as any).conversationId])).rows[0].updated_at
+    await svc.ingestMessage(m, db()) // repeticao: duplicada
+    const after = (await client.query('SELECT updated_at FROM horizon_agent.conversations WHERE id = $1', [(first as any).conversationId])).rows[0].updated_at
+    expect(after.getTime()).toBe(before.getTime())
+  })
+
   it('resposta humana é comparada com o rascunho pendente', async () => {
     const inbound = await svc.ingestMessage({ phone: '83955554444', direction: 'in', author: 'lead', body: 'Pago 1900 no plano', wid: 'w1' }, db())
     await client.query(

@@ -68,8 +68,10 @@ describe('PilotController (HTTP)', () => {
 describe('ingestão do chat: limite e idempotência', () => {
   const KEY = 'chave-de-teste'
   const inserts: any[][] = []
+  const sqls: string[] = []
   const fakePg = {
     query: async (sql: string, params: any[] = []) => {
+      sqls.push(sql.replace(/\s+/g, ' ').trim())
       if (/INSERT INTO horizon_agent\.leads/.test(sql)) return { rows: [{ id: 'lead-1', created: false }], rowCount: 1 }
       if (/INSERT INTO horizon_agent\.conversations/.test(sql)) return { rows: [{ id: 'conv-1' }], rowCount: 1 }
       if (/FROM horizon_agent\.conversations WHERE lead_id/.test(sql)) return { rows: [{ id: 'conv-1' }], rowCount: 1 }
@@ -106,6 +108,17 @@ describe('ingestão do chat: limite e idempotência', () => {
     expect(inserts[0][4]).toMatch(/^auto:[0-9a-f]{40}$/)
     await post({ ...base, wid: 'wamid.ABC' }).expect(201)
     expect(inserts[1][4]).toBe('wamid.ABC')
+  })
+
+  it('a conversa e criada por UMA instrução atômica (ON CONFLICT), sem SELECT antes (migration 010)', async () => {
+    sqls.length = 0
+    await post({ ...base, wid: 'wamid.atomic' }).expect(201)
+    const conv = sqls.filter((s) => /horizon_agent\.conversations/.test(s))
+    expect(conv.some((s) => /^SELECT .*FROM horizon_agent\.conversations/.test(s))).toBe(false)
+    const ins = conv.find((s) => /^INSERT INTO horizon_agent\.conversations/.test(s))
+    expect(ins).toMatch(/ON CONFLICT \(lead_id, channel\) DO UPDATE/)
+    expect(ins).toMatch(/'whatsapp'/)
+    expect(ins).not.toMatch(/updated_at/) // repetição não pode reordenar a lista de conversas
   })
 
   it('mensagem enviada sem wid NÃO ganha chave (duas respostas iguais precisam existir)', async () => {

@@ -203,17 +203,17 @@ export class PilotService {
       if (!can.allowed) throw new ForbiddenException(`Lead não pode ser contatado (${can.reason})`)
     }
 
-    let conv = (
-      await db.query(`SELECT * FROM horizon_agent.conversations WHERE lead_id = $1 ORDER BY created_at LIMIT 1`, [lead.id])
+    // Uma unica instrucao atomica (migration 010: UNIQUE (lead_id, channel)). Antes era SELECT e depois INSERT: duas primeiras
+    // mensagens simultaneas criavam duas conversas. No conflito o DO UPDATE e um "nao faz nada" so para o RETURNING devolver a
+    // linha existente; ele NAO mexe em updated_at (reenvio de mensagem repetida nao pode reordenar a lista) nem em external_ref.
+    const conv = (
+      await db.query(
+        `INSERT INTO horizon_agent.conversations (lead_id, channel, external_ref) VALUES ($1, 'whatsapp', $2)
+         ON CONFLICT (lead_id, channel) DO UPDATE SET channel = EXCLUDED.channel
+         RETURNING id`,
+        [lead.id, m.externalRef ?? null],
+      )
     ).rows[0]
-    if (!conv) {
-      conv = (
-        await db.query(
-          `INSERT INTO horizon_agent.conversations (lead_id, external_ref) VALUES ($1, $2) RETURNING *`,
-          [lead.id, m.externalRef ?? null],
-        )
-      ).rows[0]
-    }
 
     const ins = await db.query(
       `INSERT INTO horizon_agent.messages (conversation_id, direction, author, body, wid, contains_sensitive)
