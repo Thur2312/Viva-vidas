@@ -106,6 +106,11 @@ export function useTemplates() {
   return useQuery({ queryKey: ["disparos", "templates"], queryFn: ({ signal }) => getJson<TemplatesResp>(`${B}/templates?refresh=1`, signal), staleTime: 30_000 });
 }
 
+/** Templates JÁ sincronizados (sem `refresh`): leitura leve para telas de status. A tela de Templates usa useTemplates, que sincroniza com a Meta. */
+export function useTemplatesCache() {
+  return useQuery({ queryKey: ["disparos", "templates", "cache"], queryFn: ({ signal }) => getJson<TemplatesResp>(`${B}/templates`, signal), staleTime: 30_000 });
+}
+
 export function useNumberHealth() {
   return useQuery({ queryKey: ["disparos", "health"], queryFn: ({ signal }) => getJson<HealthResp>(`${B}/number-health`, signal), refetchInterval: 60_000 });
 }

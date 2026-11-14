@@ -6,16 +6,8 @@ import { Panel } from "@/components/ui";
 import { dateTime } from "@/lib/format";
 import { ActionError, act, isOwner, useAct, useTemplates, type DraftTemplate, type TemplateRow } from "./api";
 import { btnGhost, btnPrimary, field } from "./bits";
+import { TEMPLATE_STATUS as ST } from "@/lib/template-status";
 
-const ST: Record<string, { label: string; tone: string }> = {
-  APPROVED: { label: "Aprovado", tone: "border-ok/40 bg-ok/15 text-ok" },
-  PENDING: { label: "Aguardando aprovação da Meta", tone: "border-warn/40 bg-warn/15 text-warn" },
-  IN_APPEAL: { label: "Em recurso na Meta", tone: "border-warn/40 bg-warn/15 text-warn" },
-  REJECTED: { label: "Reprovado", tone: "border-bad/40 bg-bad/10 text-bad" },
-  PAUSED: { label: "Pausado pela Meta", tone: "border-bad/40 bg-bad/10 text-bad" },
-  DISABLED: { label: "Desativado", tone: "border-bad/40 bg-bad/10 text-bad" },
-  NAO_CRIADO: { label: "Ainda não criado na Meta", tone: "border-line bg-ink/[0.06] text-mute" },
-};
 const Badge = ({ s }: { s: string }) => {
   const x = ST[s] ?? { label: s, tone: "border-line bg-ink/[0.06] text-mute" };
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${x.tone}`}>{x.label}</span>;
