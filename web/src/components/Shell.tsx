@@ -61,6 +61,12 @@ const titles: Record<string, string> = {
   "/integracoes": "Integrações",
 };
 
+/** Título da página pela rota. Casa também as rotas filhas (/disparos/novo, /disparos/<id>) com o título da seção. */
+function tituloDaRota(path: string): string | undefined {
+  const k = Object.keys(titles).find((t) => path === t || path.startsWith(`${t}/`));
+  return k ? titles[k] : undefined;
+}
+
 function useTheme() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   useEffect(() => {
@@ -207,7 +213,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <button type="button" className={`${iconBtn} mr-2 hidden lg:inline-flex`} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} onClick={toggleCollapsed}>
             <PanelLeft size={20} aria-hidden="true" />
           </button>
-          <p className="font-display text-xl leading-none">{titles[path] ?? brand.short}</p>
+          <p className="font-display text-xl leading-none">{tituloDaRota(path) ?? brand.short}</p>
         </div>
         <div className="flex items-center gap-1">
           <button type="button" className={iconBtn} aria-label={theme === "dark" ? "Usar tema claro" : "Usar tema escuro"} onClick={toggle}>

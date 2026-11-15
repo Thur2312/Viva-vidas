@@ -87,7 +87,7 @@ function RecipientsTable({ id }: { id: string }) {
                       <td className="tabular px-3">{r.phone ?? "—"}</td>
                       <td className="px-3">{R_LABEL[r.status]}</td>
                       <td className="tabular px-3">{dateTime(r.sentAt)}</td>
-                      <td className="px-3 text-mute">{r.skipLabel ?? (r.errorCode ? ERR[r.errorCode] ?? r.errorCode : r.repliedAt ? `Respondeu ${dateTime(r.repliedAt)}` : "")}</td>
+                      <td className="px-3 text-mute">{r.skipLabel ?? (r.errorCode ? ERR[r.errorCode] ?? `Código ${r.errorCode} (sem descrição)` : r.repliedAt ? `em ${dateTime(r.repliedAt)}` : "")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,7 +183,7 @@ export function Detail({ id, role }: { id: string; role?: string }) {
                     <div className="space-y-5 text-sm">
                       {d.errors.length > 0 && (
                         <div><p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-wider text-mute">Falhas de envio</p>
-                          <ul className="divide-y divide-line border-y border-line">{d.errors.map((e) => <li key={e.code ?? "?"} className="flex justify-between gap-3 py-2"><span>{ERR[e.code ?? ""] ?? e.code ?? "Sem código"}<span className="ml-2 font-mono text-xs text-mute">{e.code}</span></span><span className="tabular font-semibold">{num(e.n)}</span></li>)}</ul></div>
+                          <ul className="divide-y divide-line border-y border-line">{d.errors.map((e) => <li key={e.code ?? "?"} className="flex justify-between gap-3 py-2"><span>{ERR[e.code ?? ""] ?? (e.code ? "Código sem descrição" : "Sem código")}{e.code && <span className="ml-2 font-mono text-xs text-mute">{e.code}</span>}</span><span className="tabular font-semibold">{num(e.n)}</span></li>)}</ul></div>
                       )}
                       {d.skipReasons.length > 0 && (
                         <div><p className="mb-1 font-mono text-[11px] font-medium uppercase tracking-wider text-mute">Pulados</p>
