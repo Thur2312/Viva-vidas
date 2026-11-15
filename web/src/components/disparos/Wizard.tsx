@@ -1,14 +1,14 @@
 "use client";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Panel } from "@/components/ui";
+import { Folio } from "@/components/folha";
 import { num } from "@/lib/format";
 import {
   ActionError, act, useNumberHealth, useTemplates,
   type AudienceFilter, type Preview, type VarSpec,
 } from "./api";
-import { btnGhost, btnPrimary, field } from "./bits";
+import { btnPrimary, btnSec, field } from "./bits";
 import { HealthBody } from "./NumberHealthCard";
 
 const STEPS = ["Nome e objetivo", "Público", "Mensagem", "Agendamento", "Revisão"];
@@ -160,11 +160,11 @@ export function Wizard({ enabled }: { enabled: boolean }) {
   };
 
   const PreviewBox = () => (
-    <div aria-live="polite" className="rounded-xl border border-line bg-ink/[0.04] p-4">
+    <div aria-live="polite" className="border-t border-line pt-5">
       <p className="text-xs font-semibold uppercase tracking-wider text-mute">Público elegível agora {pvBusy && <Loader2 size={12} className="ml-1 inline animate-spin" aria-hidden="true" />}</p>
       {pvErr ? <p role="alert" className="mt-1 text-sm text-bad">{pvErr}</p> : preview ? (
         <>
-          <p className="tabular mt-1 font-display text-3xl font-semibold">{num(preview.eligible)} <span className="text-base font-normal text-mute">de {num(preview.total)} leads</span></p>
+          <p className="tabular mt-1 font-mono text-3xl font-medium">{num(preview.eligible)} <span className="text-base font-normal text-mute">de {num(preview.total)} leads</span></p>
           {preview.reasons.length > 0 && (
             <ul className="mt-2 space-y-1 text-sm">
               {preview.reasons.map((r) => <li key={r.reason} className="flex justify-between gap-3"><span>{r.label}</span><span className="tabular font-semibold">{num(r.n)}</span></li>)}
@@ -182,17 +182,18 @@ export function Wizard({ enabled }: { enabled: boolean }) {
   return (
     <div className="space-y-6">
       <nav aria-label="Passos">
-        <ol className="flex flex-wrap gap-2">
+        <ol className="flex flex-wrap gap-x-6 gap-y-1 border-b border-line">
           {STEPS.map((t, i) => (
-            <li key={t} aria-current={i === step ? "step" : undefined} className={`rounded-full border px-3.5 py-2 text-sm font-semibold ${i === step ? "border-brand bg-brand/15 text-brand-ink" : i < step ? "border-ok/40 text-ok" : "border-line text-mute"}`}>
-              {i + 1}. {t}
+            <li key={t} aria-current={i === step ? "step" : undefined} className={`inline-flex min-h-[44px] items-center gap-1.5 border-b-2 text-sm ${i === step ? "border-brand-ink font-semibold text-ink" : i < step ? "border-transparent font-medium text-ok" : "border-transparent text-mute"}`}>
+              {i < step && <Check size={14} aria-hidden="true" />}
+              <span className="font-mono text-xs">{i + 1}</span> {t}
             </li>
           ))}
         </ol>
       </nav>
 
       {step === 0 && (
-        <Panel title="Nome e objetivo" hint="Só para a equipe se localizar. Não vai para o cliente.">
+        <Folio n="01" title="Nome e objetivo" hint="Só para a equipe se localizar. Não vai para o cliente.">
           <div className="space-y-4">
             <label className="block text-sm font-semibold">Nome do disparo
               <input className={`${field} mt-1`} value={s.name} onChange={(e) => set("name", e.target.value)} maxLength={120} placeholder="Ex.: Retomada de leads de novembro" />
@@ -201,12 +202,12 @@ export function Wizard({ enabled }: { enabled: boolean }) {
               <textarea className={`${field} mt-1 min-h-[88px] py-2`} value={s.objective} onChange={(e) => set("objective", e.target.value)} maxLength={500} />
             </label>
           </div>
-        </Panel>
+        </Folio>
       )}
 
       {step === 1 && (
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Panel title="Quem entra" hint="Filtros opcionais. As regras de consentimento são sempre aplicadas e não podem ser desligadas.">
+        <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.4fr_1fr]">
+          <Folio n="02" title="Quem entra" hint="Filtros opcionais. As regras de consentimento são sempre aplicadas e não podem ser desligadas.">
             <div className="space-y-5">
               <fieldset>
                 <legend className="text-sm font-semibold">Etapa do funil</legend>
@@ -236,14 +237,14 @@ export function Wizard({ enabled }: { enabled: boolean }) {
                 <p className="mt-1 text-mute">Marketing: consentimento de marketing ativo com origem registrada. Utilidade: consentimento de atendimento ativo. Sempre fora: opt-out, anonimizados, telefone inválido.</p>
               </div>
             </div>
-          </Panel>
+          </Folio>
           <PreviewBox />
         </div>
       )}
 
       {step === 2 && (
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Panel title="Mensagem" hint="Só templates aprovados pela Meta enviam de verdade. Os demais servem para simulação.">
+        <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.4fr_1fr]">
+          <Folio n="03" title="Mensagem" hint="Só templates aprovados pela Meta enviam de verdade. Os demais servem para simulação.">
             <div className="space-y-5">
               {templates.isPending ? <p className="text-sm text-mute">Carregando templates...</p> : templates.isError ? <p role="alert" className="text-sm text-bad">Não foi possível carregar os templates.</p> : (
                 <>
@@ -291,9 +292,9 @@ export function Wizard({ enabled }: { enabled: boolean }) {
                 </>
               )}
             </div>
-          </Panel>
+          </Folio>
           <div className="space-y-4">
-            <div className="rounded-xl border border-line bg-ink/[0.04] p-4">
+            <div className="border-t border-line pt-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-mute">Como o lead vai ver (exemplo)</p>
               {sample ? <p className="mt-2 whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-card p-3 text-sm shadow-sm">{sample}</p> : <p className="mt-2 text-sm text-mute">Escolha um template.</p>}
               {status && <p className="mt-2 text-xs text-mute">Status: {approved ? "aprovado, pode enviar de verdade" : "ainda não aprovado: apenas simulação"}.</p>}
@@ -304,7 +305,7 @@ export function Wizard({ enabled }: { enabled: boolean }) {
       )}
 
       {step === 3 && (
-        <Panel title="Agendamento e limites" hint="Mais devagar é mais seguro para a qualidade do número.">
+        <Folio n="04" title="Agendamento e limites" hint="Mais devagar é mais seguro para a qualidade do número.">
           <div className="space-y-5">
             <fieldset>
               <legend className="text-sm font-semibold">Quando</legend>
@@ -351,12 +352,12 @@ export function Wizard({ enabled }: { enabled: boolean }) {
               </label>
             </div>
           </div>
-        </Panel>
+        </Folio>
       )}
 
       {step === 4 && (
-        <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-          <Panel title="Revisão" hint="Confira tudo. Depois de iniciar, só dá para pausar ou cancelar.">
+        <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.3fr_1fr]">
+          <Folio n="05" title="Revisão" hint="Confira tudo. Depois de iniciar, só dá para pausar ou cancelar.">
             <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
               <div><dt className="text-xs font-semibold uppercase tracking-wider text-mute">Nome</dt><dd className="font-semibold">{s.name}</dd></div>
               <div><dt className="text-xs font-semibold uppercase tracking-wider text-mute">Modo</dt><dd className="font-semibold">{dry ? "SIMULAÇÃO (nada é enviado)" : "ENVIO REAL"}</dd></div>
@@ -377,17 +378,19 @@ export function Wizard({ enabled }: { enabled: boolean }) {
               </label>
               {preview && eligible === 0 && <p role="alert" className="text-sm text-bad">Nenhum destinatário elegível: ajuste o público.</p>}
             </div>
-          </Panel>
-          <Panel title="Saúde do número" hint="Disparo real só com o número saudável">
+          </Folio>
+          <section aria-labelledby="saude-wiz" className="border-t border-line pt-5">
+            <h2 id="saude-wiz" className="font-display text-xl leading-tight">Saúde do número</h2>
+            <p className="mb-3 mt-1 text-sm text-mute">Disparo real só com o número saudável</p>
             {health.data ? <HealthBody h={health.data} compact /> : <p className="text-sm text-mute">Carregando...</p>}
-          </Panel>
+          </section>
         </div>
       )}
 
       {error && <p role="alert" className="rounded-lg border border-bad/40 bg-bad/10 p-3 text-sm text-bad">{error}</p>}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" className={btnGhost} onClick={() => (step === 0 ? router.push("/disparos") : setStep(step - 1))} disabled={busy}>
+        <button type="button" className={btnSec} onClick={() => (step === 0 ? router.push("/disparos") : setStep(step - 1))} disabled={busy}>
           <ArrowLeft size={16} aria-hidden="true" />{step === 0 ? "Cancelar" : "Voltar"}
         </button>
         {step < 4 ? (

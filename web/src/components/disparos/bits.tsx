@@ -124,12 +124,12 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button type="button" aria-label="Fechar" className="absolute inset-0 bg-black/50" onClick={onClose} tabIndex={-1} />
-      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={tid} className="relative w-full max-w-md rounded-xl border border-line bg-card p-6 shadow-xl">
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={tid} className="relative w-full max-w-md rounded-lg border border-line bg-card p-6 shadow-xl">
         <h2 id={tid} className="font-display text-lg font-semibold">{title}</h2>
         <div className="mt-2 space-y-2 text-sm text-ink/90">{children}</div>
         {error && <p role="alert" className="mt-3 rounded-lg border border-bad/40 bg-bad/10 p-3 text-sm text-bad">{error}</p>}
         <div className="mt-5 flex flex-wrap justify-end gap-3">
-          <button type="button" onClick={onClose} className="min-h-[44px] rounded-full border border-line px-5 text-sm font-semibold hover:bg-ink/5">Voltar</button>
+          <button type="button" onClick={onClose} className={btnSec}>Voltar</button>
           <button
             type="button" onClick={onConfirm} disabled={busy || disabled}
             className={`inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${danger ? "bg-bad text-white" : "bg-deep text-white dark:bg-brand dark:text-deep"}`}
@@ -145,7 +145,6 @@ export function ConfirmDialog({
 
 export const btn = "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40";
 export const btnPrimary = `${btn} bg-deep text-white shadow-sm hover:opacity-90 dark:bg-brand dark:text-deep`;
-export const btnGhost = `${btn} border border-line bg-card hover:bg-ink/5`;
 /** Botão secundário (retangular): a pílula é só do botão primário e dos chips. */
 export const btnSec = "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-40";
 export const field = "min-h-[44px] w-full rounded-lg border border-line bg-card px-3 text-sm";

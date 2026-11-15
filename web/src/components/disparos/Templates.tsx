@@ -2,10 +2,10 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
-import { Panel } from "@/components/ui";
+import { Folio } from "@/components/folha";
 import { dateTime } from "@/lib/format";
 import { ActionError, act, isOwner, useAct, useTemplates, type DraftTemplate, type TemplateRow } from "./api";
-import { btnGhost, btnPrimary, field } from "./bits";
+import { btnPrimary, btnSec, field } from "./bits";
 import { TEMPLATE_STATUS as ST } from "@/lib/template-status";
 
 const Badge = ({ s }: { s: string }) => {
@@ -16,7 +16,7 @@ const CAT: Record<string, string> = { MARKETING: "Marketing", UTILITY: "Utilidad
 
 function TemplateCard({ name, category, status, body, buttons, reason }: { name: string; category: string | null; status: string; body: string | null; buttons: { text: string }[]; reason?: string | null }) {
   return (
-    <li className="rounded-xl border border-line bg-card p-4">
+    <div className="py-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-mono text-sm font-semibold">{name}</p>
         <div className="flex flex-wrap items-center gap-2">
@@ -27,7 +27,7 @@ function TemplateCard({ name, category, status, body, buttons, reason }: { name:
       {body && <p className="mt-3 whitespace-pre-wrap rounded-lg bg-ink/[0.05] p-3 text-sm">{body}</p>}
       {buttons.length > 0 && <p className="mt-2 text-xs text-mute">Botões: {buttons.map((b) => b.text).join(" · ")}</p>}
       {reason && <p className="mt-2 text-sm text-bad">Motivo da reprovação: {reason}</p>}
-    </li>
+    </div>
   );
 }
 
@@ -98,45 +98,45 @@ export function TemplatesTab({ role }: { role?: string }) {
       {(t) => {
         const byName = new Set(t.data.map((x: TemplateRow) => x.name));
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {!t.chat.configured && (
-              <p role="status" className="rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm">
+              <p role="status" className="rounded-lg border border-warn/40 bg-warn/10 p-4 text-sm">
                 <strong>Chat não configurado.</strong> Faltam {t.chat.missing.join(" e ") || "CHAT_API_URL e CHAT_BRIDGE_KEY"}. Sem o chat não dá para criar templates nem ver o status real na Meta; o que aparece abaixo vem só do que já foi sincronizado antes (nada, por enquanto).
               </p>
             )}
-            {t.syncError && t.syncError !== "chat_nao_configurado" && <p role="alert" className="rounded-xl border border-bad/40 bg-bad/10 p-4 text-sm text-bad">Não foi possível sincronizar com a Meta agora ({t.syncError}). Mostrando o último status conhecido.</p>}
+            {t.syncError && t.syncError !== "chat_nao_configurado" && <p role="alert" className="rounded-lg border border-bad/40 bg-bad/10 p-4 text-sm text-bad">Não foi possível sincronizar com a Meta agora ({t.syncError}). Mostrando o último status conhecido.</p>}
             <p className="text-sm text-mute">{t.syncedAt ? `Última sincronização: ${dateTime(t.syncedAt)}.` : "Nunca sincronizado."} A aprovação é da Meta; este painel não aprova nem acelera nada.</p>
 
-            <Panel title="Modelos aprovados e em análise" hint="Status vindo da Meta, via chat">
+            <Folio n="01" title="Modelos aprovados e em análise" hint="Status vindo da Meta, via chat">
               {t.data.length === 0 ? (
                 <EmptyState title="Nenhum template sincronizado">Quando o chat estiver configurado e houver templates na conta do WhatsApp Business, eles aparecem aqui.</EmptyState>
               ) : (
-                <ul className="grid gap-3 lg:grid-cols-2">
-                  {t.data.map((x) => <TemplateCard key={`${x.name}-${x.language}`} name={x.name} category={x.category} status={x.status} body={x.bodyText} buttons={x.buttons} reason={x.rejectedReason} />)}
+                <ul className="divide-y divide-line border-y border-line">
+                  {t.data.map((x) => <li key={`${x.name}-${x.language}`}><TemplateCard name={x.name} category={x.category} status={x.status} body={x.bodyText} buttons={x.buttons} reason={x.rejectedReason} /></li>)}
                 </ul>
               )}
-            </Panel>
+            </Folio>
 
-            <Panel title="Os 5 modelos rascunhados" hint="Textos de docs/whatsapp-oficial.md, prontos para enviar à Meta">
-              <ul className="grid gap-3 lg:grid-cols-2">
+            <Folio n="02" title="Os 5 modelos rascunhados" hint="Textos de docs/whatsapp-oficial.md, prontos para enviar à Meta">
+              <ul className="divide-y divide-line border-y border-line">
                 {t.drafts.map((d) => (
-                  <div key={d.name} className="space-y-2">
+                  <li key={d.name} className="space-y-2">
                     <TemplateCard name={d.name} category={d.category} status={d.state} body={d.bodyText} buttons={d.buttons} reason={d.rejectedReason} />
                     {d.state === "NAO_CRIADO" && !byName.has(d.name) && owner && t.chat.configured && (
-                      <button type="button" className={btnGhost} onClick={() => setForm({ prefill: d })}>Criar este modelo...</button>
+                      <button type="button" className={`${btnSec} mb-4`} onClick={() => setForm({ prefill: d })}>Criar este modelo...</button>
                     )}
-                  </div>
+                  </li>
                 ))}
               </ul>
-            </Panel>
+            </Folio>
 
-            <Panel title="Criar novo template" hint={owner ? "Vai para análise da Meta" : "Somente o dono da conta cria templates"}
-              action={owner && !form ? <button type="button" className={btnGhost} onClick={() => setForm({})}><Plus size={15} aria-hidden="true" />Novo template</button> : undefined}>
+            <Folio n="03" title="Criar novo template" hint={owner ? "Vai para análise da Meta" : "Somente o dono da conta cria templates"}
+              action={owner && !form ? <button type="button" className={btnSec} onClick={() => setForm({})}><Plus size={15} aria-hidden="true" />Novo template</button> : undefined}>
               {!owner ? <p className="text-sm text-mute">Seu perfil pode ver os templates, mas só o dono cria novos.</p>
                 : !t.chat.configured ? <p className="text-sm text-mute">Disponível quando o chat estiver configurado.</p>
                 : form ? <CreateForm key={form.prefill?.name ?? "novo"} prefill={form.prefill} onDone={() => q.refetch()} />
                 : <p className="text-sm text-mute">Clique em &quot;Novo template&quot; ou escolha um dos rascunhos acima.</p>}
-            </Panel>
+            </Folio>
           </div>
         );
       }}
