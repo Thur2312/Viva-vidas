@@ -26,7 +26,7 @@ export function HealthBody({ h, compact = false }: { h: HealthResp; compact?: bo
         <Marginalia
           items={[
             { label: "Qualidade", value: <QualityBadge q={l.qualityRating} />, sub: qualityHint(l.qualityRating) },
-            { label: "Limite diário", value: l.dailyLimit != null ? num(l.dailyLimit) : TIER_LABEL[l.limitTier] ?? "Desconhecido", sub: `${TIER_LABEL[l.limitTier] ?? l.limitTier}. O teto do disparo nunca passa disto.` },
+            { label: "Limite diário", value: l.dailyLimit != null ? num(l.dailyLimit) : TIER_LABEL[l.limitTier] ?? "Desconhecido", sub: "O teto do disparo nunca passa disto." },
             { label: "Situação do número", value: notConnected ? "Não conectado" : "Conectado", tone: notConnected ? "warn" : "ok", sub: notConnected ? `Status: ${l.status ?? "?"}` : undefined },
           ]}
         />

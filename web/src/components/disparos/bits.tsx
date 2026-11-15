@@ -74,7 +74,7 @@ export const TIER_LABEL: Record<string, string> = {
 export function Sparkline({ points }: { points: { checkedAt: string; qualityRating: Quality }[] }) {
   const rank = (q: Quality) => (q === "GREEN" ? 3 : q === "YELLOW" ? 2 : q === "RED" ? 1 : 0);
   if (points.length < 2) return <p className="text-xs text-mute">Histórico ainda curto: são necessárias ao menos 2 leituras.</p>;
-  const w = 240, h = 40;
+  const w = 240, h = 72;
   const xs = points.map((_, i) => (i / (points.length - 1)) * (w - 8) + 4);
   const ys = points.map((p) => h - 6 - ((rank(p.qualityRating) / 3) * (h - 12)));
   const d = xs.map((x, i) => `${i ? "L" : "M"}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
@@ -82,14 +82,15 @@ export function Sparkline({ points }: { points: { checkedAt: string; qualityRati
   const alt = `Qualidade nos últimos 14 dias: ${points.length} leituras, a última foi ${Q[last.qualityRating].label}.`;
   return (
     <figure className="m-0">
-      <svg role="img" aria-label={alt} viewBox={`0 0 ${w} ${h}`} className="h-10 w-full max-w-[260px] text-brand-ink">
-        <line x1="0" x2={w} y1={h - 6 - (h - 12)} y2={h - 6 - (h - 12)} stroke="currentColor" strokeOpacity="0.15" strokeDasharray="3 3" />
+      <svg role="img" aria-label={alt} viewBox={`0 0 ${w} ${h}`} className="h-[72px] w-full max-w-[280px] text-brand-ink">
+        {[1, 2, 3].map((r) => <line key={r} x1="0" x2={w} y1={h - 6 - (r / 3) * (h - 12)} y2={h - 6 - (r / 3) * (h - 12)} stroke="currentColor" strokeOpacity="0.15" strokeDasharray="3 3" />)}
         <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {xs.map((x, i) => (
           <circle key={i} cx={x} cy={ys[i]} r={i === xs.length - 1 ? 3.5 : 2} fill="currentColor" />
         ))}
       </svg>
       <figcaption className="sr-only">{alt}</figcaption>
+      <p aria-hidden="true" className="mt-1 text-xs text-mute">Linhas: verde (alto), amarela, vermelha (baixo).</p>
     </figure>
   );
 }

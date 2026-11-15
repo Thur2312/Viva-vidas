@@ -117,7 +117,7 @@ export default function Integracoes() {
         <aside className="min-w-0 space-y-10" aria-label="Números de apoio">
           <section aria-labelledby="fila-crm">
             <h2 id="fila-crm" className="mb-3 font-display text-xl leading-tight">Fila do CRM</h2>
-            <QueryBlock q={crm} skeleton={<Skeleton className="h-40" />}>{(s) => <Marginalia items={contadoresCrm(s)} />}</QueryBlock>
+            <QueryBlock q={crm} skeleton={<Skeleton className="h-40" />}>{(s) => (s.enabled ? <Marginalia items={contadoresCrm(s)} /> : <p className="border-y border-line py-3 text-sm text-mute">CRM desligado: nada é enfileirado, então não há contadores para mostrar.</p>)}</QueryBlock>
             <p className="mt-3 text-xs text-mute">Só entram etapas qualificado, reunião, compareceu, venda, perdido e opt-out. Nunca conteúdo de mensagem.</p>
           </section>
 
@@ -126,8 +126,9 @@ export default function Integracoes() {
             <QueryBlock q={cal} skeleton={<Skeleton className="h-40" />}>
               {(s) => (
                 <>
-                  <Marginalia items={regrasAgenda(s.rules)} />
-                  <p className="mt-3 text-xs text-mute">Ajustáveis no servidor, em <code className="font-mono">CALENDAR_RULES</code>.{!s.enabled && " Valem quando a agenda estiver ligada."}</p>
+                  {!s.enabled && <p className="mb-3 text-sm">Agenda desligada: estas regras só valem quando ela for ligada.</p>}
+                  <Marginalia items={regrasAgenda(s.rules)} className={s.enabled ? "" : "text-mute"} />
+                  <p className="mt-3 text-xs text-mute">Ajustáveis no servidor, em <code className="font-mono">CALENDAR_RULES</code>.</p>
                 </>
               )}
             </QueryBlock>
