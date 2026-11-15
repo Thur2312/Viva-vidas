@@ -13,7 +13,7 @@ export default function NovoDisparo() {
   return (
     <>
       <PageHeader eyebrow="Disparos" title="Novo disparo">Cinco passos. O rascunho é salvo ao continuar e nada sai até a confirmação final.</PageHeader>
-      <SafetyBanner safety={list.data?.safety} />
+      <SafetyBanner safety={list.data?.safety} regras="abertas" />
       {me.isSuccess && !manager ? (
         <p role="alert" className="rounded-xl border border-warn/40 bg-warn/10 p-5 text-sm">Seu perfil não pode criar disparos. Peça acesso de gerente.</p>
       ) : (

@@ -146,4 +146,6 @@ export function ConfirmDialog({
 export const btn = "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40";
 export const btnPrimary = `${btn} bg-deep text-white shadow-sm hover:opacity-90 dark:bg-brand dark:text-deep`;
 export const btnGhost = `${btn} border border-line bg-card hover:bg-ink/5`;
+/** Botão secundário (retangular): a pílula é só do botão primário e dos chips. */
+export const btnSec = "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-40";
 export const field = "min-h-[44px] w-full rounded-lg border border-line bg-card px-3 text-sm";

@@ -1,35 +1,37 @@
 "use client";
 import { PauseCircle, ShieldAlert } from "lucide-react";
 import { useState } from "react";
+import { Selo } from "@/components/Selo";
+import { estadoEnvio } from "@/lib/disparos-view";
 import { ActionError, act, useAct, type Safety } from "./api";
-import { ConfirmDialog, PAUSE_REASON, btnPrimary } from "./bits";
+import { ConfirmDialog, PAUSE_REASON, btnSec } from "./bits";
 
-/** Regras do WhatsApp e da LGPD, e o estado do interruptor geral. Sempre visível no topo. */
-export function SafetyBanner({ safety }: { safety?: Safety }) {
-  const off = !safety?.enabled;
+/**
+ * Estado do interruptor geral (sempre visível) e as regras do WhatsApp e da LGPD.
+ * Na lista as regras ficam recolhidas (o que muda é o interruptor); no assistente de criação ficam abertas.
+ */
+export function SafetyBanner({ safety, regras = "recolhidas" }: { safety?: Safety; regras?: "recolhidas" | "abertas" }) {
+  const e = estadoEnvio(safety);
   return (
-    <aside aria-label="Regras de envio" className="mb-6 rounded-xl border border-brand/40 bg-brand/10 p-5">
-      <p className="flex items-center gap-2 font-display text-base font-semibold">
-        <ShieldAlert size={18} aria-hidden="true" className="text-brand-ink" />
-        Antes de disparar: o que o WhatsApp e a LGPD exigem
-      </p>
-      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm">
-        <li><strong>Só para quem deu opt-in.</strong> Mensagem de marketing exige consentimento de marketing ativo, com a origem registrada. Lista fria não recebe: o sistema barra o lead sem consentimento.</li>
-        <li><strong>Janela de 24 horas.</strong> Fora dela só vale template aprovado pela Meta. Texto livre só até 24h depois da última mensagem do lead.</li>
-        <li><strong>Saída fácil.</strong> Template de marketing precisa de aviso de saída (&quot;responda PARAR&quot;) ou botão de resposta rápida. Quem sair nunca mais recebe.</li>
-        <li><strong>Horário e frequência.</strong> Janela padrão 9h às 18h, segunda a sexta (horário de Brasília), e no máximo 1 marketing a cada 7 dias por pessoa. <em>Confirmar com o jurídico e a regra da Anatel.</em></li>
-      </ul>
-      <p className={`mt-3 rounded-lg border p-3 text-sm font-semibold ${off ? "border-warn/40 bg-warn/15 text-warn" : "border-ok/40 bg-ok/15 text-ok"}`} role="status">
-        {safety === undefined
-          ? "Verificando o interruptor geral de envio..."
-          : off
-            ? "Interruptor geral DESLIGADO (BROADCASTS_ENABLED). Nenhuma mensagem real sai: só é possível criar e simular (dry-run)."
-            : "Interruptor geral LIGADO: disparos reais podem sair, dentro das regras acima."}
-      </p>
-      {safety && !safety.chat.configured && (
-        <p className="mt-2 text-sm text-mute">Chat não configurado ({safety.chat.missing.join(", ") || "CHAT_API_URL, CHAT_BRIDGE_KEY"}): o envio real não é possível ainda. Nada foi testado com a Meta.</p>
-      )}
-    </aside>
+    <section aria-label="Regras de envio" className="mb-8">
+      <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Selo estado={e.estado} />
+        <p className="text-sm">{e.texto}</p>
+      </div>
+      {e.aviso && <p className="mt-2 text-sm text-mute">{e.aviso}</p>}
+      <details open={regras === "abertas"} className="mt-3 border-y border-line">
+        <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 text-sm font-medium">
+          <ShieldAlert size={16} aria-hidden="true" className="text-brand-ink" />
+          O que o WhatsApp e a LGPD exigem <span className="text-mute">(4 regras)</span>
+        </summary>
+        <ul className="list-disc space-y-1.5 pb-3 pl-9 text-sm">
+          <li><strong>Só para quem deu opt-in.</strong> Mensagem de marketing exige consentimento de marketing ativo, com a origem registrada. Lista fria não recebe: o sistema barra o lead sem consentimento.</li>
+          <li><strong>Janela de 24 horas.</strong> Fora dela só vale template aprovado pela Meta. Texto livre só até 24h depois da última mensagem do lead.</li>
+          <li><strong>Saída fácil.</strong> Template de marketing precisa de aviso de saída (&quot;responda PARAR&quot;) ou botão de resposta rápida. Quem sair nunca mais recebe.</li>
+          <li><strong>Horário e frequência.</strong> Janela padrão 9h às 18h, segunda a sexta (horário de Brasília), e no máximo 1 marketing a cada 7 dias por pessoa. <em>Confirmar com o jurídico e a regra da Anatel.</em></li>
+        </ul>
+      </details>
+    </section>
   );
 }
 
@@ -40,18 +42,18 @@ export function AutoPausedBanner({ items, canResume }: { items: { id: string; na
   const m = useAct((id: string) => act("POST", `${id}/resume`, { confirm: true }));
   if (!items.length) return null;
   return (
-    <section role="alert" className="mb-6 rounded-xl border border-warn/40 bg-warn/10 p-5">
-      <p className="flex items-center gap-2 font-display text-base font-semibold text-warn">
+    <section role="alert" className="mb-8 border-t border-line pt-5">
+      <h2 className="flex items-center gap-2 font-display text-xl leading-tight text-warn">
         <PauseCircle size={18} aria-hidden="true" />
         Disparos pausados automaticamente
-      </p>
+      </h2>
       <p className="mt-1 text-sm">{PAUSE_REASON.saude_numero}. A retomada é sempre manual: confira a saúde do número antes.</p>
-      <ul className="mt-3 space-y-2">
+      <ul className="mt-3 divide-y divide-line border-y border-line">
         {items.map((i) => (
-          <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-card p-3">
-            <span className="text-sm font-semibold">{i.name}</span>
+          <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+            <span className="text-sm font-medium">{i.name}</span>
             {canResume ? (
-              <button type="button" className={btnPrimary} onClick={() => { setError(null); setPick(i); }}>Retomar...</button>
+              <button type="button" className={btnSec} onClick={() => { setError(null); setPick(i); }}>Retomar...</button>
             ) : (
               <span className="text-xs text-mute">Só gerentes podem retomar.</span>
             )}
