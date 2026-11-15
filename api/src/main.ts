@@ -55,6 +55,8 @@ async function bootstrap() {
   )
   app.use((_req, res, next) => {
     res.setHeader('Cache-Control', 'no-store')
+    // O helmet nao define Permissions-Policy. API pura: nenhum recurso do navegador e necessario (mesmo valor do painel).
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()')
     next()
   })
   app.useGlobalFilters(new SafeExceptionFilter())
