@@ -193,8 +193,8 @@ export function Wizard({ enabled }: { enabled: boolean }) {
       </nav>
 
       {step === 0 && (
-        <Folio n="01" title="Nome e objetivo" hint="Só para a equipe se localizar. Não vai para o cliente.">
-          <div className="space-y-4">
+        <Folio n="Passo 1 de 5" className="!border-t-0 !pt-2" title="Nome e objetivo" hint="Só para a equipe se localizar. Não vai para o cliente.">
+          <div className="max-w-2xl space-y-4">
             <label className="block text-sm font-semibold">Nome do disparo
               <input className={`${field} mt-1`} value={s.name} onChange={(e) => set("name", e.target.value)} maxLength={120} placeholder="Ex.: Retomada de leads de novembro" />
             </label>
@@ -207,7 +207,7 @@ export function Wizard({ enabled }: { enabled: boolean }) {
 
       {step === 1 && (
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.4fr_1fr]">
-          <Folio n="02" title="Quem entra" hint="Filtros opcionais. As regras de consentimento são sempre aplicadas e não podem ser desligadas.">
+          <Folio n="Passo 2 de 5" className="!border-t-0 !pt-2" title="Quem entra" hint="Filtros opcionais. As regras de consentimento são sempre aplicadas e não podem ser desligadas.">
             <div className="space-y-5">
               <fieldset>
                 <legend className="text-sm font-semibold">Etapa do funil</legend>
@@ -244,7 +244,7 @@ export function Wizard({ enabled }: { enabled: boolean }) {
 
       {step === 2 && (
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.4fr_1fr]">
-          <Folio n="03" title="Mensagem" hint="Só templates aprovados pela Meta enviam de verdade. Os demais servem para simulação.">
+          <Folio n="Passo 3 de 5" className="!border-t-0 !pt-2" title="Mensagem" hint="Só templates aprovados pela Meta enviam de verdade. Os demais servem para simulação.">
             <div className="space-y-5">
               {templates.isPending ? <p className="text-sm text-mute">Carregando templates...</p> : templates.isError ? <p role="alert" className="text-sm text-bad">Não foi possível carregar os templates.</p> : (
                 <>
@@ -305,8 +305,8 @@ export function Wizard({ enabled }: { enabled: boolean }) {
       )}
 
       {step === 3 && (
-        <Folio n="04" title="Agendamento e limites" hint="Mais devagar é mais seguro para a qualidade do número.">
-          <div className="space-y-5">
+        <Folio n="Passo 4 de 5" className="!border-t-0 !pt-2" title="Agendamento e limites" hint="Mais devagar é mais seguro para a qualidade do número.">
+          <div className="max-w-2xl space-y-5">
             <fieldset>
               <legend className="text-sm font-semibold">Quando</legend>
               <div className="mt-2 flex flex-wrap gap-3">
@@ -357,7 +357,7 @@ export function Wizard({ enabled }: { enabled: boolean }) {
 
       {step === 4 && (
         <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[1.3fr_1fr]">
-          <Folio n="05" title="Revisão" hint="Confira tudo. Depois de iniciar, só dá para pausar ou cancelar.">
+          <Folio n="Passo 5 de 5" className="!border-t-0 !pt-2" title="Revisão" hint="Confira tudo. Depois de iniciar, só dá para pausar ou cancelar.">
             <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
               <div><dt className="text-xs font-semibold uppercase tracking-wider text-mute">Nome</dt><dd className="font-semibold">{s.name}</dd></div>
               <div><dt className="text-xs font-semibold uppercase tracking-wider text-mute">Modo</dt><dd className="font-semibold">{dry ? "SIMULAÇÃO (nada é enviado)" : "ENVIO REAL"}</dd></div>
