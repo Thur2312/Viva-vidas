@@ -35,8 +35,13 @@ export function custo(investido: number, quantidade: number): number | null {
   return investido / quantidade;
 }
 
-/** Retorno = receita ÷ investimento. null sem investimento ou sem receita. */
-export const retorno = (r: Pick<Row, "investido" | "receita">): number | null => (r.investido > 0 && r.receita > 0 ? r.receita / r.investido : null);
+/**
+ * Retorno = receita ÷ investimento. null (traço) sem investimento registrado.
+ * Receita 0 com 0 vendas é um zero REAL (investiu e não vendeu: retorno 0,0x), não dado desconhecido.
+ * Já vendas > 0 com receita 0 significa venda sem valor registrado: aí a receita é desconhecida e o retorno fica null.
+ */
+export const retorno = (r: Pick<Row, "investido" | "receita" | "vendas">): number | null =>
+  r.investido > 0 && (r.receita > 0 || r.vendas === 0) ? r.receita / r.investido : null;
 
 /**
  * Base dos custos de um CONJUNTO de campanhas: soma só as que têm investimento registrado (investimento E resultados delas).
