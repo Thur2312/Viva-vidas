@@ -19,10 +19,38 @@ export function goLogin(next?: string) {
   window.location.assign(`/login?next=${encodeURIComponent(to)}`);
 }
 
+const SESSAO_TENTATIVAS = 3;
+const esperar = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 409 "session_busy": outra requisição acabou de renovar a sessão (o refresh token é de uso único) e o cookie novo já
+ * está a caminho. O pedido ainda NÃO foi executado no servidor (o 409 nasce na renovação, antes da chamada), então repetir
+ * é seguro, até para escrita. Só esse 409: os demais (horário ocupado, estado mudou) são respostas de negócio e NÃO se repetem.
+ */
+async function sessaoOcupada(res: Response): Promise<boolean> {
+  if (res.status !== 409) return false;
+  try {
+    const j = await res.clone().json();
+    return j?.error === "session_busy";
+  } catch {
+    return false;
+  }
+}
+
+/** fetch que repete, com pausa crescente (0,6 s, 1,2 s), enquanto a sessão estiver "ocupada". Máximo de 3 tentativas. */
+async function buscar(url: string, init: RequestInit): Promise<Response> {
+  for (let tentativa = 1; ; tentativa++) {
+    const res = await fetch(url, init);
+    if (tentativa >= SESSAO_TENTATIVAS || !(await sessaoOcupada(res))) return res;
+    await esperar(600 * tentativa);
+    if (init.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  }
+}
+
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(url, { credentials: "same-origin", signal, headers: { accept: "application/json" } });
+    res = await buscar(url, { credentials: "same-origin", signal, headers: { accept: "application/json" } });
   } catch (e) {
     if (signal?.aborted) throw e;
     throw new ApiError(0, "network");
@@ -71,7 +99,7 @@ export async function sendJson<T = unknown>(
 ): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await buscar(url, {
       method,
       credentials: "same-origin",
       headers: { "content-type": "application/json", accept: "application/json" },
