@@ -17,4 +17,5 @@ export function middleware(req: NextRequest) {
   return NextResponse.redirect(url);
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+// icon.svg é o favicon (gerado pelo Next em /icon.svg): precisa carregar também na tela de login, antes da sessão.
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"] };
