@@ -70,7 +70,7 @@ export function CallDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
       <button type="button" tabIndex={-1} aria-label="Fechar" className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative w-full max-w-lg rounded-2xl border border-line bg-paper p-5 shadow-2xl">
+      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} className="relative w-full max-w-lg rounded-lg border border-line bg-paper p-5 shadow-2xl">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 id={titleId} className="font-display text-xl font-semibold">Ligar para um lead</h2>
@@ -126,7 +126,7 @@ export function CallDialog({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="min-h-[44px] rounded-full border border-line bg-card px-5 text-sm font-semibold hover:bg-ink/5">
+          <button type="button" onClick={onClose} className="min-h-[44px] rounded-lg border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5">
             {result?.ok ? "Fechar" : "Cancelar"}
           </button>
           {!result?.ok && (

@@ -74,7 +74,7 @@ export function CallDrawer({ id, canSeeTranscript, onClose }: { id: string; canS
           {d && (
             <>
               <section aria-labelledby={`${titleId}-t`}>
-                <h3 id={`${titleId}-t`} className="mb-3 text-xs font-semibold uppercase tracking-wider text-mute">Linha do tempo</h3>
+                <h3 id={`${titleId}-t`} className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-mute">Linha do tempo</h3>
                 <ol className="space-y-3 border-l-2 border-line pl-4">
                   {timeline(d).map((e, i) => (
                     <li key={i} className="relative text-sm">
@@ -87,7 +87,7 @@ export function CallDrawer({ id, canSeeTranscript, onClose }: { id: string; canS
               </section>
 
               <section aria-labelledby={`${titleId}-d`}>
-                <h3 id={`${titleId}-d`} className="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Detalhes</h3>
+                <h3 id={`${titleId}-d`} className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-mute">Detalhes</h3>
                 <dl className="grid grid-cols-[150px_1fr] gap-y-1.5 text-sm">
                   <dt className="text-mute">Duração</dt><dd className="tabular">{duration(d.duration_sec)}</dd>
                   <dt className="text-mute">Lead atendeu</dt><dd>{d.answered_at ? dateTime(d.answered_at) : d.status === "completed" || d.status === "no_answer" ? "Não" : "—"}</dd>
@@ -104,18 +104,18 @@ export function CallDrawer({ id, canSeeTranscript, onClose }: { id: string; canS
               </section>
 
               <section aria-labelledby={`${titleId}-x`}>
-                <h3 id={`${titleId}-x`} className="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Transcrição</h3>
+                <h3 id={`${titleId}-x`} className="mb-2 font-mono text-[11px] font-medium uppercase tracking-wider text-mute">Transcrição</h3>
                 {d.transcript ? (
-                  <ul className="space-y-2.5">
+                  <ul className="divide-y divide-line border-y border-line">
                     {d.transcript.segments.map((s, i) => (
-                      <li key={i} className="rounded-xl border border-line bg-card p-3 text-sm">
+                      <li key={i} className="py-3 text-sm">
                         <p className="text-xs font-semibold text-mute">{speakerName(s.speaker, seen)}</p>
                         <p className={`whitespace-pre-wrap ${hide ? "sensitive" : ""}`}>{s.text}</p>
                       </li>
                     ))}
                   </ul>
                 ) : d.transcript_restricted || (!canSeeTranscript && d.transcript_status === "done") ? (
-                  <p className="flex items-start gap-2 rounded-xl border border-dashed border-line p-3 text-sm text-mute">
+                  <p className="flex items-start gap-2 rounded-lg border border-dashed border-line p-3 text-sm text-mute">
                     <Lock size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                     Transcrição disponível apenas para gestores. Conversas por telefone podem conter dado de saúde (LGPD, art. 11), e cada leitura fica registrada.
                   </p>
