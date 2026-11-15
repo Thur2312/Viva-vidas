@@ -85,15 +85,15 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
   const path = usePathname();
   const [open, setOpen] = useState<string[]>(["Dashboard"]);
 
-  const active = "bg-white/12 text-white font-medium ring-1 ring-white/10";
-  const idle = "text-white/70 hover:bg-white/8 hover:text-white";
+  const active = "bg-brand/10 text-brand-ink font-medium ring-1 ring-brand/25";
+  const idle = "text-mute hover:bg-ink/5 hover:text-ink";
   const base = "group flex min-h-[44px] items-center rounded-lg text-sm transition-colors";
 
   return (
     <nav aria-label="Principal" className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {nav.map((cat) => (
         <div key={cat.category}>
-          {!collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">{cat.category}</p>}
+          {!collapsed && <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">{cat.category}</p>}
           <div className="space-y-1">
             {cat.items.map((item) => {
               const Icon = item.icon;
@@ -119,7 +119,7 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?
                       )}
                     </button>
                     {expanded && (
-                      <div className={`mt-1 space-y-1 ${collapsed ? "" : "ml-4 border-l border-white/10 pl-2"}`}>
+                      <div className={`mt-1 space-y-1 ${collapsed ? "" : "ml-4 border-l border-line pl-2"}`}>
                         {item.modules.map((m) => {
                           const MIcon = m.icon;
                           return (
@@ -234,19 +234,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-h-0 flex-1">
         {/* Sidebar desktop */}
-        <aside className={`hidden shrink-0 flex-col bg-deep text-white transition-[width] duration-200 lg:flex ${collapsed ? "w-[72px]" : "w-64"}`}>
+        <aside className={`hidden shrink-0 flex-col border-r border-line bg-card text-ink transition-[width] duration-200 dark:bg-deep lg:flex ${collapsed ? "w-[72px]" : "w-64"}`}>
           <SidebarNav collapsed={collapsed} />
-          {!collapsed && <p className="px-6 pb-5 text-xs text-white/40">{brand.footer}</p>}
+          {!collapsed && <p className="px-6 pb-5 text-xs text-mute">{brand.footer}</p>}
         </aside>
 
         {/* Sidebar mobile */}
         {drawer && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <button type="button" className="absolute inset-0 bg-black/50" aria-label="Fechar menu" onClick={() => setDrawer(false)} />
-            <aside className="relative flex h-full w-72 flex-col bg-deep text-white">
+            <aside className="relative flex h-full w-72 flex-col border-r border-line bg-card text-ink dark:bg-deep">
               <div className="flex h-16 items-center justify-between px-4">
-                <Wordmark light compact />
-                <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-white/80 hover:bg-white/10" aria-label="Fechar menu" onClick={() => setDrawer(false)}>
+                <Wordmark compact />
+                <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-mute hover:bg-ink/10 hover:text-ink" aria-label="Fechar menu" onClick={() => setDrawer(false)}>
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>

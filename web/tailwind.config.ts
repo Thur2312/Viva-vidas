@@ -1,6 +1,8 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  // O tema é o atributo data-theme (botão do painel). Sem isto, as classes `dark:` seguiriam o sistema operacional e divergiriam do botão.
+  darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {

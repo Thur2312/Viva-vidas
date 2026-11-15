@@ -42,7 +42,7 @@ Todo valor visual no código vem de um token. Nada de hex solto em componente.
 | `--mute` | `#55636E` | Texto secundário | 5,74 (AA) |
 | `--line` | `#D6DEE2` | Divisórias e bordas | decorativo |
 | `--brand` | `#0B6B8A` | Botão primário, links, dados (linhas e barras) | branco: 6,03; sobre o fundo: 5,60 |
-| `--deep` | `#10222D` | Menu lateral e superfícies escuras | branco: 16,3 |
+| `--deep` | `#10222D` | Botão primário e superfícies escuras. O **menu lateral** acompanha o tema: `--card` com filete no claro, `--deep` no escuro | branco: 16,3 |
 | `--sinal` | `#C2410C` | **Urgência**: conversa esperando resposta, lead parado | 5,18 |
 | `--ok` / `--warn` / `--bad` | `#15803D` / `#A16207` / `#B91C1C` | Sucesso, atenção, erro | 4,66 / 4,57 / 6,01 (AA) |
 
