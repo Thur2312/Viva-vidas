@@ -8,7 +8,7 @@ import { CHIP, Selo } from "@/components/Selo";
 import { useCalendarStatus, useCrmStatus } from "@/components/integracoes/api";
 import { PageHeader } from "@/components/ui";
 import { useVoiceStatus } from "@/components/voz/voz-api";
-import { SEM_LEITURA, TOM, contagemTemplates, estadoIntegracao, estadoTemplate, faltando, leitura, type Estado } from "@/lib/agente-estados";
+import { SEM_LEITURA, TOM, contagemTemplates, estadoIntegracao, estadoTelefonia, estadoTemplate, faltando, leitura, type Estado } from "@/lib/agente-estados";
 import { pct } from "@/lib/format";
 import { useReadiness } from "@/lib/hooks";
 import { playbookRef } from "@/lib/playbook";
@@ -49,10 +49,7 @@ export default function Agente() {
     },
     {
       nome: "Telefonia (voz)", href: "/voz", destino: "Voz", monitorada: true,
-      estado: leitura(voz, (v) =>
-        v.telephony.ready ? { tom: "ok", rotulo: "Pronta" }
-        : v.telephony.configured ? { tom: "warn", rotulo: "Configurada, ainda não pronta" }
-        : { tom: "warn", rotulo: "Falta configurar", detalhe: faltando(v.telephony.missing) }),
+      estado: leitura(voz, (v) => estadoTelefonia(v.telephony)),
     },
     {
       nome: "Provedor de IA (modo sombra)",

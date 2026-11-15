@@ -31,6 +31,26 @@ export function estadoIntegracao(d: { enabled: boolean; configured: boolean; mis
   return { tom: "ok", rotulo: "Ligado", detalhe: extra };
 }
 
+type Provedor = { configured: boolean; ready: boolean; missing: string[]; provider?: string };
+
+/** Telefonia: pronta, configurada mas ainda não pronta, ou faltando configurar. */
+export function estadoTelefonia(t: Provedor): Estado {
+  if (t.ready) return { tom: "ok", rotulo: "Pronta" };
+  if (t.configured) return { tom: "warn", rotulo: "Configurada, ainda não pronta" };
+  return { tom: "warn", rotulo: "Falta configurar", detalhe: faltando(t.missing) };
+}
+
+/**
+ * Voz sintética e transcrição. Quando `opcional` (o piloto funciona sem eles) e nenhum provedor foi escolhido, é "Desligado" (cinza):
+ * algo que ninguém pediu não é alerta. Com provedor escolhido e incompleto, "Falta configurar".
+ */
+export function estadoProvedor(p: Provedor, opcional = false): Estado {
+  if (p.ready) return { tom: "ok", rotulo: "Pronto" };
+  if (opcional && p.provider === "disabled") return { tom: "mute", rotulo: "Desligado" };
+  if (p.missing.length) return { tom: "warn", rotulo: "Falta configurar", detalhe: faltando(p.missing) };
+  return { tom: "mute", rotulo: "Desligado" };
+}
+
 type TemplatesLidos = { chat: { configured: boolean }; data: { name: string; status: string; rejectedReason: string | null }[] };
 
 /** Template planejado × o que a Meta realmente tem. null = carregando. */

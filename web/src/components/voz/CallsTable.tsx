@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, Mic, MicOff } from "lucide-react";
 import { useState } from "react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
-import { Panel } from "@/components/ui";
+import { Folio } from "@/components/folha";
 import { dateTime, num } from "@/lib/format";
 import { CallDrawer } from "./CallDrawer";
 import { MicWave } from "./MicWave";
@@ -15,25 +15,28 @@ const FILTERS: { v: string; label: string }[] = [
   ...(["completed", "no_answer", "busy", "failed", "canceled", "in_progress", "ringing", "queued"] as CallState[]).map((v) => ({ v, label: STATE_LABEL[v] })),
 ];
 
+const th = "py-2 font-mono text-[11px] font-medium uppercase tracking-wider";
+const secundario = "inline-flex min-h-[44px] items-center rounded-lg border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5";
+
 function Table({ rows, onOpen }: { rows: CallRow[]; onOpen: (id: string) => void }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[640px] text-left text-sm">
         <caption className="sr-only">Histórico de ligações, da mais recente para a mais antiga</caption>
         <thead>
-          <tr className="border-b border-line text-xs uppercase tracking-wider text-mute">
-            <th scope="col" className="py-2 pr-3 font-semibold">Lead</th>
-            <th scope="col" className="py-2 pr-3 font-semibold">Estado</th>
-            <th scope="col" className="py-2 pr-3 font-semibold">Quando</th>
-            <th scope="col" className="py-2 pr-3 font-semibold">Duração</th>
-            <th scope="col" className="py-2 pr-3 font-semibold">Gravação</th>
-            <th scope="col" className="py-2 pr-3 font-semibold">Transcrição</th>
-            <th scope="col" className="py-2 font-semibold"><span className="sr-only">Detalhes</span></th>
+          <tr className="border-b border-line text-mute">
+            <th scope="col" className={`${th} pr-3`}>Lead</th>
+            <th scope="col" className={`${th} pr-3`}>Estado</th>
+            <th scope="col" className={`${th} pr-3`}>Quando</th>
+            <th scope="col" className={`${th} pr-3`}>Duração</th>
+            <th scope="col" className={`${th} pr-3`}>Gravação</th>
+            <th scope="col" className={`${th} pr-3`}>Transcrição</th>
+            <th scope="col" className={th}><span className="sr-only">Detalhes</span></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-line">
           {rows.map((c) => (
-            <tr key={c.id} className="border-b border-line/60 last:border-0">
+            <tr key={c.id}>
               <td className="py-2.5 pr-3">
                 <p className="font-semibold leading-tight">{c.lead_name || "Sem nome"}</p>
                 <p className="tabular text-xs text-mute">{c.phone_masked ?? ""}</p>
@@ -45,7 +48,7 @@ function Table({ rows, onOpen }: { rows: CallRow[]; onOpen: (id: string) => void
                 </span>
               </td>
               <td className="tabular py-2.5 pr-3 text-mute">{dateTime(c.requested_at)}</td>
-              <td className="tabular py-2.5 pr-3">{duration(c.duration_sec)}</td>
+              <td className="tabular py-2.5 pr-3 font-mono">{duration(c.duration_sec)}</td>
               <td className="py-2.5 pr-3">
                 {c.has_recording ? (
                   <span className="inline-flex items-center gap-1.5 text-ok"><Mic size={15} aria-hidden="true" /> Guardada</span>
@@ -60,7 +63,7 @@ function Table({ rows, onOpen }: { rows: CallRow[]; onOpen: (id: string) => void
                   onClick={() => onOpen(c.id)}
                   aria-haspopup="dialog"
                   aria-label={`Ver detalhes da ligação com ${c.lead_name || "lead sem nome"}`}
-                  className="inline-flex min-h-[44px] items-center rounded-full border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5"
+                  className={secundario}
                 >
                   Detalhes
                 </button>
@@ -73,6 +76,7 @@ function Table({ rows, onOpen }: { rows: CallRow[]; onOpen: (id: string) => void
   );
 }
 
+/** Seção 01 da Voz: o histórico é a ferramenta de uso diário, por isso vem antes da configuração. */
 export function CallsTable({ canSeeTranscript }: { canSeeTranscript: boolean }) {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
@@ -80,7 +84,8 @@ export function CallsTable({ canSeeTranscript }: { canSeeTranscript: boolean }) 
   const q = useCalls({ page, status });
 
   return (
-    <Panel
+    <Folio
+      n="01"
       title="Histórico de ligações"
       hint="Telefones aparecem mascarados. Nenhum endereço de gravação é exposto nesta tela."
       action={
@@ -112,10 +117,10 @@ export function CallsTable({ canSeeTranscript }: { canSeeTranscript: boolean }) 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-mute">
               <span className="tabular">{num(d.meta.totalItems)} ligação(ões) · página {d.meta.page} de {d.meta.totalPages}</span>
               <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-line bg-card px-4 font-semibold hover:bg-ink/5 disabled:opacity-40">
+                <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className={`${secundario} gap-1 disabled:opacity-40`}>
                   <ChevronLeft size={16} aria-hidden="true" /> Anterior
                 </button>
-                <button type="button" disabled={page >= d.meta.totalPages} onClick={() => setPage((p) => p + 1)} className="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-line bg-card px-4 font-semibold hover:bg-ink/5 disabled:opacity-40">
+                <button type="button" disabled={page >= d.meta.totalPages} onClick={() => setPage((p) => p + 1)} className={`${secundario} gap-1 disabled:opacity-40`}>
                   Próxima <ChevronRight size={16} aria-hidden="true" />
                 </button>
               </div>
@@ -124,6 +129,6 @@ export function CallsTable({ canSeeTranscript }: { canSeeTranscript: boolean }) 
         )}
       </QueryBlock>
       {open && <CallDrawer id={open} canSeeTranscript={canSeeTranscript} onClose={() => setOpen(null)} />}
-    </Panel>
+    </Folio>
   );
 }

@@ -1,9 +1,12 @@
 "use client";
 
-import { Check, Copy, PhoneCall, Mic, AudioLines, ShieldCheck } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { useState } from "react";
-import { Panel } from "@/components/ui";
-import type { ProviderStatus, VoiceStatus } from "./voz-api";
+import { Folio } from "@/components/folha";
+import { Selo } from "@/components/Selo";
+import { estadoProvedor, estadoTelefonia, type Estado } from "@/lib/agente-estados";
+import { estadoAviso } from "@/lib/voz-view";
+import type { VoiceStatus } from "./voz-api";
 
 // Como obter cada item. Texto curto e honesto: prazos são estimativas de mercado, não promessas do provedor.
 const HOWTO: Record<string, string> = {
@@ -21,33 +24,25 @@ const HOWTO: Record<string, string> = {
 const howto = (name: string) => HOWTO[name] ?? (name.startsWith("STT_PROVIDER") ? HOWTO.STT_PROVIDER : "Defina esta variável no servidor da API.");
 const envName = (s: string) => s.split(" ")[0];
 
-function Chip({ tone, children }: { tone: "ok" | "warn" | "bad"; children: React.ReactNode }) {
-  const c = { ok: "bg-ok/15 text-ok", warn: "bg-warn/15 text-warn", bad: "bg-bad/15 text-bad" }[tone];
-  return <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${c}`}>{children}</span>;
-}
+const rotulo = "font-mono text-[11px] font-medium uppercase tracking-wider text-mute";
 
-function Row({
-  icon, title, subtitle, state, missing = [], extra,
-}: { icon: React.ReactNode; title: string; subtitle: string; state: { tone: "ok" | "warn" | "bad"; label: string }; missing?: string[]; extra?: React.ReactNode }) {
+function Row({ title, subtitle, estado, missing = [], faltaRotulo = "O que falta", extra }: { title: string; subtitle: string; estado: Estado; missing?: string[]; faltaRotulo?: string; extra?: React.ReactNode }) {
   return (
-    <li className="rounded-xl border border-line bg-card p-4">
+    <li className="py-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span aria-hidden="true" className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-ink/[0.07] text-mute">{icon}</span>
-          <div className="min-w-0">
-            <p className="font-semibold leading-tight">{title}</p>
-            <p className="text-sm text-mute">{subtitle}</p>
-          </div>
+        <div className="min-w-0">
+          <p className="font-medium leading-tight">{title}</p>
+          <p className="mt-0.5 text-sm text-mute">{subtitle}</p>
         </div>
-        <Chip tone={state.tone}>{state.label}</Chip>
+        <Selo estado={estado} />
       </div>
       {missing.length > 0 && (
-        <div className="mt-3 border-t border-line pt-3">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-mute">O que falta</p>
+        <div className="mt-3">
+          <p className={`mb-1.5 ${rotulo}`}>{faltaRotulo}</p>
           <ul className="space-y-1.5">
             {missing.map((m) => (
               <li key={m} className="text-sm">
-                <code className="rounded bg-ink/[0.08] px-1.5 py-0.5 font-mono text-[13px]">{envName(m)}</code>
+                <code className="font-mono text-[13px]">{envName(m)}</code>
                 <span className="ml-2 text-mute">{howto(envName(m))}</span>
               </li>
             ))}
@@ -59,19 +54,17 @@ function Row({
   );
 }
 
-const provState = (p: ProviderStatus) => (p.ready ? { tone: "ok" as const, label: "Pronto" } : { tone: "warn" as const, label: "Pendente" });
-
 function CopyUrl({ url }: { url: string }) {
   const [done, setDone] = useState(false);
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-      <code className="min-w-0 flex-1 break-all rounded bg-ink/[0.08] px-2 py-1.5 font-mono text-[13px]">{url}</code>
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <code className="min-w-0 flex-1 break-all border-y border-line py-1.5 font-mono text-[13px]">{url}</code>
       <button
         type="button"
         onClick={async () => {
           try { await navigator.clipboard.writeText(url); setDone(true); setTimeout(() => setDone(false), 2000); } catch { /* sem permissão: o usuário copia à mão */ }
         }}
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5"
+        className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-line bg-card px-4 text-sm font-semibold hover:bg-ink/5"
       >
         {done ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}
         {done ? "Copiado" : "Copiar"}
@@ -85,53 +78,48 @@ export function StatusPanel({ s }: { s: VoiceStatus }) {
   // O webhook só faz sentido depois da base pública definida; com ela, mostra as duas URLs que o Twilio chama.
   const baseMissing = telMissing.includes("VOICE_WEBHOOK_BASE_URL");
   return (
-    <Panel
-      title="Estado da integração"
-      hint="Lido do servidor. Nada aqui é simulado: o que não está ligado aparece como pendente, com o nome exato da variável."
-    >
-      <ul className="grid gap-3 lg:grid-cols-2">
+    <Folio n="02" title="Estado da integração" hint="Lido do servidor. Nada aqui é simulado: o que não está ligado aparece como pendente, com o nome exato da variável.">
+      <ul className="divide-y divide-line border-y border-line">
         <Row
-          icon={<PhoneCall size={18} />}
           title="Telefonia"
           subtitle={s.telephony.provider === "disabled" ? "Nenhum provedor ativo" : `Provedor: ${s.telephony.provider} (não testado com conta real)`}
-          state={provState(s.telephony)}
+          estado={estadoTelefonia(s.telephony)}
           missing={telMissing}
           extra={
             s.webhookUrl && !baseMissing ? (
-              <>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-mute">Cole no console do provedor</p>
+              <div className="mt-4">
+                <p className={rotulo}>Cole no console do provedor</p>
                 <p className="mt-1 text-sm text-mute">Os eventos de status e gravação usam este endereço como base (/status e /recording).</p>
                 <CopyUrl url={s.webhookUrl} />
-              </>
+              </div>
             ) : undefined
           }
         />
         <Row
-          icon={<AudioLines size={18} />}
           title="Voz sintética (TTS)"
           subtitle={`Provedor: ${s.tts.provider === "disabled" ? "ElevenLabs" : s.tts.provider}. Só será usada pelo agente de voz, ainda não construído.`}
-          state={provState(s.tts)}
+          estado={estadoProvedor(s.tts, true)}
           missing={s.tts.missing}
+          faltaRotulo={s.tts.provider === "disabled" ? "Para ligar (opcional)" : "O que falta"}
         />
         <Row
-          icon={<Mic size={18} />}
           title="Transcrição (STT)"
           subtitle={s.stt.provider === "disabled" ? "Sem provedor: gravações não são transcritas" : `Provedor: ${s.stt.provider}`}
-          state={provState(s.stt)}
+          estado={estadoProvedor(s.stt, true)}
           missing={s.stt.missing}
+          faltaRotulo={s.stt.provider === "disabled" ? "Para ligar (opcional)" : "O que falta"}
         />
         <Row
-          icon={<ShieldCheck size={18} />}
           title="Aviso de gravação"
           subtitle={s.recording.announcementConfigured ? `Texto configurado${s.recording.announcementVersion ? ` (versão ${s.recording.announcementVersion})` : ""}` : "Sem o texto, nenhuma ligação é feita"}
-          state={s.recording.announcementConfigured ? { tone: "ok", label: "Configurado" } : { tone: "bad", label: "Obrigatório" }}
+          estado={estadoAviso(s.recording)}
           extra={
             !s.recording.announcementConfigured ? (
-              <p className="mt-3 border-t border-line pt-3 text-sm text-mute">O texto é cadastrado pelo proprietário da conta (configurações de voz) e precisa de validação jurídica antes do uso.</p>
+              <p className="mt-3 text-sm text-mute">O texto é cadastrado pelo proprietário da conta (configurações de voz) e precisa de validação jurídica antes do uso.</p>
             ) : undefined
           }
         />
       </ul>
-    </Panel>
+    </Folio>
   );
 }
