@@ -40,3 +40,25 @@ export function linhaDisparo(b: { counts: Contagens; total: number; dryRun: bool
     semDestinatarios: !(b.total > 0),
   };
 }
+
+type KpisEntrega = { sent: number; delivered: number; read: number };
+
+export type LeituraEntrega = "simulacao" | "sem-retorno" | "medida";
+
+/**
+ * Como ler Entregues/Lidos. Zero NÃO é "ninguém recebeu": sem o webhook de entrega do chat o sistema nunca vê entrega nem leitura.
+ * Simulação: nada foi enviado. Envio real com enviados > 0 e zero entregues e lidos: o chat não devolveu retorno (nunca mostrar 0).
+ */
+export function leituraEntrega(k: KpisEntrega, simulado: boolean): LeituraEntrega {
+  if (simulado) return "simulacao";
+  if (k.sent > 0 && k.delivered === 0 && k.read === 0) return "sem-retorno";
+  return "medida";
+}
+
+export type MancheteDetalhe = { tipo: "vazio" | "simulado" | "respostas"; valor: number | null };
+
+/** O número do topo do detalhe: respostas (envio real) ou o que SERIA enviado (simulação); sem destinatários não há número. */
+export function mancheteDetalhe(k: { sent: number; replied: number }, simulado: boolean, total: number): MancheteDetalhe {
+  if (!(total > 0)) return { tipo: "vazio", valor: null };
+  return simulado ? { tipo: "simulado", valor: k.sent } : { tipo: "respostas", valor: k.replied };
+}
