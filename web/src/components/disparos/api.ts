@@ -3,6 +3,8 @@
 // Helpers próprios: não toca em lib/hooks.ts nem em lib/types.ts (arquivos compartilhados).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ActionError, getJson, sendJson, type ActionMessages } from "@/lib/client";
+import * as demo from "@/lib/demo-disparos";
+import { DEMO } from "@/lib/flags";
 
 // Mantido aqui para os componentes que importam ActionError de "./api" (o tipo vive em lib/client.ts).
 export { ActionError };
@@ -83,36 +85,38 @@ const MESSAGES: ActionMessages = { network: "Sem conexão com o servidor. Nada f
 
 /** Chamada de escrita ao BFF (lib/client.ts: sendJson). Mostra a mensagem do servidor (pt-BR) quando existe; nunca inventa sucesso. */
 export function act<T = unknown>(method: "POST" | "PATCH", path: string, body?: unknown): Promise<T> {
+  // Demonstração: nada é enviado nem alterado, e a tela diz isso (não finge sucesso).
+  if (DEMO) return Promise.reject(new ActionError(0, "demo", "Modo demonstração: nada foi enviado nem alterado."));
   return sendJson<T>(method, path ? `${B}/${path}` : B, body, MESSAGES);
 }
 
 export function useBroadcasts() {
-  return useQuery({ queryKey: ["disparos", "list"], queryFn: ({ signal }) => getJson<BroadcastList>(B, signal), refetchInterval: 15_000 });
+  return useQuery({ queryKey: ["disparos", "list"], queryFn: ({ signal }) => (DEMO ? demo.demoBroadcastList() : getJson<BroadcastList>(B, signal)), refetchInterval: 15_000 });
 }
 
 export function useBroadcast(id: string) {
-  return useQuery({ queryKey: ["disparos", "one", id], queryFn: ({ signal }) => getJson<BroadcastDetail>(`${B}/${id}`, signal), refetchInterval: 10_000 });
+  return useQuery({ queryKey: ["disparos", "one", id], queryFn: ({ signal }) => (DEMO ? demo.demoBroadcastDetail(id) : getJson<BroadcastDetail>(`${B}/${id}`, signal)), refetchInterval: 10_000 });
 }
 
 export function useRecipients(id: string, status: string, page: number) {
   return useQuery({
     queryKey: ["disparos", "recipients", id, status, page],
-    queryFn: ({ signal }) => getJson<RecipientsPage>(`${B}/${id}/recipients?${qs({ status, page })}`, signal),
+    queryFn: ({ signal }) => (DEMO ? demo.demoRecipients(id, status, page) : getJson<RecipientsPage>(`${B}/${id}/recipients?${qs({ status, page })}`, signal)),
     placeholderData: keepPreviousData,
   });
 }
 
 export function useTemplates() {
-  return useQuery({ queryKey: ["disparos", "templates"], queryFn: ({ signal }) => getJson<TemplatesResp>(`${B}/templates?refresh=1`, signal), staleTime: 30_000 });
+  return useQuery({ queryKey: ["disparos", "templates"], queryFn: ({ signal }) => (DEMO ? demo.demoTemplates() : getJson<TemplatesResp>(`${B}/templates?refresh=1`, signal)), staleTime: 30_000 });
 }
 
 /** Templates JÁ sincronizados (sem `refresh`): leitura leve para telas de status. A tela de Templates usa useTemplates, que sincroniza com a Meta. */
 export function useTemplatesCache() {
-  return useQuery({ queryKey: ["disparos", "templates", "cache"], queryFn: ({ signal }) => getJson<TemplatesResp>(`${B}/templates`, signal), staleTime: 30_000 });
+  return useQuery({ queryKey: ["disparos", "templates", "cache"], queryFn: ({ signal }) => (DEMO ? demo.demoTemplates() : getJson<TemplatesResp>(`${B}/templates`, signal)), staleTime: 30_000 });
 }
 
 export function useNumberHealth() {
-  return useQuery({ queryKey: ["disparos", "health"], queryFn: ({ signal }) => getJson<HealthResp>(`${B}/number-health`, signal), refetchInterval: 60_000 });
+  return useQuery({ queryKey: ["disparos", "health"], queryFn: ({ signal }) => (DEMO ? demo.demoHealth() : getJson<HealthResp>(`${B}/number-health`, signal)), refetchInterval: 60_000 });
 }
 
 /** Mutação simples com invalidação do cache de disparos. */
@@ -121,5 +125,6 @@ export function useAct<V>(fn: (v: V) => Promise<unknown>) {
   return useMutation({ mutationFn: fn, onSettled: () => qc.invalidateQueries({ queryKey: ["disparos"] }) });
 }
 
-export const isManager = (role?: string) => role === "manager" || role === "owner";
-export const isOwner = (role?: string) => role === "owner";
+// Em demonstração não há papel real: libera a tela inteira para dar para ver (as ações continuam simuladas, ver `act`).
+export const isManager = (role?: string) => DEMO || role === "manager" || role === "owner";
+export const isOwner = (role?: string) => DEMO || role === "owner";
