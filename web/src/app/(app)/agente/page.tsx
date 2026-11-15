@@ -4,6 +4,7 @@ import Link from "next/link";
 import { QueryBlock, Skeleton } from "@/components/Block";
 import { useNumberHealth, useTemplatesCache } from "@/components/disparos/api";
 import { Folio, Marginalia, type MarginItem } from "@/components/folha";
+import { CHIP, Selo } from "@/components/Selo";
 import { useCalendarStatus, useCrmStatus } from "@/components/integracoes/api";
 import { PageHeader } from "@/components/ui";
 import { useVoiceStatus } from "@/components/voz/voz-api";
@@ -17,13 +18,6 @@ import { STAGE_META, toNum, type Stage } from "@/lib/types";
 // Cada estado vem do servidor. Onde a leitura falha, aparece "Sem leitura": nunca um estado inventado.
 
 type Conexao = { nome: string; ref?: string; href?: string; destino?: string; monitorada: boolean; estado: Estado | null };
-
-const chip = "inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold";
-
-function Selo({ estado }: { estado: Estado | null }) {
-  if (!estado) return <span className={`${chip} ${TOM.mute}`} aria-busy="true">Lendo…</span>;
-  return <span className={`${chip} ${TOM[estado.tom]}`}>{estado.rotulo}</span>;
-}
 
 const th = "py-2 font-mono text-[11px] font-medium uppercase tracking-wider";
 
@@ -198,7 +192,7 @@ export default function Agente() {
                         <th scope="row" className="break-all py-2.5 pr-4 text-left font-mono font-semibold">{t.nome}</th>
                         <td className="px-4 py-2.5 text-mute">{t.categoria}</td>
                         <td className="py-2.5 pl-4 text-right">
-                          {e ? <span className={`${chip} ${e.tom}`}>{e.rotulo}</span> : <span className={`${chip} ${TOM.mute}`} aria-busy="true">Lendo…</span>}
+                          {e ? <span className={`${CHIP} ${e.tom}`}>{e.rotulo}</span> : <span className={`${CHIP} ${TOM.mute}`} aria-busy="true">Lendo…</span>}
                           {e?.detalhe && <p className="mt-1 text-xs text-mute">{e.detalhe}</p>}
                         </td>
                       </tr>
