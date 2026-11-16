@@ -6,7 +6,7 @@ import { Folio, Marginalia } from "@/components/folha";
 import { Selo } from "@/components/Selo";
 import { PageHeader } from "@/components/ui";
 import { isOwner } from "@/components/disparos/api";
-import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
+import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, useWhatsappConnection, type WhatsappConnection, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
 import { estadoIntegracao } from "@/lib/agente-estados";
 import { useMe } from "@/lib/hooks";
 import { contadoresCrm, regrasAgenda } from "@/lib/integracoes-view";
@@ -72,6 +72,38 @@ function SlotsList({ timezone, slots }: { timezone: string; slots: Slot[] }) {
   );
 }
 
+const WA_ESTADOS: Record<string, string> = { CONNECTED: "Conectado", qrcode: "Aguardando leitura do QR", PAIRING: "Pareando", OPENING: "Iniciando", TIMEOUT: "Tempo esgotado", DISCONNECTED: "Desconectado" };
+
+function WhatsappPanel({ c, owner }: { c: WhatsappConnection; owner: boolean }) {
+  if (!c.ok) {
+    const msg = c.error === "chat_nao_configurado" ? "O chat ainda não está ligado a esta API (faltam CHAT_API_URL e CHAT_BRIDGE_KEY no servidor)." : "O chat não respondeu agora. Tente de novo em instantes.";
+    return <p role="status" className="text-sm text-warn">{msg}</p>;
+  }
+  const d = c.data;
+  const conectado = d.status === "CONNECTED";
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Selo estado={{ tom: conectado ? "ok" : "warn", rotulo: WA_ESTADOS[d.status] ?? d.status }} />
+        <span className="text-sm text-mute">{d.name}{d.number ? ` · ${d.number}` : ""}</span>
+      </div>
+      {d.qrDataUrl && owner && (
+        <div className="mt-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={d.qrDataUrl} alt="QR code para conectar o WhatsApp" width={320} height={320} className="rounded-lg border border-line bg-white p-2" />
+          <ol className="mt-3 list-decimal space-y-0.5 pl-5 text-sm text-mute">
+            <li>No celular do número, abra o WhatsApp.</li>
+            <li>Toque em Aparelhos conectados e depois em Conectar um aparelho.</li>
+            <li>Aponte a câmera para este QR. Ele se renova sozinho a cada poucos segundos.</li>
+          </ol>
+        </div>
+      )}
+      {d.qrDataUrl && !owner && <p className="mt-4 text-sm text-warn">Só o dono do painel vê o QR de conexão.</p>}
+      {conectado && <p className="mt-4 text-sm text-mute">Número conectado. As conversas aparecem na aba Conversas.</p>}
+    </>
+  );
+}
+
 function CalendarPanel({ s }: { s: CalendarStatus }) {
   const ready = s.enabled && s.configured;
   const slots = useSlots(ready);
@@ -95,19 +127,24 @@ export default function Integracoes() {
   const me = useMe();
   const crm = useCrmStatus();
   const cal = useCalendarStatus();
+  const wa = useWhatsappConnection();
   return (
     <>
       <PageHeader eyebrow="Agente" title="Integrações">
-        Pipedrive e Google Agenda: o que está ligado, o que falta configurar e o que ficou pendente.
+        WhatsApp, Pipedrive e Google Agenda: o que está ligado, o que falta configurar e o que ficou pendente.
       </PageHeader>
 
       <div className="grid gap-x-14 gap-y-12 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-12">
-          <Folio n="01" title="Pipedrive (CRM)" hint="Cada etapa do funil vira um negócio no CRM do Alberto, por uma fila com nova tentativa.">
+          <Folio n="01" title="WhatsApp" hint="Conexão do número pelo chat. Quando precisar parear, o QR aparece aqui.">
+            <QueryBlock q={wa} skeleton={<Skeleton className="h-40" />}>{(c) => <WhatsappPanel c={c} owner={isOwner(me.data?.role)} />}</QueryBlock>
+          </Folio>
+
+          <Folio n="02" title="Pipedrive (CRM)" hint="Cada etapa do funil vira um negócio no CRM do Alberto, por uma fila com nova tentativa.">
             <QueryBlock q={crm} skeleton={<Skeleton className="h-40" />}>{(s) => <CrmPanel s={s} owner={isOwner(me.data?.role)} />}</QueryBlock>
           </Folio>
 
-          <Folio n="02" title="Google Agenda" hint="Horários livres da agenda do Alberto e agendamento direto pelo lead.">
+          <Folio n="03" title="Google Agenda" hint="Horários livres da agenda do Alberto e agendamento direto pelo lead.">
             <QueryBlock q={cal} skeleton={<Skeleton className="h-40" />}>{(s) => <CalendarPanel s={s} />}</QueryBlock>
           </Folio>
 
