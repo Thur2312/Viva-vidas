@@ -36,12 +36,32 @@ export class DisabledDraftProvider implements DraftProvider {
 }
 
 /**
+ * URL base da API de mensagens (formato Anthropic). Padrão: a Anthropic. `ANTHROPIC_BASE_URL` permite um
+ * gateway compatível (ex.: freeLLMAPI em testes). Só https, ou http em loopback; qualquer outra coisa é ignorada
+ * (cai no padrão) para não mandar conteúdo de conversa a um destino em texto puro por engano.
+ */
+export function resolveAnthropicBaseUrl(raw?: string): string {
+  const DEFAULT = 'https://api.anthropic.com'
+  if (!raw) return DEFAULT
+  try {
+    const u = new URL(raw)
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)
+    if (u.protocol === 'https:' || (u.protocol === 'http:' && loopback)) return raw.replace(/\/+$/, '')
+  } catch { /* cai no padrão */ }
+  return DEFAULT
+}
+
+/**
  * Claude via Messages API, com tool use forçado para devolver o rascunho estruturado.
  * ATENÇÃO: ainda NÃO foi exercitado contra a API real (sem chave no ambiente de desenvolvimento).
  */
 export class AnthropicDraftProvider implements DraftProvider {
   readonly enabled = true
-  constructor(private readonly apiKey: string, private readonly model = process.env.PILOT_MODEL || 'claude-sonnet-5-5') {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly model = process.env.PILOT_MODEL || 'claude-sonnet-5-5',
+    private readonly baseUrl = resolveAnthropicBaseUrl(process.env.ANTHROPIC_BASE_URL),
+  ) {}
 
   async generate(ctx: DraftContext): Promise<DraftResult> {
     const system = [
@@ -64,7 +84,7 @@ export class AnthropicDraftProvider implements DraftProvider {
     while (messages.length && messages[0].role !== 'user') messages.shift()
     if (!messages.length || messages[messages.length - 1].role !== 'user') throw new Error('Sem mensagem do lead para responder')
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`${this.baseUrl}/v1/messages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
