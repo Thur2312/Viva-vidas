@@ -60,4 +60,19 @@ describe('ShadowService: pseudonimização antes do provedor', () => {
     expect(await svc.run('00000000-0000-4000-8000-000000000000')).toEqual({ status: 'opt_out' })
     expect(called).toBe(false)
   })
+  it('conversa com mensagem sensível (saúde) não é enviada ao provedor: fica para o humano', async () => {
+    let called = false
+    const pg = {
+      query: async (sql: string) => {
+        if (/m.author = 'lead'/.test(sql)) return { rows: [{ id: 1, body: 'tenho diabetes' }], rowCount: 1 }
+        if (/FROM horizon_agent.conversations c/.test(sql)) return { rows: [{ name: 'X', phone: '5583999991234', stage: 'contatado', qualification: {}, opt_out: false, anonymized_at: null }], rowCount: 1 }
+        if (/contains_sensitive LIMIT 1/.test(sql)) return { rows: [{ '?column?': 1 }], rowCount: 1 }
+        return { rows: [], rowCount: 0 }
+      },
+    }
+    const svc = new ShadowService(pg as any, {} as any)
+    ;(svc as any).provider = { enabled: true, generate: async () => { called = true; return { draft: 'x', model: 'm' } } }
+    expect(await svc.run('00000000-0000-4000-8000-000000000000')).toEqual({ status: 'sensitive_human_only' })
+    expect(called).toBe(false)
+  })
 })
