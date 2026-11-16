@@ -4,6 +4,7 @@ import { ShadowService, DraftContext } from '../shadow.service'
 describe('ShadowService: pseudonimização antes do provedor', () => {
   it('troca nome/telefone/CPF por marcadores e restaura o nome só localmente', async () => {
     delete process.env.ANTHROPIC_API_KEY
+    delete process.env.GEMINI_API_KEY
     const captured: { ctx?: DraftContext } = {}
     const inserts: any[][] = []
     const pg = {
