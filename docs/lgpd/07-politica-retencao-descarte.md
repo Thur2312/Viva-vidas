@@ -1,6 +1,6 @@
 # 07 - Política de retenção e descarte
 
-Versão 0.2 (2026-11-12), reconciliada com o código. Os prazos abaixo são **defaults implementados** que ainda precisam de decisão da Controladora **[DADO A PREENCHER]** e validação jurídica **[DECISÃO JURÍDICA]**, considerando guarda de documentos de corretagem exigida por normas SUSEP/fiscais para quem virou cliente. **Não declara conformidade.**
+Versão 0.2 (2026-11-12), reconciliada com o código. Os prazos abaixo são **defaults implementados** que ainda precisam de decisão da Controladora **[DADO A PREENCHER]** e validação jurídica, considerando guarda de documentos de corretagem exigida por normas SUSEP/fiscais para quem virou cliente. **Não declara conformidade.**
 
 ## 1. Estado do código
 Existe job de retenção: `api/src/modules/pilot/compliance/retention.service.ts`.
@@ -27,7 +27,7 @@ Não existe variável para `audit_log`, `consents`, `data_subject_requests`, `le
 
 | Classe | Tabela | Prazo implementado / proposto | Ação no fim | Observação |
 |---|---|---|---|---|
-| Mensagens da conversa | `messages` | **180 dias (implementado)** | Eliminar | `contains_sensitive = true`: reduzir para 30-60 dias **[DECISÃO JURÍDICA]**; o código não distingue prazo por sensibilidade |
+| Mensagens da conversa | `messages` | **180 dias (implementado)** | Eliminar | `contains_sensitive = true`: reduzir para 30-60 dias; o código não distingue prazo por sensibilidade |
 | Rascunhos da IA | `agent_drafts` | **180 dias (implementado)** | Eliminar | Contêm `reasoning` (não cifrado) que pode repetir dado do lead |
 | Resumo de conversa | `conversations.summary` | Segue a conversa; **a linha de `conversations` só é apagada quando o lead é anonimizado/eliminado**, não quando as mensagens vencem | Eliminar com o lead | Não cifrado |
 | Lead sem interação | `leads` | **730 dias (implementado)** | **Anonimizar** (nome nulo, telefone `anon:<hash|aleatório>`, `qualification = {}`, `source` reduzido a `campaign_id`/`campaign_name`, `pipedrive_ids = {}`, `opt_in_origin = NULL`, `anonymized_at`) | `phone_hash` (HMAC) só se havia `opt_out`; apaga também conversas, mensagens, rascunhos e exemplos derivados e zera `lead_events.payload`; revoga consentimentos |
@@ -37,7 +37,7 @@ Não existe variável para `audit_log`, `consents`, `data_subject_requests`, `le
 | Playbook | `playbook_versions` | Permanente (sem dado pessoal) | - | Revisar se não contém dado pessoal |
 | Consentimentos | `consents` | Sem purga automática; proposta: vigência + 5 anos (prova) | Eliminar depois | Prova de consentimento, art. 8, §2. Revogados na anonimização, não apagados |
 | Pedidos de titulares | `data_subject_requests` | Sem purga automática; proposta: 5 anos | Eliminar | Sem FK, sobrevive à eliminação do lead |
-| Auditoria | `audit_log` | Sem purga automática; proposta: 5 anos **[DECISÃO JURÍDICA]** | Eliminar | `details` sem dado pessoal (`sanitizeDetails`) |
+| Auditoria | `audit_log` | Sem purga automática; proposta: 5 anos | Eliminar | `details` sem dado pessoal (`sanitizeDetails`) |
 | Ligações (metadados) | `voice_calls`, `voice_call_events` | Sem purga automática; ficam ligadas ao lead (cascata na eliminação) | A decidir | Na anonimização, `transcript_status` vira `none` e `retention_until` é zerado |
 | Gravação de voz | Áudio no provedor (Twilio) + referência cifrada em `voice_calls.recording_url_ref` | **365 dias por padrão, a confirmar com o cliente** (vem do briefing sobre SUSEP, não de norma verificada) | Apagar no provedor e zerar a referência | Falha ao apagar no provedor **impede** a eliminação do lead (gancho falha alto) |
 | Transcrição de voz | `voice_transcripts` | **365 dias por padrão** | Eliminar | Cifrada; leitura só `manager+` e auditada |
@@ -52,7 +52,7 @@ Não existe variável para `audit_log`, `consents`, `data_subject_requests`, `le
 - As operações não são transacionais (pool de conexões): são ordenadas para cortar primeiro o vínculo com a pessoa e são idempotentes; repetir o pedido conclui o trabalho.
 
 ## 4. Backups
-- Supabase mantém backups conforme o plano **[DADO A PREENCHER: confirmar retenção do plano contratado]**. A eliminação não é imediata nos backups. **Backups estão fora do código desta aplicação.**
+- Backup diário do banco, **cifrado**: 7 dias na VPS e 30 dias em cópia externa no Cloudflare R2. A eliminação de um dado **não é imediata** nos backups: ele sai deles quando o prazo expira (até 30 dias). Snapshots do provedor da VPS, se houver: **[DADO A PREENCHER: confirmar retenção]**.
 - Regra: dados eliminados não são restaurados para produção sem reaplicar a lista de eliminações; manter registro de `data_subject_requests` concluídas para reaplicação após restore.
 - Backups expiram em até 35 dias (proposta; ajustar ao plano).
 - Se `PILOT_DATA_KEY` for perdida, os backups cifrados de mensagens/rascunhos/transcrições **ficam ilegíveis** (doc 09, seção 6).

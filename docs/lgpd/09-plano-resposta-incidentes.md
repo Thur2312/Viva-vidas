@@ -1,6 +1,6 @@
 # 09 - Plano de resposta a incidentes de segurança (LGPD art. 48)
 
-Versão 0.2 (2026-11-12), reconciliada com o código. Revisão jurídica **[DECISÃO JURÍDICA]**. **Não declara conformidade.** Nenhum valor de segredo deve ser colado em tickets, chats ou neste documento.
+Versão 0.2 (2026-11-12), reconciliada com o código. Revisão jurídica. **Não declara conformidade.** Nenhum valor de segredo deve ser colado em tickets, chats ou neste documento.
 
 ## 1. Papéis e árvore de contato
 | Papel | Responsabilidade | Contato |
@@ -10,7 +10,7 @@ Versão 0.2 (2026-11-12), reconciliada com o código. Revisão jurídica **[DECI
 | Encarregado (Controladora) | Avalia risco, decide e faz comunicações | **[DADO A PREENCHER]** |
 | Representante legal da Controladora | Aprova comunicação à ANPD | **[DADO A PREENCHER]** |
 | Advogado | Orienta | **[DADO A PREENCHER]** |
-| Suporte Supabase / Meta / Anthropic / Twilio / provedor de STT | Escalonamento de suboperador | **[DADO A PREENCHER]** |
+| Suporte do provedor da VPS / Meta / Anthropic / Twilio / provedor de STT | Escalonamento de suboperador | **[DADO A PREENCHER]** |
 
 Ordem: quem detecta avisa o Coordenador (imediato) que avisa o Encarregado (meta: até 24h, ver DPA doc 06).
 
@@ -26,18 +26,18 @@ Incidente = acesso não autorizado, perda, alteração, divulgação ou destrui�
 | Baixo | Tentativa bloqueada (lockout, rate limit) | - | Registrar |
 
 ## 4. Fases
-1. **Detecção**: relatos de colaboradores, `GET /pilot/audit-log` (owner), logs do painel/API (método, caminho, status), avisos do Supabase/Meta/Twilio. **Não há alerta automático**: nada monitora a trilha por rotina.
+1. **Detecção**: relatos de colaboradores, `GET /pilot/audit-log` (owner), logs do painel/API (método, caminho, status), avisos do provedor da VPS/Meta/Twilio. **Não há alerta automático**: nada monitora a trilha por rotina.
 2. **Triagem** (até 2 h): confirmar, classificar, abrir registro com data/hora de ciência.
 3. **Contenção**: seção 5.
 4. **Avaliação de risco aos titulares**: quais dados (há saúde?), quantos titulares, **o que estava cifrado**. Hoje a cifra de aplicação (AES-256-GCM) cobre `messages.body`, `agent_drafts.draft_body`, transcrições de voz e a referência da gravação. **Não cobre**: telefone, nome, `conversations.summary`, `leads.qualification`, `lead_events.payload`, `agent_drafts.reasoning`, `learned_examples` (redigidos, mas em claro). Se o vazamento incluiu `PILOT_DATA_KEY`, tratar tudo como exposto.
-5. **Comunicação (art. 48)**: ao ANPD e aos titulares **se houver risco ou dano relevante**. Prazo regulatório: a Resolução CD/ANPD nº 15/2024 define **3 dias úteis** a contar da ciência do controlador **[DECISÃO JURÍDICA: advogado deve confirmar o prazo vigente e o formulário]**. O controlador decide e assina; a Operadora fornece subsídios (cláusula 10 do DPA). Conteúdo mínimo: natureza, dados afetados, titulares, medidas técnicas, riscos, o que foi feito, motivo se atrasar, contato do encarregado. Aos titulares em linguagem simples.
+5. **Comunicação (art. 48)**: ao ANPD e aos titulares **se houver risco ou dano relevante**. Prazo regulatório: a Resolução CD/ANPD nº 15/2024 define **3 dias úteis** a contar da ciência do controlador (advogado deve confirmar o prazo vigente e o formulário). O controlador decide e assina; a Operadora fornece subsídios (cláusula 10 do DPA). Conteúdo mínimo: natureza, dados afetados, titulares, medidas técnicas, riscos, o que foi feito, motivo se atrasar, contato do encarregado. Aos titulares em linguagem simples.
 6. **Evidências**: preservar logs, linha do tempo, decisões, cópias de comunicações (guardar 5 anos).
 7. **Pós-mortem** (até 10 dias): causa raiz, o que falhou, ações com dono e prazo, atualização de RIPD e doc 11.
 
 ## 5. Primeiros passos técnicos neste stack
 Ordem sugerida; registre horário de cada ação fora do sistema (sem dado pessoal). Nomes são de variáveis de ambiente; **nunca** imprima ou cole os valores.
 
-1. **Preservar evidência antes de mexer**: exportar logs da aplicação e do Supabase (Postgres/API), `audit_log` (`GET /pilot/audit-log`), listagem de `panel_refresh_tokens` (só `user_id`, `family_id`, datas; não o hash). Não apagar nada.
+1. **Preservar evidência antes de mexer**: exportar logs da aplicação (PM2 e nginx) e do Postgres, `audit_log` (`GET /pilot/audit-log`), listagem de `panel_refresh_tokens` (só `user_id`, `family_id`, datas; não o hash). Não apagar nada.
 2. **Parar envios**:
    - Disparos: definir `BROADCASTS_ENABLED=false` (qualquer valor diferente de `true`/`1` desliga) e **reiniciar a API**; o worker só processa disparos em simulação com o interruptor desligado. Para o disparo em curso: `POST /pilot/broadcasts/:id/pause` (manager) ou `/cancel`.
    - Mensagens pelo painel: remover `CHAT_API_URL` ou `CHAT_BRIDGE_KEY` da API (envio devolve 503 "Chat não configurado") ou remover `CHAT_BRIDGE_KEY` do chat (ponte de saída fecha com 503 `bridge_closed`).
@@ -46,7 +46,7 @@ Ordem sugerida; registre horário de cada ação fora do sistema (sem dado pesso
 4. **Rotacionar segredos** (cada item: gerar novo, atualizar quem usa, reiniciar, revogar o antigo):
    - `PILOT_API_KEY` (e `PILOT_API_KEY` do chat, que é o mesmo valor), `CHAT_BRIDGE_KEY` (API e chat).
    - `SECRETKEY`: assina os JWT de acesso do painel (15 min). Trocar **invalida os tokens de acesso**, mas **não** os refresh tokens (são aleatórios, com hash no banco, não dependem de `SECRETKEY`): faça também o passo 5. Em produção o boot recusa `SECRETKEY` com menos de 32 caracteres ou placeholder.
-   - Credenciais do banco: senha do usuário em `PILOT_DATABASE_URL`/`DATABASE_URL` (Supabase: reset da senha e das chaves service/anon).
+   - Credenciais do banco: senha do usuário em `PILOT_DATABASE_URL`/`DATABASE_URL` (trocar a senha dos usuários `horizon_app` e `horizon_owner` no Postgres e atualizar `PILOT_DATABASE_URL` no `.env` da API).
    - `TWILIO_AUTH_TOKEN` (também valida a assinatura dos webhooks de voz), `ELEVENLABS_API_KEY`, `STT_API_KEY`, `ANTHROPIC_API_KEY` (revogar no console do provedor).
    - `ENCRYPTION_KEY` (tokens Meta) **somente com plano de recifragem**: trocar sem migrar impede ler tokens Meta já gravados. Tokens do WhatsApp/Meta (revogar token do usuário do sistema, regenerar), `FB_APP_SECRET`, Pipedrive/Google quando existirem.
 5. **Revogar sessões do painel**: `UPDATE horizon_agent.panel_refresh_tokens SET revoked_at = now() WHERE revoked_at IS NULL;` e desativar usuários suspeitos: `UPDATE horizon_agent.panel_users SET active = false WHERE id = '<id>';`. **Atenção:** o JWT de acesso (15 min) **não é revogado individualmente** e `JwtStrategy.validate` não consulta `panel_users.active`; um usuário desativado mantém acesso até o token expirar, a menos que `SECRETKEY` seja trocada. O refresh de usuário desativado revoga a família (`panel-auth.service.ts#refresh`).

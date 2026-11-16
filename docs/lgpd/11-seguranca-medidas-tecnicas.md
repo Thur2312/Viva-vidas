@@ -51,7 +51,7 @@ Versão 0.2, verificado no código em 2026-11-12 (leitura de `api/`, `web/`, pon
 15. **`PILOT_API_KEY` única e compartilhada**; rotação manual; sem lista de IPs.
 16. **Sem recifragem de `PILOT_DATA_KEY`** (doc 09) e **sem purga** de `audit_log`, `consents`, `learned_examples`, `lead_events` etc. (doc 07).
 17. ~~Cron de retenção e worker de disparos podem não rodar em `PILOT_ONLY=true`~~ **Corrigido** (`ScheduleModule` agora também no modo piloto); falta confirmação em instância em execução.
-18. **Backups e logs de infraestrutura estão fora da aplicação**: retenção, cifra, acesso e teste de restauração dependem do Supabase e do host **[DADO A PREENCHER]**.
+18. **Backups e logs de infraestrutura estão fora da aplicação**: hoje há backup diário cifrado com `age` (7 dias na VPS e 30 dias no Cloudflare R2), com restauração testada em 14/11/2026, e logs rotacionados por `logrotate`. Falta confirmar **[DADO A PREENCHER: retenção de snapshots do provedor e dos logs]**.
 19. **Canal Baileys** não oficial: sessão no servidor equivale a acesso total ao WhatsApp; guardar credenciais com cifra e acesso restrito.
 20. **Deploy herdado** do chat (`deploy.sh`, Dockerfile) aponta para infra antiga, conforme README.
 21. **Sem teste de intrusão**, sem alerta automático sobre `audit_log`, sem plano de backup/restauração documentado.

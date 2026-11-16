@@ -1,6 +1,6 @@
 # 03 - Aviso de Privacidade para quem fala conosco no WhatsApp
 
-> Modelo para revisão jurídica **[DECISÃO JURÍDICA]**. Versão do texto: `privacidade-v0.1`. Publicar em URL pública da corretora e linkar nos anúncios, formulários e na primeira mensagem.
+> Modelo para revisão jurídica. Versão do texto: `privacidade-v0.1`. Publicar em URL pública da corretora e linkar nos anúncios, formulários e na primeira mensagem.
 
 ## Quem somos
 - **Controladora (quem decide sobre seus dados):** **[DADO A PREENCHER: razão social da corretora de Alberto Apolinário, CNPJ, endereço, registro SUSEP]**.
@@ -22,33 +22,35 @@
 | Finalidade | Base legal (LGPD) |
 |---|---|
 | Responder seu pedido, fazer cotação, marcar reunião | Procedimentos preliminares a contrato a seu pedido (art. 7, V) |
-| Medir resultado dos atendimentos e anúncios, organizar o funil | Legítimo interesse (art. 7, IX) **[DECISÃO JURÍDICA]** |
-| Treinar e avaliar o assistente de IA com conversas, sem envio de respostas automáticas na fase atual | Legítimo interesse (art. 7, IX), com dados pessoais retirados dos exemplos, **ou** seu consentimento, conforme definição jurídica **[DECISÃO JURÍDICA]** |
+| Medir resultado dos atendimentos e anúncios, organizar o funil | Legítimo interesse (art. 7, IX) |
+| Treinar e avaliar o assistente de IA com conversas, sem envio de respostas automáticas na fase atual | Legítimo interesse (art. 7, IX), com dados pessoais retirados dos exemplos, **ou** seu consentimento, conforme definição jurídica |
 | Enviar novidades e ofertas por WhatsApp | Seu consentimento (art. 7, I), que você pode retirar a qualquer momento |
-| Enviar à Meta informação de que um contato virou cliente, para melhorar anúncios (se ativarmos) | Seu consentimento **[DECISÃO JURÍDICA]** |
+| Enviar à Meta informação de que um contato virou cliente, para melhorar anúncios (se ativarmos) | Seu consentimento |
 
 ## Uso de inteligência artificial
 Usamos um assistente de IA para ler as conversas e **sugerir** respostas. Nesta fase, ele **não envia nada sozinho**: um corretor humano responde. Se um dia ele passar a responder diretamente, avisaremos você no início da conversa e você poderá pedir atendimento humano e revisão (art. 20). As conversas são processadas por provedor de IA no exterior (ver abaixo).
 
-## Ligações (somente se esta função for ativada) **[DECISÃO JURÍDICA]**
+## Ligações (somente se esta função for ativada)
 Se um corretor ligar para você pelo sistema, a ligação pode ser **gravada e transcrita**. No início da ligação você ouvirá um aviso de gravação (texto e versão a validar pelo jurídico). Gravações e transcrições ficam guardadas por **[DADO A PREENCHER; hoje o padrão do sistema é 365 dias, a confirmar]** e podem conter informações de saúde se você as mencionar; o acesso à transcrição é restrito. Ligamos apenas em dia e horário comerciais configurados. Você pode pedir para não ser contatado por ligação ou por mensagem. Se o corretor responder suas mensagens pelo painel do sistema, isso também é feito apenas dentro da janela de 24 h de conversa iniciada por você.
 
 ## Com quem compartilhamos
 | Quem | Para quê | País |
 |---|---|---|
 | Horizon (operadora) | Sistema de atendimento | Brasil |
-| Supabase | Banco de dados (região São Paulo) | Brasil **[DADO A PREENCHER: confirmar região de produção]** |
+| Servidor da API (VPS) | Aplicação e banco de dados | **[DADO A PREENCHER: país e região da VPS]** |
+| Vercel | Interface web do painel | Brasil (região de São Paulo) |
+| Cloudflare (R2) | Cópia externa e **cifrada** dos backups do banco | **[DADO A PREENCHER: região do bucket]** |
 | Anthropic | IA que redige sugestões | Estados Unidos |
 | Meta (WhatsApp, Facebook, Instagram) | Canal de conversa e anúncios | Estados Unidos e outros |
 | Twilio (quando ativarmos ligações) | Telefonia e gravação das ligações | Estados Unidos e outros **[DADO A PREENCHER: confirmar região da gravação]** |
 | Provedor de transcrição de voz (ElevenLabs ou equivalente, quando ativado) | Transformar a gravação em texto | Estados Unidos e outros **[DADO A PREENCHER]** |
 | Pipedrive e Google (quando ativados) | CRM e agenda | Exterior |
-| Operadoras de planos de saúde | Somente se você pedir uma proposta e com o necessário **[DECISÃO JURÍDICA]** | Brasil |
+| Operadoras de planos de saúde | Somente se você pedir uma proposta e com o necessário | Brasil |
 
 Não vendemos seus dados.
 
 ## Transferência internacional
-Alguns provedores acima ficam fora do Brasil. Usamos mecanismos previstos nos arts. 33 a 36 da LGPD **[DECISÃO JURÍDICA: cláusulas-padrão ou outro mecanismo]**. Você pode pedir informação sobre eles.
+Alguns provedores acima ficam fora do Brasil. Usamos mecanismos previstos nos arts. 33 a 36 da LGPD (cláusulas-padrão ou outro mecanismo). Você pode pedir informação sobre eles.
 
 ## Por quanto tempo guardamos
 | Dado | Prazo |

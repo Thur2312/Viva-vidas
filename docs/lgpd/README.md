@@ -2,6 +2,8 @@
 
 Conjunto de documentos para apoiar a adequação do Horizon Agente (agente de IA para WhatsApp da corretora de Alberto Apolinário) à LGPD (Lei 13.709/2018). Fatos extraídos do código em 2026-11-12 (versão 0.2, reconciliada após a implementação de compliance, autenticação do painel, voz, disparos e conversas). **Nada aqui declara conformidade**; são rascunhos para decisão do dono do produto e revisão de advogado. Nada foi exercitado contra Meta, Twilio, Anthropic ou provedor de STT reais (sem chaves).
 
+> **Atualização de 16/11/2026:** a infraestrutura real de produção (VPS com Postgres próprio, painel no Vercel em São Paulo e backup cifrado no Cloudflare R2) substitui as menções ao Supabase, que nunca foi usado. Os demais textos seguem na versão de 12/11/2026.
+
 ## Índice
 | Arquivo | Para quê |
 |---|---|
@@ -21,7 +23,7 @@ Conjunto de documentos para apoiar a adequação do Horizon Agente (agente de IA
 
 ## Como usar
 1. Ler 00 para ver o quadro geral.
-2. Resolver os marcadores `**[DADO A PREENCHER]**` (informação da empresa) e `**[DECISÃO JURÍDICA]**` (precisa de advogado). Nenhum dado da empresa foi inventado.
+2. Resolver os marcadores `**[DADO A PREENCHER]**` (informação da empresa) e a pendência de revisão jurídica (precisa de advogado). Nenhum dado da empresa foi inventado.
 3. Levar 01, 02, 03, 05, 06 e 12 ao advogado. Publicar 03 e 05 só depois.
 4. Os itens `[reconferir]` da primeira versão foram verificados contra o código nesta revisão; restam apenas os marcados `[reconferir em execução]` (ex.: se o agendamento da retenção roda).
 5. Revisar os documentos ao mudar de modo (shadow para assisted/auto), ao ligar voz, disparos, Pipedrive/Google/Conversions API ou ao trocar de LLM.
@@ -53,11 +55,11 @@ Falta ou é diferente do desejável:
 - [ ] Dados da corretora e da Horizon (razão social, CNPJ, endereço, SUSEP).
 - [ ] Nome e canal do encarregado (e variáveis `NEXT_PUBLIC_LGPD_*` da página `/privacidade`).
 - [ ] Contrato Controlador-Operador (doc 06) assinado.
-- [ ] DPAs com Supabase, Anthropic, hospedagem, Meta, **Twilio, ElevenLabs/provedor de STT**, Pipedrive e Google.
+- [ ] DPAs com Anthropic, o provedor da VPS, Vercel, Cloudflare, Meta, **Twilio, ElevenLabs/provedor de STT**, Pipedrive e Google.
 - [ ] Aviso aos colaboradores com ciência assinada (doc 04).
 - [ ] Prazos de retenção aprovados (doc 07), incluindo gravação de voz e leads `venda`.
 - [ ] Contatos da árvore de incidentes (doc 09); guarda de `PILOT_DATA_KEY` em cofre separado.
-- [ ] Confirmar região do Supabase de produção, onde roda a API, retenção de backups e logs.
+- [ ] Confirmar provedor e região da VPS, região do bucket do R2, retenção de snapshots do provedor e de logs.
 - [ ] Portfólio empresarial Meta, WABA e número do **próprio corretor**; templates criados e aprovados.
 - [ ] Conta Twilio, Regulatory Bundle e número brasileiro, URL pública HTTPS dos webhooks.
 - [ ] Segmentar a carteira de ~70 mil contatos em A/B/C (doc 12) e guardar a prova de opt-in do grupo A.

@@ -1,6 +1,6 @@
 # 04 - Aviso e política para colaboradores da corretora
 
-> Modelo para revisão jurídica trabalhista e de proteção de dados **[DECISÃO JURÍDICA]**. A corretora (empregadora) é a controladora e deve emitir o aviso. Versão: `colab-v0.1`.
+> Modelo para revisão jurídica trabalhista e de proteção de dados. A corretora (empregadora) é a controladora e deve emitir o aviso. Versão: `colab-v0.1`.
 
 ## 1. O que acontece
 Os atendimentos que você faz com leads no WhatsApp da corretora passam a ser lidos por um sistema (Horizon Agente). Ele:
@@ -16,12 +16,12 @@ Os atendimentos que você faz com leads no WhatsApp da corretora passam a ser li
 - Construir material de treinamento.
 
 ## 3. Para que NÃO serve
-- **Não será usado para avaliar seu desempenho individual, aplicar advertência, definir bônus ou desligar**, a menos que haja acordo separado, escrito, com base jurídica e aviso específico **[DECISÃO JURÍDICA]**.
+- **Não será usado para avaliar seu desempenho individual, aplicar advertência, definir bônus ou desligar**, a menos que haja acordo separado, escrito, com base jurídica e aviso específico.
 - Não é monitoramento de conversas pessoais: apenas o número comercial da corretora é lido. Não use o aparelho/número comercial para assuntos pessoais.
 - Os índices de semelhança são medidos por **rascunho**, não por pessoa; o sistema não guarda identificação individual do colaborador nas tabelas de comparação (verificado na migração `001_horizon_agent.sql`). **[DADO A PREENCHER: confirmar com a Horizon se a integração com o chat passa a identificar o colaborador]**
 
 ## 4. Base legal
-Legítimo interesse da corretora (art. 7, IX), com teste de balanceamento documentado, e execução do contrato de trabalho quanto ao uso das ferramentas da empresa (art. 7, V). **[DECISÃO JURÍDICA]**. Este tratamento não depende de consentimento do colaborador, pois o consentimento do empregado é frágil pela desigualdade da relação.
+Legítimo interesse da corretora (art. 7, IX), com teste de balanceamento documentado, e execução do contrato de trabalho quanto ao uso das ferramentas da empresa (art. 7, V). Este tratamento não depende de consentimento do colaborador, pois o consentimento do empregado é frágil pela desigualdade da relação.
 
 ## 5. Seus direitos
 Acesso a como suas mensagens foram usadas, correção, informação sobre compartilhamento, oposição quando houver motivo legítimo (art. 18, §2) e revisão se alguma decisão automatizada o afetar (art. 20). Contato: **[DADO A PREENCHER: encarregado/RH]**.

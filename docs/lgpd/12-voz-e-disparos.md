@@ -25,17 +25,17 @@ Fluxo (`voice.service.ts`, `voice-webhooks.controller.ts`): o gestor (papel `man
 
 Portões que **falham fechado** antes de discar (`voice-gates.ts`, na ordem): lead existente e não anonimizado; `can_contact` (sem opt-out, sem marketing revogado); consentimento ativo `atendimento`; texto do aviso configurado; telefone válido; janela de horário (padrão seg-sex 09:00-18:00 `America/Sao_Paulo`, `VOICE_CALL_WINDOW` ou painel); "Não Perturbe" (se ligado: exige verificador, erro bloqueia); sem ligação ativa para o mesmo lead nos últimos 15 min. Falta de configuração de telefonia = 503. Tudo é auditado sem dado pessoal (`voice.call.place|refused|failed`, `voice.recording.stored|discarded`, `voice.transcript.created|read`).
 
-### 2.2 Bases legais (proposta, **[DECISÃO JURÍDICA]**)
+### 2.2 Bases legais (proposta)
 - **Ligação em si** (retomar contato com quem pediu informações): art. 7, V (procedimentos preliminares a pedido do titular) pode ser defensável **para quem pediu cotação**; **não** cobre ligar para carteira antiga sem pedido recente. Alternativa: legítimo interesse (art. 7, IX) com teste de balanceamento documentado (LIA).
 - **Gravação**: o código registra `recording_consent = true` e `consent_basis = aviso_previo:<versão>` quando o aviso foi **entregue**, ou seja, **aviso prévio com continuidade da ligação**, não consentimento expresso (ex.: tecla para aceitar). Se o jurídico exigir consentimento expresso ou outra base, o fluxo `/announce` precisa mudar. O nome do campo (`recording_consent`) não deve ser lido como consentimento juridicamente válido.
-- **Conteúdo**: conversa de venda de plano de saúde pode conter dado sensível (art. 11). Transcrição fica restrita a `manager+`, cifrada, com leitura auditada, e `contains_sensitive` é calculado. A base do art. 11 permanece **[DECISÃO JURÍDICA]** (ver doc 01, seção 4).
+- **Conteúdo**: conversa de venda de plano de saúde pode conter dado sensível (art. 11). Transcrição fica restrita a `manager+`, cifrada, com leitura auditada, e `contains_sensitive` é calculado. A base do art. 11 permanece (ver doc 01, seção 4).
 - **Transferência internacional**: Twilio (áudio e telefone) e STT (áudio) ficam fora do Brasil; mecanismo do art. 33 e DPA pendentes (doc 10).
 
 ### 2.3 Evidência de opt-in e de aviso
 - Consentimento `atendimento` **não é mais concedido automaticamente**: só nasce quando o lead escreveu primeiro (`source = mensagem_do_lead`) ou quando quem cria o registro informa uma `optInOrigin` (`pilot.service.ts#upsertLead`, base `procedimentos_preliminares`). Lead importado sem origem fica sem consentimento e é barrado nas portas de voz e de disparo. `marketing` e `aprendizado_agente` exigem base `consentimento`, versão do texto e `source` no formato `tipo:referencia`.
 - Cada ligação guarda `announcement_version`, `recording_announced_at`, `answered_at`, `consent_basis` (prova do aviso, não do consentimento).
 
-### 2.4 Regras de telecom e plataforma (distintas da LGPD) **[DECISÃO JURÍDICA / telecom]**
+### 2.4 Regras de telecom e plataforma (distintas da LGPD)
 - As regras da Anatel para ligações de oferta (horários, identificação do chamador, prefixo, cadastro "Não Perturbe") **não foram verificadas** e não estão implementadas além da janela padrão (escolha conservadora, não a regra).
 - **Número brasileiro no Twilio exige Regulatory Bundle aprovado** (processo manual do Twilio; prazo incerto). Sem número a voz não funciona.
 - `VOICE_DNC_ENABLED=true` sem verificador bloqueia tudo; com `false`, **não há consulta a nenhuma lista**.
@@ -64,10 +64,10 @@ Auditoria (`audit_log`, sem dado pessoal): `broadcast.create|start|pause|resume|
 
 ### 3.2 O que as portas **não** garantem (importante)
 - A porta de `marketing` exige consentimento ativo com `source` não vazia, mas **o código não valida a prova** (texto exato, versão válida, data). O painel (`POST /pilot/leads/:id/consents`, manager) aceita registrar `marketing` com qualquer `textVersion` e `source`. A integridade depende de **quem registra**.
-- A porta de `atendimento` (utilidade e texto na janela) agora exige consentimento registrado com evidência (o lead escrever primeiro ou origem de opt-in informada). Uma importação em massa da carteira **sem** origem por contato não passa nessa porta. Continua dependendo de a origem informada ser verdadeira: o sistema valida o formato, não o documento de origem. **[DECISÃO JURÍDICA]** se a origem de cada contato da carteira (grupos A, B, C) comprova de fato o opt-in.
+- A porta de `atendimento` (utilidade e texto na janela) agora exige consentimento registrado com evidência (o lead escrever primeiro ou origem de opt-in informada). Uma importação em massa da carteira **sem** origem por contato não passa nessa porta. Continua dependendo de a origem informada ser verdadeira: o sistema valida o formato, não o documento de origem. Se a origem de cada contato da carteira (grupos A, B, C) comprova de fato o opt-in.
 - Criar template com texto promocional em UTILITY é barrado na criação pelo painel (`template-rules.ts`), mas a Meta pode reclassificar; categoria errada afeta custo e qualidade.
 
-### 3.3 Bases legais (proposta, **[DECISÃO JURÍDICA]**)
+### 3.3 Bases legais (proposta)
 - **Marketing por WhatsApp**: consentimento (art. 7, I; art. 8), específico, destacado, comprovável (`text_version`, origem, data) e revogável (`PARAR`). É a base recomendada **e** é o que a plataforma exige (opt-in).
 - **Utilidade** (confirmação/lembrete de reunião já marcada, remarcação): art. 7, V, a pedido do titular.
 - **Legítimo interesse** (art. 7, IX) para relacionamento com ex-lead: possível em tese **para a LGPD**, com avaliação documentada (LIA: finalidade legítima, necessidade, balanceamento, expectativa razoável do titular, opt-out fácil). **A LIA é decisão jurídica e precisa estar escrita antes de qualquer contato.** Mesmo com LIA válida, **a regra da plataforma de WhatsApp exige opt-in** para mensagem ativa de marketing; a LIA não resolve a plataforma.
@@ -86,13 +86,13 @@ Contexto: a carteira citada em `docs/whatsapp-oficial.md` é um **portfólio exi
 | Grupo | Definição | Pode receber marketing por WhatsApp? | Tratamento |
 |---|---|---|---|
 | **A: opt-in comprovado** | Contato que pediu ser contatado ou aceitou receber mensagens, com **prova** (texto/versão, origem, data, id da mensagem/anúncio/formulário), sem opt-out | **Sim**, por template aprovado, dentro das portas e dos limites, **começando por lotes pequenos** | Importar com consentimento `marketing` real (`textVersion`, `source`); é o único grupo elegível ao disparo |
-| **B: relacionamento sem opt-in** | Ex-lead que o corretor atendeu ou que pediu cotação no passado, sem prova de consentimento para mensagens ativas | **Não.** Não enviar marketing por WhatsApp | Coletar opt-in por canais de consentimento (formulário/landing com texto versionado; e-mail; outros canais lícitos **[DECISÃO JURÍDICA]**) ou reativar via **anúncios click-to-WhatsApp**: é o contato que **escreve primeiro** e abre a janela de atendimento |
+| **B: relacionamento sem opt-in** | Ex-lead que o corretor atendeu ou que pediu cotação no passado, sem prova de consentimento para mensagens ativas | **Não.** Não enviar marketing por WhatsApp | Coletar opt-in por canais de consentimento (formulário/landing com texto versionado; e-mail; outros canais lícitos) ou reativar via **anúncios click-to-WhatsApp**: é o contato que **escreve primeiro** e abre a janela de atendimento |
 | **C: desconhecido ou com opt-out** | Origem desconhecida, sem histórico claro, ou que já pediu para sair/bloqueou | **Não** | Não importar para o sistema com consentimento; **opt-outs conhecidos entram numa lista de supressão** (o sistema guarda o bloqueio por `phone_hash` só para leads anonimizados com `opt_out`) |
 
 Regras de importação: não criar consentimento `atendimento`/`marketing` por presunção; origem registrada como o que é (ex.: `carteira_perdidos`, nunca igual a uma origem com prova); como o código concede `atendimento` automático, **importar somente depois de corrigir isso ou usar `optInOrigins` para bloquear essas origens**.
 
 ### 4.2 Audiências de anúncios (click-to-WhatsApp) para o grupo B
-Subir uma lista de telefones como público personalizado de anúncios é, em si, **tratamento e compartilhamento com a Meta** (transferência internacional e base legal próprias) **[DECISÃO JURÍDICA]**. Não está construído no código (Conversions API e envio de públicos inexistem). Se o jurídico aprovar, a opção é fazer o upload manual no gerenciador de anúncios, com a base e o aviso adequados, e medir o retorno por conversas iniciadas pelo lead.
+Subir uma lista de telefones como público personalizado de anúncios é, em si, **tratamento e compartilhamento com a Meta** (transferência internacional e base legal próprias). Não está construído no código (Conversions API e envio de públicos inexistem). Se o jurídico aprovar, a opção é fazer o upload manual no gerenciador de anúncios, com a base e o aviso adequados, e medir o retorno por conversas iniciadas pelo lead.
 
 ### 4.3 Proibição de base fria
 **Não fazer disparo em massa para os ~70 mil contatos.** Mesmo sendo carteira própria, sem opt-in comprovado por contato o envio viola a política da plataforma e arrisca (a) qualidade do número, (b) bloqueio da conta, (c) reclamações de titulares e ANPD. O código impõe o teto de 5000 por público, 1000 por dia por disparo e 250 por dia no global (padrões), mas **esses limites não substituem o opt-in**.

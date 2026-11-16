@@ -1,6 +1,6 @@
 # 05 - Textos de opt-in, opt-out e consentimento
 
-Todos os textos são modelos para revisão jurídica **[DECISÃO JURÍDICA]**. Distinguir:
+Todos os textos são modelos para revisão jurídica. Distinguir:
 - **LGPD**: consentimento livre, informado, específico, destacado e comprovável (arts. 7, I; 8; 11, I).
 - **Regra de plataforma (WhatsApp Business / Meta)**: opt-in para mensagens ativas, templates aprovados, botão de saída em marketing, qualidade do número. Não é LGPD, mas descumprir derruba o número (`docs/whatsapp-oficial.md`).
 
@@ -52,7 +52,7 @@ Veja templates sugeridos em `docs/whatsapp-oficial.md`. **Evitar dado de saúde 
 | Prazo | Imediato; confirmar em até 24h |
 
 ## 7. Retirada separada
-Quem sair de marketing pode continuar em atendimento (se pediu cotação). Ofereça: "PARAR MARKETING" e "PARAR TUDO". **[DECISÃO JURÍDICA]**
+Quem sair de marketing pode continuar em atendimento (se pediu cotação). Ofereça: "PARAR MARKETING" e "PARAR TUDO".
 
 ## 8. Base fria
-Listas compradas ou subidas sem opt-in (ex.: ~70 mil contatos) **não devem** receber contato ativo: sem base legal sólida e risco de banimento. **[DECISÃO JURÍDICA]**
+Listas compradas ou subidas sem opt-in (ex.: ~70 mil contatos) **não devem** receber contato ativo: sem base legal sólida e risco de banimento.

@@ -50,8 +50,8 @@ Observações importantes:
 | I Confirmação, II Acesso | `GET /pilot/leads/:id/export` e entregar por canal verificado | Não incluir dado de outros titulares. Prazo completo: 15 dias. |
 | III Correção | `PATCH /pilot/leads/:id/data` | Não corrige texto de mensagens. |
 | IV Anonimização/bloqueio/eliminação de dado desnecessário | `POST /pilot/leads/:id/anonymize`; bloqueio por `opt_out` ou revogação | Bloqueio parcial (por finalidade): `consents/revoke`. |
-| V Portabilidade | Export JSON | Regulamentação da ANPD pendente **[DECISÃO JURÍDICA]** |
-| VI Eliminação de dados tratados com consentimento | `DELETE /pilot/leads/:id` | Exceção: guarda legal de contrato (art. 16), em especial lead `venda` **[DECISÃO JURÍDICA]**. **Manual ainda:** apagar no Pipedrive/Google (planejados), solicitar a suboperadores (Anthropic, Twilio, STT, Meta) e reaplicar após restore de backup |
+| V Portabilidade | Export JSON | Regulamentação da ANPD pendente |
+| VI Eliminação de dados tratados com consentimento | `DELETE /pilot/leads/:id` | Exceção: guarda legal de contrato (art. 16), em especial lead `venda`. **Manual ainda:** apagar no Pipedrive/Google (planejados), solicitar a suboperadores (Anthropic, Twilio, STT, Meta) e reaplicar após restore de backup |
 | VII Informação sobre compartilhamento | Entregar doc 10 resumido | |
 | VIII Informação sobre não consentir | Aviso de privacidade (doc 03) | |
 | IX Revogação do consentimento | `POST /pilot/leads/:id/consents/revoke` ou evento `opt_out` | |
