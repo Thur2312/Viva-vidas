@@ -147,6 +147,13 @@ export class ShadowService {
     ).rows[0]
     // Titular que pediu para não ser contatado (ou já anonimizado) não tem a conversa enviada ao provedor.
     if (lead.opt_out || lead.anonymized_at) return { status: 'opt_out' as const }
+    // Dado sensível (saúde, art. 11): conversa com qualquer mensagem marcada NÃO sai para o provedor de LLM.
+    // Fica para o humano. A marcação é por lista de termos (pode haver falso negativo); só sinaliza, não prova ausência.
+    const sensitive = await this.pg.query(
+      `SELECT 1 FROM horizon_agent.messages WHERE conversation_id = $1 AND contains_sensitive LIMIT 1`,
+      [conversationId],
+    )
+    if (sensitive.rowCount) return { status: 'sensitive_human_only' as const }
     const history = (
       await this.pg.query(`SELECT author, body FROM horizon_agent.messages WHERE conversation_id = $1 ORDER BY created_at`, [conversationId])
     ).rows.map((m) => ({ author: m.author, body: this.crypto.decrypt(m.body) }))
