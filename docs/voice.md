@@ -16,6 +16,8 @@ Contexto: agente de vendas de IA do Alberto Apolinário (corretor de planos de s
 | Migração `004_voice.sql` | `api/db/migrations/` | **aplicada no banco compartilhado** (só schema `horizon_agent`, aditiva, idempotente) |
 | Ganchos LGPD (titular e retenção) | `pilot/compliance/subject-hooks.ts` + 2 pequenas edições | testado em banco real |
 | Página `/voz` | `web/src/app/(app)/voz`, `web/src/components/voz` | compila; não verificada visualmente com sessão real |
+| Medição e simulador de latência | `voice/latency/`, `npm run voice:latency` | testado (unitário); perfis do simulador são suposições |
+| Núcleo do agente de voz (barge-in, portão de texto, passagem ao humano) | `voice/agent/` | testado só com dublês; **sem telefonia, STT, LLM ou TTS reais** |
 
 ### Escolha: Twilio sem SDK
 A assinatura `X-Twilio-Signature` é HMAC-SHA1 de `URL + (chaves ordenadas, "chave+valor")`, em base64: 15 linhas, implementadas à mão em `twilio-signature.ts` com comparação em tempo constante. O SDK oficial é grande e traria dependências sem necessidade; o REST usado (`Calls.json`, `Recordings`) é pequeno. Troca de provedor = novo adaptador que implemente `TelephonyAdapter`.
@@ -173,7 +175,7 @@ Os tetos somam mais que o total de propósito: os p95 não se somam; o que manda
 
 ## 9. Limites conhecidos
 
-- Nada foi executado contra Twilio, ElevenLabs ou STT reais; só dublês e a especificação.
+- Nada foi executado contra Twilio, ElevenLabs ou STT reais; só dublês e a especificação. O mesmo vale para o núcleo do agente (seção 8): a latência real é desconhecida até a primeira ligação de teste.
 - Um único telefone de operador por instalação (`VOICE_OPERATOR_PHONE`); sem fila de operadores nem ligação receptiva (`inbound` existe no schema, sem fluxo).
 - A página de configuração (`PUT /voice/settings`) existe na API, mas o painel só **lê** o estado: o BFF não libera `PUT`. Até lá o proprietário usa a API (ou o texto do aviso fica sem como ser cadastrado pela tela).
 - Custo por ligação (`cost_cents`) não é preenchido ainda (o adaptador sabe ler o preço do Twilio em `getCall`, sem rotina que o busque).
