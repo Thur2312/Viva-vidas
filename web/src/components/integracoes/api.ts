@@ -12,6 +12,17 @@ export type CrmStatus = {
   queue: { pending: number; processing: number; sent: number; skipped: number; dead: number };
 };
 
+export type WhatsappConnection =
+  | { ok: true; data: { id: number; name: string; status: string; number: string | null; qrDataUrl: string | null } }
+  | { ok: false; error: string };
+
+export const useWhatsappConnection = () =>
+  useQuery({
+    queryKey: ["whatsapp", "connection"],
+    queryFn: ({ signal }) => (DEMO ? Promise.resolve<WhatsappConnection>({ ok: false, error: "chat_nao_configurado" }) : getJson<WhatsappConnection>("/api/pilot/whatsapp/connection", signal)),
+    refetchInterval: 5_000,
+  });
+
 export type CalendarRules = { timezone: string; days: number[]; start: string; end: string; durationMin: number; minNoticeMin: number; horizonDays: number };
 export type CalendarStatus = { enabled: boolean; provider: string; configured: boolean; missing: string[]; rules: CalendarRules };
 export type Slot = { start: string; end: string };

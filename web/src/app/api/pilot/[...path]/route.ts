@@ -25,6 +25,7 @@ const GET_ROUTES: Route[] = [
   { re: /^broadcasts\/templates$/, params: ["refresh"] },
   { re: /^broadcasts\/number-health$/, params: [] },
   { re: /^crm\/status$/, params: [] },
+  { re: /^whatsapp\/connection$/, params: [] },
   { re: /^calendar\/status$/, params: [] },
   { re: /^calendar\/slots$/, params: ["limit"] },
   { re: new RegExp(`^broadcasts/${UUID}$`), params: [] },
