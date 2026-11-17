@@ -1,4 +1,4 @@
-import { Controller, Get, Header } from '@nestjs/common'
+import { Controller, Get, Header, HttpCode, Post } from '@nestjs/common'
 import { NoTenant } from '../../auth/no-tenant.decorator'
 import { Roles } from '../../panel-auth/roles.decorator'
 import { ChatGatewayService } from '../../chat-gateway/chat-gateway.service'
@@ -11,4 +11,9 @@ export class WhatsappController {
   @NoTenant() @Roles('owner') @Get('connection')
   @Header('Cache-Control', 'no-store')
   connection() { return this.chat.connection() }
+
+  /** Inicia a sessão (gera o QR). Só o dono; o chat garante que conectado não é derrubado. */
+  @NoTenant() @Roles('owner') @Post('connection/start') @HttpCode(202)
+  @Header('Cache-Control', 'no-store')
+  start() { return this.chat.startConnection() }
 }
