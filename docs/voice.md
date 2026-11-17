@@ -2,7 +2,7 @@
 
 Versão 0.1 (2026-11-12). Estado: **construído sem nenhuma chave de API. Nenhum adaptador foi testado contra um provedor real.** Tudo o que fala com Twilio, ElevenLabs ou STT foi escrito contra a documentação pública e testado só com dublês (fetch falso). Sem credenciais o módulo falha fechado e a tela `/voz` mostra "pendente".
 
-Contexto: agente de vendas de IA do Alberto Apolinário (corretor de planos de saúde; ele é o controlador na LGPD, a Horizon é a operadora). O agente trabalha em **modo sombra**: aprende com os colaboradores humanos. A voz nasceu como "fase 2" e o proprietário quer rápido. Esta primeira entrega é **ligação assistida por operador humano (click-to-call) com gravação, aviso, transcrição e conformidade**. O agente de voz automático é só projeto (seção 8).
+Contexto: agente de vendas de IA do Alberto Apolinário (corretor de planos de saúde; ele é o controlador na LGPD, a Horizon é a operadora). O agente trabalha em **modo sombra**: aprende com os colaboradores humanos. A voz nasceu como "fase 2" e o proprietário quer rápido. Esta primeira entrega é **ligação assistida por operador humano (click-to-call) com gravação, aviso, transcrição e conformidade**. O agente de voz automático tem projeto e núcleo testado com dublês, sem telefonia real (seção 8).
 
 ## 1. O que existe
 
@@ -123,18 +123,53 @@ O módulo de voz registra o gancho em `onModuleInit`. Anonimizar apaga gravaçã
 
 Passo a passo do Twilio no Brasil (conferir no console, que muda): criar conta; em *Phone Numbers > Regulatory Compliance* criar o *Bundle* para o Brasil (tipo de número local/móvel conforme o caso) com os documentos pedidos e aguardar aprovação; comprar o número vinculado ao bundle; preencher as variáveis acima. Os webhooks **não precisam ser colados no console para o click-to-call**: as URLs de status e instruções vão em cada chamada. A tela `/voz` mostra a URL base de qualquer forma.
 
-## 8. Agente de voz (apenas projeto; nada disso está implementado)
+## 8. Agente de voz de baixa latência (projeto + núcleo; nada ligado a telefonia real)
 
-Interfaces já existentes que serão reaproveitadas: `TelephonyAdapter`, `TtsProvider`, `SttProvider`. Falta: streaming de mídia, orquestrador e política de passagem para humano.
+Estado: existe o **núcleo testado só com dublês** (`voice/agent/`) e a **medição de latência** (`voice/latency/`). Não existe adaptador de streaming real (Twilio Media Streams, STT em streaming, LLM em streaming, TTS em μ-law): é o próximo passo.
 
-Pipeline proposto: **Twilio Media Streams (WebSocket, áudio μ-law 8 kHz) ou SIP** → **STT em streaming** (parciais + fim de fala) → texto vira entrada do **`ShadowService`** existente (rascunho de resposta, hoje sempre não enviado) → texto → **TTS** (`ulaw_8000` do ElevenLabs, sem reamostragem) → reprodução no stream.
+### 8.1 Métrica e meta
+**Latência percebida** = do instante em que o lead para de falar até o primeiro áudio do agente tocar. Metas de projeto (estimativas, a validar): **p50 ≤ 800 ms e p95 ≤ 1200 ms**. Acima de ~1,5 s a conversa soa travada. O orçamento por estágio fica em `latency/latency-budget.ts`.
 
-- **Orçamento de latência** (meta de conversa natural, ponta a ponta fala-do-lead -> primeira fala do agente, ~1,0 a 1,5 s; a validar): detecção de fim de fala 200-400 ms, STT final 150-300 ms, LLM (primeiro token) 300-600 ms, TTS (primeiro áudio) 150-300 ms, rede 100 ms. Estourou o orçamento: usar frase de preenchimento curta ("um instante") ou passar ao humano.
-- **Interrupção (barge-in)**: ao detectar fala do lead durante a reprodução, parar o áudio do agente em < 200 ms e descartar o texto pendente.
-- **Passagem para humano** sempre disponível: o lead pede, confiança baixa, assunto fora do playbook, sinal de saúde sensível, 2 falhas de entendimento, ou o operador "pega" a ligação (a perna do operador entra na ponte e o agente sai).
-- **Prontidão por etapa** usando a view `agent_readiness` (taxa de concordância entre rascunho do agente e o que o humano fez): a voz só assume uma etapa que já esteja liberada no texto; cada etapa começa em sombra de voz (o agente "ouve" ligações humanas gravadas e gera o que diria; mede-se contra o operador).
-- **Por que continuar em sombra até medir**: voz não tem botão de desfazer; erro dito ao lead é irreversível, há dado de saúde, risco regulatório (SUSEP, consumidor) e a prontidão hoje mede texto em WhatsApp, não fala. Liberar só com concordância medida em ligações reais e revisão do jurídico.
-- **LGPD no agente**: avisar que é um assistente automatizado e que a ligação é gravada; art. 11 em toda ligação; art. 33 para cada provedor no caminho de áudio; retenção mínima do áudio bruto (apagar após transcrever se a SUSEP não exigir o áudio).
+### 8.2 Arquitetura: decisão
+| Opção | Latência típica (estimativa) | Prós | Contras |
+|---|---|---|---|
+| **A. Cascata em streaming** (STT → LLM → TTS) | ~700 a 1000 ms | Passa por texto: dá para aplicar o portão de dado sensível e a redação antes do modelo; troca cada peça sozinha | Mais peças para ajustar; soma de três estágios |
+| **B. Voz nativa** (Gemini Live: áudio entra e sai do mesmo modelo) | ~300 a 600 ms | Menor latência, sem STT/TTS separados | O áudio cru vai ao provedor **sem** portão de texto antes (art. 11 e art. 33); menos controle da fala |
+| **C. Plataforma pronta** (Vapi, Retell, Pipecat gerenciado) | ~600 a 900 ms | Rápido de pôr no ar | Mais um subprocessador, custo por minuto, pouco controle sobre o filtro |
+
+**Decisão:** **A é o caminho principal**, porque o portão de texto antes do LLM (o mesmo princípio do PR de dado sensível) só existe quando há texto no meio. **B só como protótipo em modo sombra, com dados inventados**, para medir o ganho real; promover só com parecer do jurídico sobre áudio cru de saúde. **C fica descartada por ora.**
+
+### 8.3 Orçamento por estágio (p95, ms)
+| Estágio | Teto | Tática |
+|---|---|---|
+| Fim de turno (`endpoint`) | 400 | VAD + detector semântico de fim de turno; silêncio curto só quando a frase parece completa |
+| STT final | 250 | STT em streaming com resultado parcial; não esperar o arquivo |
+| 1º token do LLM | 600 | Modelo rápido (candidato: `gemini-3.1-flash-lite`), prompt curto, contexto do lead carregado **antes** da ligação, início especulativo sobre o parcial |
+| 1ª frase (`first_chunk`) | 150 | `SentenceChunker` solta a primeira fala numa vírgula, sem esperar a frase inteira |
+| 1º áudio do TTS | 350 | TTS em streaming já em μ-law 8 kHz (sem reamostrar); frases curtas e comuns pré-sintetizadas |
+| Tocar na linha (`playback`) | 80 | Conexões (WebSocket/TLS) abertas antes da primeira fala |
+
+Os tetos somam mais que o total de propósito: os p95 não se somam; o que manda é o total.
+
+### 8.4 O que mais pesa (sem medir ainda)
+1. **Distância dos provedores.** A VPS é no Brasil; STT/LLM/TTS fora do país somam ~150 a 250 ms por ida e volta. No simulador, a mesma cascata sai de p50 ~1000 ms (perto) para ~1500 ms (longe). Escolher região/provedor antes de otimizar código.
+2. **1º token do LLM** é o estágio dominante nos perfis simulados.
+3. **Fora do caminho quente:** nada de consulta ao banco, gravação de auditoria ou `ShadowService` entre a fala e a resposta; isso roda depois, de forma assíncrona.
+
+### 8.5 Núcleo implementado (`voice/agent/`)
+- `VoiceAgentSession`: **barge-in** (a fala do lead aborta LLM/TTS e limpa o áudio pendente), **portão de texto antes do LLM** (bloqueado ou com erro => passagem ao humano; falha fechado), passagem ao humano por pedido do lead, 2 falas ininteligíveis ou erro, frase de preenchimento se o primeiro áudio demorar.
+- `SentenceChunker`: frases em pt-BR (abreviações e decimais), primeira fala antecipada.
+- Cada turno alimenta o `LatencyRecorder`.
+- **Ainda falta:** adaptadores reais, VAD/detecção de fim de turno de verdade, política de eco, métricas por ligação no painel.
+
+### 8.6 Como medir
+`npm run voice:latency -- --turns 1000 --seed 1` roda o simulador em tempo virtual com três perfis (`cascata-br`, `cascata-eua`, `voz-nativa`). **Os perfis são suposições.** Resultado da última execução: `cascata-br` p50 ~986 ms / p95 ~1338 ms (fora da meta; domina o 1º token); `cascata-eua` p50 ~1529 ms; `voz-nativa` p50 ~639 ms / p95 ~967 ms. **A meta só é considerada atingida com medição real** (`LatencyRecorder` em ligações de teste), nunca pelo simulador.
+
+### 8.7 Sombra, prontidão e LGPD
+- **Continua em modo sombra até medir:** voz não tem botão de desfazer; erro dito ao lead é irreversível, há dado de saúde e risco regulatório (SUSEP, consumidor). A prontidão (`agent_readiness`) hoje mede texto no WhatsApp, não fala. Cada etapa começa em sombra de voz (o agente "ouve" ligações humanas gravadas e gera o que diria).
+- **Passagem para humano sempre disponível:** pedido do lead, confiança baixa, assunto fora do playbook, sinal de saúde sensível, 2 falhas de entendimento ou o operador "pega" a ligação.
+- **LGPD:** avisar que é assistente automatizado e que a ligação é gravada; art. 11 em toda ligação; art. 33 para cada provedor no caminho do áudio (inclusive o de voz nativa); retenção mínima do áudio bruto.
+- **Antes de qualquer chamada real:** bundle regulatório do Twilio, chaves, texto do aviso validado e decisões da seção 7.
 
 ## 9. Limites conhecidos
 
