@@ -30,6 +30,13 @@ export interface NumberHealthInfo {
   accountReviewStatus: string | null
   checkedAt: string
 }
+export interface ConnectionInfo {
+  id: number
+  name: string
+  status: string // CONNECTED | qrcode | OPENING | DISCONNECTED | PAIRING | TIMEOUT
+  number: string | null
+  qrDataUrl: string | null
+}
 export interface CreateTemplateInput {
   name: string
   category: 'MARKETING' | 'UTILITY'
@@ -107,6 +114,21 @@ export class ChatGatewayService {
       return { ok: false, error: 'chat_indisponivel' }
     } finally {
       clearTimeout(t)
+    }
+  }
+
+  /**
+   * Estado da conexão do WhatsApp no chat e, enquanto aguarda pareamento, o QR (data URL).
+   * Nunca lança: devolve o motivo explícito. O QR é credencial de sessão: só chega ao painel para o dono.
+   */
+  async connection(): Promise<{ ok: true; data: ConnectionInfo } | { ok: false; error: string }> {
+    if (!this.configured()) return { ok: false, error: 'chat_nao_configurado' }
+    const q = new URLSearchParams()
+    if (this.connectionId) q.set('connectionId', this.connectionId)
+    try {
+      return { ok: true, data: await this.call<ConnectionInfo>('GET', `/pilot-bridge/connection?${q}`) }
+    } catch (e: any) {
+      return { ok: false, error: e?.status === 503 ? 'chat_nao_configurado' : 'chat_indisponivel' }
     }
   }
 

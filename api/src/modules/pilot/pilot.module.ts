@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { WhatsappController } from './whatsapp/whatsapp.controller'
 import { ChatGatewayModule } from '../chat-gateway/chat-gateway.module'
 import { PgModule } from './pg.module'
 import { PilotService } from './pilot.service'
@@ -19,7 +20,7 @@ import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.mod
 
 @Module({
   imports: [ChatGatewayModule, PgModule],
-  controllers: [PilotController, BroadcastsController, ConversationsController, CrmController, CalendarController],
+  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, CrmController, CalendarController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,
