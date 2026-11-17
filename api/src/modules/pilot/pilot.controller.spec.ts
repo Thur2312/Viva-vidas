@@ -57,6 +57,7 @@ describe('PilotController (HTTP)', () => {
 
   it('shadow/run responde "disabled" sem chave da Anthropic', async () => {
     delete process.env.ANTHROPIC_API_KEY
+    delete process.env.GEMINI_API_KEY
     const res = await request(app.getHttpServer())
       .post('/pilot/shadow/run').set('x-pilot-key', 'chave-de-teste')
       .send({ conversationId: '00000000-0000-4000-8000-000000000000' }).expect(201)
