@@ -35,6 +35,7 @@ const GET_ROUTES: Route[] = [
 const POST_ROUTES: Route[] = [
   { re: new RegExp(`^conversations/${UUID}/messages$`), params: [] },
   { re: /^crm\/retry-dead$/, params: [] },
+  { re: /^whatsapp\/connection\/start$/, params: [] },
   { re: /^calendar\/book$/, params: [] },
   { re: /^voice\/calls$/, params: [], base: "/voice" },
   { re: /^broadcasts$/, params: [] },
