@@ -1,12 +1,12 @@
 "use client";
 
-import { RefreshCw, Workflow } from "lucide-react";
+import { Link2, RefreshCw, Workflow } from "lucide-react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
 import { Folio, Marginalia } from "@/components/folha";
 import { Selo } from "@/components/Selo";
 import { PageHeader } from "@/components/ui";
 import { isOwner } from "@/components/disparos/api";
-import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, useWhatsappConnection, type WhatsappConnection, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
+import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, useStartWhatsapp, useWhatsappConnection, type WhatsappConnection, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
 import { estadoIntegracao } from "@/lib/agente-estados";
 import { useMe } from "@/lib/hooks";
 import { contadoresCrm, regrasAgenda } from "@/lib/integracoes-view";
@@ -74,6 +74,27 @@ function SlotsList({ timezone, slots }: { timezone: string; slots: Slot[] }) {
 
 const WA_ESTADOS: Record<string, string> = { CONNECTED: "Conectado", qrcode: "Aguardando leitura do QR", PAIRING: "Pareando", OPENING: "Iniciando", TIMEOUT: "Tempo esgotado", DISCONNECTED: "Desconectado" };
 
+const START_ERROS: Record<string, string> = {
+  chat_nao_configurado: "O chat ainda não está ligado a esta API. Nada foi feito.",
+  chat_indisponivel: "O chat não respondeu agora. Tente de novo em instantes.",
+};
+
+function ConectarWhatsapp({ iniciando }: { iniciando: boolean }) {
+  const start = useStartWhatsapp();
+  const ocupado = iniciando || start.isPending;
+  const falha = start.isError ? ((start.error as { userMessage?: string }).userMessage ?? "Não foi possível iniciar a conexão.") : start.data && !start.data.ok ? (START_ERROS[start.data.error] ?? "Não foi possível iniciar a conexão.") : null;
+  return (
+    <div className="mt-5">
+      <button type="button" disabled={ocupado} onClick={() => start.mutate()} className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-on-brand hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60">
+        {ocupado ? <RefreshCw size={15} aria-hidden="true" className="animate-spin" /> : <Link2 size={15} aria-hidden="true" />}
+        {ocupado ? "Gerando o QR…" : "Conectar WhatsApp"}
+      </button>
+      <p className="mt-2 text-sm text-mute">Gera o QR para parear o número. Quem vai escanear precisa estar com o celular do número em mãos.</p>
+      {falha && <p role="alert" className="mt-2 text-sm text-bad">{falha}</p>}
+    </div>
+  );
+}
+
 function WhatsappPanel({ c, owner }: { c: WhatsappConnection; owner: boolean }) {
   if (!c.ok) {
     const msg = c.error === "chat_nao_configurado" ? "O chat ainda não está ligado a esta API (faltam CHAT_API_URL e CHAT_BRIDGE_KEY no servidor)." : "O chat não respondeu agora. Tente de novo em instantes.";
@@ -99,6 +120,8 @@ function WhatsappPanel({ c, owner }: { c: WhatsappConnection; owner: boolean }) 
         </div>
       )}
       {d.qrDataUrl && !owner && <p className="mt-4 text-sm text-warn">Só o dono do painel vê o QR de conexão.</p>}
+      {!conectado && !d.qrDataUrl && owner && <ConectarWhatsapp iniciando={d.status === "OPENING" || d.status === "PAIRING"} />}
+      {!conectado && !d.qrDataUrl && !owner && <p className="mt-4 text-sm text-warn">Só o dono do painel pode conectar o número.</p>}
       {conectado && <p className="mt-4 text-sm text-mute">Número conectado. As conversas aparecem na aba Conversas.</p>}
     </>
   );
