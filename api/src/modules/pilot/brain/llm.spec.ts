@@ -234,3 +234,59 @@ describe('grafo de imports', () => {
     expect(shadow.resolveAnthropicBaseUrl).toBe(llm.resolveAnthropicBaseUrl)
   })
 })
+
+describe('truncamento e thinking tokens (I1)', () => {
+  const okGemini = (extra: any = {}) => ({
+    body: {
+      candidates: [{ content: { parts: [{ text: '{"resposta":"oi"}' }] }, finishReason: 'STOP' }],
+      usageMetadata: { promptTokenCount: 20, candidatesTokenCount: 9, thoughtsTokenCount: 31 },
+      ...extra,
+    },
+  })
+  const gem = (model: string) => new GeminiLlm('k', model, 'https://g', { retryDelayMs: 1, timeoutMs: 1000 })
+  const ant = () => new AnthropicLlm('k', 'claude-x', 'https://api.anthropic.com', { retryDelayMs: 1, timeoutMs: 1000 })
+
+  it('Gemini flash: desliga thinking (thinkingBudget 0) e soma thoughtsTokenCount na saída', async () => {
+    const f = mockFetch([okGemini()])
+    const r = await gem('gemini-2.5-flash').call(call)
+    expect(r.outputTokens).toBe(9 + 31)
+    const body = JSON.parse(f.mock.calls[0][1].body)
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 })
+  })
+
+  it('Gemini pro: orçamento de thinking pequeno e fixo (0 não é permitido)', async () => {
+    const f = mockFetch([okGemini()])
+    await gem('gemini-2.5-pro').call(call)
+    const body = JSON.parse(f.mock.calls[0][1].body)
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 128 })
+  })
+
+  it('Gemini 2.0 (sem thinking): não envia thinkingConfig', async () => {
+    const f = mockFetch([okGemini()])
+    await gem('gemini-2.0-flash').call(call)
+    const body = JSON.parse(f.mock.calls[0][1].body)
+    expect(body.generationConfig.thinkingConfig).toBeUndefined()
+  })
+
+  it('Gemini finishReason MAX_TOKENS -> LlmError truncated (mesmo com JSON parcial)', async () => {
+    mockFetch([{ body: { candidates: [{ content: { parts: [{ text: '{"resposta":"o' }] }, finishReason: 'MAX_TOKENS' }] } }])
+    const err: any = await gem('gemini-2.5-flash').call(call).catch((e) => e)
+    expect(err).toBeInstanceOf(LlmError)
+    expect(err.code).toBe('truncated')
+  })
+
+  it('Gemini MAX_TOKENS sem conteúdo -> truncated (não invalid_json)', async () => {
+    mockFetch([{ body: { candidates: [{ finishReason: 'MAX_TOKENS' }] } }])
+    const err: any = await gem('gemini-2.5-flash').call(call).catch((e) => e)
+    expect(err.code).toBe('truncated')
+  })
+
+  it('Anthropic stop_reason max_tokens -> LlmError truncated', async () => {
+    mockFetch([
+      { body: { stop_reason: 'max_tokens', content: [{ type: 'tool_use', input: { resposta: 'o' } }], usage: { input_tokens: 1, output_tokens: 800 } } },
+    ])
+    const err: any = await ant().call(call).catch((e) => e)
+    expect(err).toBeInstanceOf(LlmError)
+    expect(err.code).toBe('truncated')
+  })
+})

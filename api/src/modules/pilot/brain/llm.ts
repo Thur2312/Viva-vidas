@@ -42,7 +42,8 @@ export interface StructuredLlm {
 export class LlmError extends Error {
   constructor(
     message: string,
-    public readonly code: 'http' | 'timeout' | 'invalid_json' | 'disabled',
+    /** truncated: o provedor parou por limite de tokens de saída (resposta parcial, nunca usada). */
+    public readonly code: 'http' | 'timeout' | 'invalid_json' | 'disabled' | 'truncated',
     public readonly status?: number,
   ) {
     super(message)
@@ -132,6 +133,7 @@ export class AnthropicLlm implements StructuredLlm {
       },
       this.opts,
     )
+    if (json?.stop_reason === 'max_tokens') throw new LlmError('Anthropic truncado (max_tokens)', 'truncated')
     const block = json?.content?.find?.((b: any) => b?.type === 'tool_use')
     if (!block || block.input === undefined || block.input === null) throw new LlmError('Anthropic sem tool_use', 'invalid_json')
     return {
@@ -159,6 +161,16 @@ export function toGeminiSchema(schema: any): any {
   return out
 }
 
+/**
+ * Thinking do Gemini 2.5+ consome maxOutputTokens e, sem limite, esgota o orçamento antes do JSON.
+ * Modelos *pro* não aceitam 0: orçamento pequeno e fixo. Gerações sem thinking (1.x/2.0) não recebem o campo.
+ */
+export function geminiThinkingConfig(model: string): { thinkingBudget: number } | undefined {
+  const m = model.toLowerCase()
+  if (/gemini-(?:1(?:\.\d+)?|2\.0)(?![\d.])/.test(m)) return undefined
+  return { thinkingBudget: m.includes('pro') ? 128 : 0 }
+}
+
 export class GeminiLlm implements StructuredLlm {
   readonly enabled = true
   readonly provider = 'gemini' as const
@@ -173,6 +185,7 @@ export class GeminiLlm implements StructuredLlm {
   }
 
   async call<T>(c: LlmCall): Promise<LlmResult<T>> {
+    const thinkingConfig = geminiThinkingConfig(this.model)
     const json = await postJson(
       'Gemini',
       `${this.baseUrl}/v1beta/models/${encodeURIComponent(this.model)}:generateContent`,
@@ -186,10 +199,12 @@ export class GeminiLlm implements StructuredLlm {
           temperature: 0.4,
           responseMimeType: 'application/json',
           responseSchema: toGeminiSchema(c.schema),
+          ...(thinkingConfig ? { thinkingConfig } : {}),
         },
       },
       this.opts,
     )
+    if (json?.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new LlmError('Gemini truncado (MAX_TOKENS)', 'truncated')
     const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? '').join('')
     if (!text) throw new LlmError('Gemini sem conteúdo', 'invalid_json')
     let data: T
@@ -202,7 +217,8 @@ export class GeminiLlm implements StructuredLlm {
       data,
       model: this.model,
       inputTokens: Number(json.usageMetadata?.promptTokenCount) || 0,
-      outputTokens: Number(json.usageMetadata?.candidatesTokenCount) || 0,
+      // Thinking tokens são cobrados como saída mas não vêm em candidatesTokenCount.
+      outputTokens: (Number(json.usageMetadata?.candidatesTokenCount) || 0) + (Number(json.usageMetadata?.thoughtsTokenCount) || 0),
     }
   }
 }
