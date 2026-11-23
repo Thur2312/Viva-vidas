@@ -14,6 +14,7 @@
     "panel:create-user": "ts-node scripts/create-panel-user.ts",
     "panel:reset-password": "ts-node scripts/reset-panel-password.ts",
     "voice:latency": "ts-node scripts/voice-latency.ts",
+    "eval": "ts-node src/modules/pilot/brain/eval/run-eval.ts",
     "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
