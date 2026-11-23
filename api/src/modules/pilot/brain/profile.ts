@@ -2,6 +2,16 @@ import { Predicate, Profile, ProfileEntry } from './types'
 
 type Extracted = Record<string, { valor: ProfileEntry['valor']; confianca: number }>
 
+const DEFAULT_MIN_CONFIDENCE = 0.6
+
+/** BRAIN_MIN_CONFIDENCE vazio ou não numérico cai no padrão (0.6), nunca em 0 nem NaN. */
+function envMinConfidence(): number {
+  const raw = (process.env.BRAIN_MIN_CONFIDENCE ?? '').trim()
+  if (!raw) return DEFAULT_MIN_CONFIDENCE
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : DEFAULT_MIN_CONFIDENCE
+}
+
 /**
  * Mescla campos extraídos no perfil sem mutar as entradas.
  * - confiança < mínimo: ignorado;
@@ -16,7 +26,7 @@ export function mergeProfile(
   msgId: number | string,
   opts?: { minConfidence?: number },
 ): { profile: Profile; conflicts: string[] } {
-  const min = opts?.minConfidence ?? Number(process.env.BRAIN_MIN_CONFIDENCE ?? 0.6)
+  const min = opts?.minConfidence ?? envMinConfidence()
   const profile: Profile = { ...current }
   const conflicts: string[] = []
   for (const [chave, novo] of Object.entries(extracted)) {

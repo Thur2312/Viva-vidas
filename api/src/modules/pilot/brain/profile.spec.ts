@@ -27,6 +27,12 @@ describe('mergeProfile', () => {
     expect(mergeProfile({}, { a: { valor: 1, confianca: 0.8 } }, 1, { minConfidence: 0.5 }).profile.a).toBeDefined()
   })
 
+  it.each(['', '   ', 'abc', 'NaN'])('BRAIN_MIN_CONFIDENCE=%p invalido volta a 0.6', (v) => {
+    process.env.BRAIN_MIN_CONFIDENCE = v
+    expect(mergeProfile({}, { a: { valor: 1, confianca: 0.5 } }, 1).profile).toEqual({})
+    expect(mergeProfile({}, { a: { valor: 1, confianca: 0.7 } }, 1).profile.a).toBeDefined()
+  })
+
   it('confianca maior substitui', () => {
     const cur: Profile = { vidas: e(2, 0.7) }
     const r = mergeProfile(cur, { vidas: { valor: 4, confianca: 0.9 } }, 2)
