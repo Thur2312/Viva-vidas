@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import type { Violation } from './guardrails'
-import type { Action, HandoffReason, PlaybookData, Profile } from './types'
+import type { Action, ApprovedFact, HandoffReason, PlaybookData, Profile } from './types'
 
 export const SENSITIVE_PLACEHOLDER = '[mensagem omitida: conteúdo sensível]'
 export const EMPTY_PLACEHOLDER = '[mensagem vazia]'
@@ -73,6 +73,26 @@ function perfilTexto(playbook: PlaybookData, profile: Profile): string {
 }
 
 const fatosTexto = (p: PlaybookData) => lista('FATOS APROVADOS', p.fatos.map((f) => `[${f.id}] ${f.texto}`))
+
+/**
+ * Textos que o dono aprovou e que o modelo recebe neste turno: os fatos, a agenda (duração, janelas, o que
+ * prometer) e, em tratar_objecao, a resposta aprovada da objeção ATUAL. É a base dos guarda-corpos
+ * (checkDraft) e do bloco de fatos do verificador; outra objeção nunca aprova número.
+ */
+export function approvedSources(p: PlaybookData, action: Action): ApprovedFact[] {
+  const fontes: ApprovedFact[] = [...p.fatos]
+  const agenda = [
+    p.agenda.duracaoMin > 0 ? `duração da conversa: ${p.agenda.duracaoMin} minutos` : '',
+    p.agenda.janelas.trim() ? `janelas: ${p.agenda.janelas.trim()}` : '',
+    p.agenda.prometer.trim() ? `o que pode prometer: ${p.agenda.prometer.trim()}` : '',
+  ].filter(Boolean)
+  if (agenda.length) fontes.push({ id: 'agenda', texto: `${agenda.join('; ')}.` })
+  if (action.tipo === 'tratar_objecao') {
+    const o = p.objecoes.find((x) => x.id === action.objecaoId)
+    if (o?.resposta.trim()) fontes.push({ id: `objecao:${o.id}`, texto: o.resposta.trim() })
+  }
+  return fontes
+}
 
 export function buildExtractSystem(playbook: PlaybookData, profile: Profile): string {
   return [
@@ -215,7 +235,7 @@ export function buildVerifySystem(p: PlaybookData, action: Action): string {
   const o = action.tipo === 'tratar_objecao' ? p.objecoes.find((x) => x.id === action.objecaoId) : undefined
   return [
     VERIFY_SYSTEM,
-    fatosTexto(p),
+    lista('FATOS APROVADOS', approvedSources(p, action).map((f) => `[${f.id}] ${f.texto}`)),
     lista('EXPRESSÕES E REGRAS PROIBIDAS', [...p.regrasProibidas, ...(o?.nuncaDizer ?? [])]),
   ]
     .filter(Boolean)

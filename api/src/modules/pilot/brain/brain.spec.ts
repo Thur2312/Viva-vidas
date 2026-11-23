@@ -340,6 +340,72 @@ describe('SalesBrain', () => {
     })
   })
 
+  describe('I2: textos aprovados do próprio playbook valem nos guarda-corpos', () => {
+    const qualificado = {
+      vidas: { valor: 2, confianca: 0.9, msgId: '1' },
+      plano_atual: { valor: 'nao', confianca: 0.9, msgId: '1' },
+      cidade: { valor: 'Cidade Exemplo', confianca: 0.9, msgId: '1' },
+    }
+
+    it('propor_horario citando a duração da agenda (20 minutos) passa', async () => {
+      const draft = 'Que tal uma conversa de 20 minutos com um consultor esta semana?'
+      const llm = new FakeLlm([ext(), { texto: draft }, { aprovado: true, motivo: 'ok' }])
+      const out = await new SalesBrain(llm).decide(input({ profile: qualificado }))
+      expect(out.action).toEqual({ tipo: 'propor_horario' })
+      expect(out.draft).toBe(draft)
+      expect(out.violations).toEqual([])
+      expect(llm.calls.map((c) => c.schemaName)).toEqual(['extrair', 'redigir', 'verificar'])
+      // o verificador vê a agenda entre os textos aprovados
+      expect(llm.calls[2].system).toContain('20 minutos')
+    })
+
+    it('propor_horario citando horário das janelas aprovadas (às 15h) passa', async () => {
+      const pb = clone()
+      pb.agenda.janelas = 'dias úteis às 15h'
+      const draft = 'Posso te ligar amanhã às 15h?'
+      const llm = new FakeLlm([ext(), { texto: draft }, { aprovado: true, motivo: 'ok' }])
+      const out = await new SalesBrain(llm).decide(input({ playbook: pb, profile: qualificado }))
+      expect(out.draft).toBe(draft)
+      expect(out.violations).toEqual([])
+    })
+
+    it('tratar_objecao com o valor da resposta aprovada (R$ 350) passa', async () => {
+      const pb = clone()
+      pb.objecoes[0].resposta = 'Temos opções a partir de R$ 350 por mês para famílias.'
+      const draft = 'Entendo! Temos opções a partir de R$ 350 por mês. Quer que eu te mostre?'
+      const llm = new FakeLlm([ext({ objecao_id: 'preco' }), { texto: draft }, { aprovado: true, motivo: 'ok' }])
+      const out = await new SalesBrain(llm).decide(input({ playbook: pb, history: [lead(77, 'tá caro')] }))
+      expect(out.action).toEqual({ tipo: 'tratar_objecao', objecaoId: 'preco' })
+      expect(out.draft).toBe(draft)
+      expect(out.violations).toEqual([])
+      expect(llm.calls[2].system).toContain('R$ 350')
+    })
+
+    it('resposta de OUTRA objeção não aprova o valor', async () => {
+      const pb = clone()
+      pb.objecoes[1].resposta = 'Carência a partir de R$ 350.'
+      const draft = 'Entendo! Temos opções a partir de R$ 350 por mês.'
+      const llm = new FakeLlm([ext({ objecao_id: 'preco' }), { texto: draft }, { texto: draft }])
+      const out = await new SalesBrain(llm).decide(input({ playbook: pb, history: [lead(77, 'tá caro')] }))
+      expect(out.handoffReason).toBe('guardacorpo')
+      expect(out.violations).toContain('valor_nao_aprovado')
+    })
+
+    it('número fora de toda fonte aprovada continua bloqueando', async () => {
+      const pb = clone()
+      pb.objecoes[0].resposta = 'Temos opções a partir de R$ 350 por mês para famílias.'
+      const llm = new FakeLlm([
+        ext({ objecao_id: 'preco' }),
+        { texto: 'Temos opções a partir de R$ 400 por mês.' },
+        { texto: 'Uma conversa de 45 minutos resolve.' },
+      ])
+      const out = await new SalesBrain(llm).decide(input({ playbook: pb, history: [lead(77, 'tá caro')] }))
+      expect(out.handoffReason).toBe('guardacorpo')
+      expect(out.violations).toContain('prazo_nao_aprovado')
+      expect(llm.calls[2].system).toContain('valor_nao_aprovado')
+    })
+  })
+
   describe('ruling 10: histórico', () => {
     it('sem mensagem do lead no fim: aguardar, sem LLM', async () => {
       const llm = new FakeLlm([])

@@ -10,6 +10,7 @@ import {
   SENSITIVE_PLACEHOLDER,
   VERIFY_SCHEMA,
   WRITE_SCHEMA,
+  approvedSources,
   buildExamplesMessage,
   buildExtractSystem,
   buildVerifySystem,
@@ -207,10 +208,12 @@ export class SalesBrain {
     }
 
     // Uma única regeração por turno, compartilhada entre guarda-corpo e verificador.
+    // Aprovados = fatos + agenda + resposta da objeção atual (o mesmo conteúdo que o prompt entrega ao modelo).
+    const aprovados = approvedSources(playbook, action)
     let draft = await write()
     let regenerated = false
     for (;;) {
-      const { violations, risky } = checkDraft(draft, playbook.fatos)
+      const { violations, risky } = checkDraft(draft, aprovados)
       let rejection: { violations: Violation[]; motivo?: string } | null = null
       if (!draft) rejection = { violations, motivo: 'rascunho vazio' }
       else if (violations.length) rejection = { violations }
