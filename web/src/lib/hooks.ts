@@ -7,6 +7,8 @@ import * as demo from "./demo";
 import type { Range } from "./range";
 import { postMessage, SendError } from "./conversas-api";
 import type { CampaignRow, ConversationStats, ConversationsPage, LeadDetail, LeadsPage, Me, Overview, Readiness, ThreadMessage, ThreadPage } from "./types";
+// Chamadas do playbook (com o modo demonstração embutido) vivem junto do editor.
+import { activatePlaybook, fetchPlaybook, fetchPlaybookVersion, savePlaybook, type SaveInput } from "@/components/agente/playbook-api";
 
 const qs = (o: Record<string, string | number | undefined>) =>
   new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])).toString();
@@ -174,4 +176,37 @@ export function useThread(conversationId: string | null) {
     send: (body: string) => mutation.mutateAsync({ body, tempId: `p${Date.now()}${Math.random().toString(36).slice(2, 6)}` }).then(() => true, () => false),
     sending: mutation.isPending,
   };
+}
+
+// ───── Playbook de vendas ─────
+/** Versões, a ativa e o modelo vazio (com as instruções "EXEMPLO (não ativo)"). Leitura: qualquer perfil. */
+export function usePlaybook() {
+  return useQuery({ queryKey: ["playbook"], queryFn: ({ signal }) => fetchPlaybook(signal), retry: (n: number, e: Error) => shouldRetry(n, e) });
+}
+
+export function usePlaybookVersion(version: number | null) {
+  return useQuery({
+    queryKey: ["playbook", "version", version],
+    enabled: version !== null,
+    queryFn: ({ signal }) => fetchPlaybookVersion(version!, signal),
+    retry: (n: number, e: Error) => shouldRetry(n, e),
+  });
+}
+
+/** Cria (sem `version`) ou atualiza um rascunho (com `version`). Só o dono; o servidor confere. */
+export function useSavePlaybook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: SaveInput) => savePlaybook(v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["playbook"] }),
+  });
+}
+
+/** Ativa um rascunho. 422 traz a lista `missing` em ActionError.missing. */
+export function useActivatePlaybook() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (version: number) => activatePlaybook(version),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["playbook"] }),
+  });
 }

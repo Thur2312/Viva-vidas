@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { QueryBlock, Skeleton } from "@/components/Block";
-import { useNumberHealth, useTemplatesCache } from "@/components/disparos/api";
+import { PlaybookEditor } from "@/components/agente/PlaybookEditor";
+import { isOwner, useNumberHealth, useTemplatesCache } from "@/components/disparos/api";
 import { Folio, Marginalia, type MarginItem } from "@/components/folha";
 import { CHIP, Selo } from "@/components/Selo";
 import { useCalendarStatus, useCrmStatus } from "@/components/integracoes/api";
@@ -10,7 +11,7 @@ import { PageHeader } from "@/components/ui";
 import { useVoiceStatus } from "@/components/voz/voz-api";
 import { SEM_LEITURA, TOM, contagemTemplates, estadoIntegracao, estadoTelefonia, estadoTemplate, faltando, leitura, type Estado } from "@/lib/agente-estados";
 import { pct } from "@/lib/format";
-import { useReadiness } from "@/lib/hooks";
+import { useMe, useReadiness } from "@/lib/hooks";
 import { playbookRef } from "@/lib/playbook";
 import { STAGE_META, toNum, type Stage } from "@/lib/types";
 
@@ -21,8 +22,19 @@ type Conexao = { nome: string; ref?: string; href?: string; destino?: string; mo
 
 const th = "py-2 font-mono text-[11px] font-medium uppercase tracking-wider";
 
+const PROVEDOR: Record<string, string> = { gemini: "Google Gemini", anthropic: "Anthropic Claude", none: "nenhum" };
+const ACAO: Record<string, string> = {
+  perguntar_campo: "Perguntar um campo",
+  tratar_objecao: "Tratar objeção",
+  responder_duvida: "Responder dúvida",
+  propor_horario: "Propor horário",
+  repassar_humano: "Repassar a uma pessoa",
+  aguardar: "Aguardar",
+};
+
 export default function Agente() {
   const rd = useReadiness();
+  const me = useMe();
   const crm = useCrmStatus();
   const agenda = useCalendarStatus();
   const voz = useVoiceStatus();
@@ -98,39 +110,71 @@ export default function Agente() {
         <div className="min-w-0 space-y-12">
           <Folio n="01" title="Aprendizado em modo sombra" hint="O agente rascunha respostas sem enviar nada. Aqui, cada rascunho é comparado com o que a equipe de fato escreveu. Lido do servidor.">
             <QueryBlock q={rd} skeleton={<Skeleton className="h-40" />}>
-              {(r) =>
-                !r.shadow.enabled ? (
-                  <p className="text-sm text-mute">Aprendizado em modo sombra aguardando a chave do provedor de IA. Quando ela for configurada, esta tabela mostra, por etapa, quantos rascunhos foram comparados com a resposta real.</p>
-                ) : r.stages.length === 0 ? (
-                  <p className="text-sm text-mute">Ativo, mas ainda sem rascunhos comparados.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <caption className="sr-only">Rascunhos do agente comparados com a resposta humana, por etapa do funil</caption>
-                      <thead>
-                        <tr className="border-b border-line text-mute">
-                          <th scope="col" className={`${th} pr-4 text-left`}>Etapa</th>
-                          <th scope="col" className={`${th} px-4 text-right`}>Rascunhos</th>
-                          <th scope="col" className={`${th} px-4 text-right`}>Comparados</th>
-                          <th scope="col" className={`${th} px-4 text-right`}>Similaridade</th>
-                          <th scope="col" className={`${th} pl-4 text-right`}>Aproveitáveis</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line">
-                        {r.stages.map((s) => (
-                          <tr key={s.stage}>
-                            <th scope="row" className="py-2.5 pr-4 text-left font-normal">{STAGE_META[s.stage as Stage]?.nome ?? s.stage}</th>
-                            <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(s.drafts)}</td>
-                            <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(s.compared)}</td>
-                            <td className="tabular px-4 py-2.5 text-right font-mono">{s.avg_similarity === null ? "sem dados" : pct(toNum(s.avg_similarity))}</td>
-                            <td className="tabular pl-4 py-2.5 text-right font-mono font-semibold">{s.usable_rate === null ? "sem dados" : pct(toNum(s.usable_rate))}</td>
+              {(r) => (
+                <div className="space-y-6">
+                  {r.shadow.provider && r.shadow.provider !== "none" && (
+                    <p className="text-sm text-mute">Provedor de IA: <span className="font-medium text-ink">{PROVEDOR[r.shadow.provider] ?? r.shadow.provider}</span></p>
+                  )}
+                  {!r.shadow.enabled ? (
+                    <p className="text-sm text-mute">Aprendizado em modo sombra aguardando a chave do provedor de IA. Quando ela for configurada, esta tabela mostra, por etapa, quantos rascunhos foram comparados com a resposta real.</p>
+                  ) : r.stages.length === 0 ? (
+                    <p className="text-sm text-mute">Ativo, mas ainda sem rascunhos comparados.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <caption className="sr-only">Rascunhos do agente comparados com a resposta humana, por etapa do funil</caption>
+                        <thead>
+                          <tr className="border-b border-line text-mute">
+                            <th scope="col" className={`${th} pr-4 text-left`}>Etapa</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Rascunhos</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Comparados</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Similaridade</th>
+                            <th scope="col" className={`${th} pl-4 text-right`}>Aproveitáveis</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              }
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {r.stages.map((s) => (
+                            <tr key={s.stage}>
+                              <th scope="row" className="py-2.5 pr-4 text-left font-normal">{STAGE_META[s.stage as Stage]?.nome ?? s.stage}</th>
+                              <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(s.drafts)}</td>
+                              <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(s.compared)}</td>
+                              <td className="tabular px-4 py-2.5 text-right font-mono">{s.avg_similarity === null ? "sem dados" : pct(toNum(s.avg_similarity))}</td>
+                              <td className="tabular pl-4 py-2.5 text-right font-mono font-semibold">{s.usable_rate === null ? "sem dados" : pct(toNum(s.usable_rate))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {r.byAction && r.byAction.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <caption className="mb-2 text-left text-sm font-semibold">Por ação do agente</caption>
+                        <thead>
+                          <tr className="border-b border-line text-mute">
+                            <th scope="col" className={`${th} pr-4 text-left`}>Ação</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Rascunhos</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Comparados</th>
+                            <th scope="col" className={`${th} px-4 text-right`}>Aproveitáveis</th>
+                            <th scope="col" className={`${th} pl-4 text-right`}>Barrados</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {r.byAction.map((a) => (
+                            <tr key={a.action}>
+                              <th scope="row" className="py-2.5 pr-4 text-left font-normal">{ACAO[a.action] ?? a.action}</th>
+                              <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(a.drafts)}</td>
+                              <td className="tabular px-4 py-2.5 text-right font-mono">{toNum(a.compared)}</td>
+                              <td className="tabular px-4 py-2.5 text-right font-mono font-semibold">{a.usable_rate === null ? "sem dados" : pct(toNum(a.usable_rate))}</td>
+                              <td className="tabular pl-4 py-2.5 text-right font-mono" title="Rascunhos barrados pelas travas de segurança">{toNum(a.guard_failures)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </QueryBlock>
           </Folio>
 
@@ -159,15 +203,8 @@ export default function Agente() {
             </ul>
           </Folio>
 
-          <Folio n="03" title="Playbook" hint="Texto de referência do projeto. Ainda não sincronizado com o agente.">
-            <ol className="divide-y divide-line border-y border-line">
-              {playbookRef.ajustes.map((a, i) => (
-                <li key={a} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 py-3 text-sm">
-                  <span className="tabular font-mono text-mute" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                  <span>{a}</span>
-                </li>
-              ))}
-            </ol>
+          <Folio n="03" title="Playbook" hint="O que o agente sabe e como vende: oferta, perguntas, critérios, objeções e fatos. Versionado; o agente usa só a versão ativa.">
+            <PlaybookEditor owner={isOwner(me.data?.role)} />
           </Folio>
 
           <Folio n="04" title="Templates do WhatsApp" hint="Os templates planejados no playbook, cruzados com o que a Meta já tem. Lido do que o servidor sincronizou.">

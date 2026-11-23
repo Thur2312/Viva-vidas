@@ -30,6 +30,8 @@ const GET_ROUTES: Route[] = [
   { re: /^calendar\/slots$/, params: ["limit"] },
   { re: new RegExp(`^broadcasts/${UUID}$`), params: [] },
   { re: new RegExp(`^broadcasts/${UUID}/recipients$`), params: ["status", "page"] },
+  { re: /^playbook$/, params: [] },
+  { re: /^playbook\/\d{1,9}$/, params: [] },
 ];
 
 const POST_ROUTES: Route[] = [
@@ -40,12 +42,18 @@ const POST_ROUTES: Route[] = [
   { re: /^broadcasts$/, params: [] },
   { re: /^broadcasts\/templates$/, params: [] },
   { re: new RegExp(`^broadcasts/${UUID}/(audience/preview|start|pause|resume|cancel)$`), params: [] },
+  // Playbook: só o dono cria e ativa (o papel é conferido de novo no backend).
+  { re: /^playbook$/, params: [] },
+  { re: /^playbook\/\d{1,9}\/activate$/, params: [] },
 ];
 
 const PATCH_ROUTES: Route[] = [{ re: new RegExp(`^broadcasts/${UUID}$`), params: [] }];
 
 // Só o dono altera a configuração de voz (o papel é conferido de novo no backend).
-const PUT_ROUTES: Route[] = [{ re: /^voice\/settings$/, params: [], base: "/voice" }];
+const PUT_ROUTES: Route[] = [
+  { re: /^voice\/settings$/, params: [], base: "/voice" },
+  { re: /^playbook\/\d{1,9}$/, params: [] },
+];
 
 // voice/... -> /voice/...  |  demais -> /pilot/...
 const target = (route: Route, path: string) => (route.base ? `${route.base}/${path.replace(/^voice\//, "")}` : `/pilot/${path}`);
@@ -69,11 +77,15 @@ export function GET(req: Request, ctx: { params: Promise<{ path: string[] }> }) 
 }
 
 const MAX_BODY = 8 * 1024;
+// O playbook é um documento maior: o BFF deixa passar até 220 KB e o DTO da API (200 KiB) é quem decide.
+const PLAYBOOK_MAX_BODY = 220 * 1024;
+const isPlaybook = (path: string) => path === "playbook" || path.startsWith("playbook/");
+const maxBody = (path: string) => (isPlaybook(path) ? PLAYBOOK_MAX_BODY : MAX_BODY);
 
 type Method = "POST" | "PATCH" | "PUT";
 
 const passthrough = (path: string, status: number) =>
-  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status));
+  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status)) || (isPlaybook(path) && [400, 403, 409, 413, 422].includes(status));
 
 function mutate(method: Method, routes: Route[]) {
   return (req: Request, ctx: { params: Promise<{ path: string[] }> }) =>
@@ -83,7 +95,7 @@ function mutate(method: Method, routes: Route[]) {
       if (!route) throw new UpstreamError(404, "not_found");
       if (!sameOrigin(req)) throw new UpstreamError(403, "forbidden_origin");
       const raw = await req.text();
-      if (raw.length > MAX_BODY) throw new UpstreamError(413, "payload_too_large");
+      if (raw.length > maxBody(path)) throw new UpstreamError(413, "payload_too_large");
       let json: unknown;
       try {
         json = JSON.parse(raw || "{}");
@@ -107,7 +119,12 @@ function mutate(method: Method, routes: Route[]) {
         // O Nest devolve `message` como texto ou lista de textos (validação).
         const raw = Array.isArray(j?.message) ? j.message.join(" ") : j?.message;
         const message = typeof raw === "string" ? raw.slice(0, 300) : undefined;
-        return NextResponse.json({ error: code, message }, { status: res.status, headers: { "cache-control": "no-store" } });
+        // Playbook incompleto (422): a lista do que falta volta junto, para a tela mostrar item por item.
+        const missing =
+          isPlaybook(path) && res.status === 422 && Array.isArray(j?.missing)
+            ? (j.missing as unknown[]).filter((m): m is string => typeof m === "string").slice(0, 100).map((m) => m.slice(0, 300))
+            : undefined;
+        return NextResponse.json(missing ? { error: code, message, missing } : { error: code, message }, { status: res.status, headers: { "cache-control": "no-store" } });
       }
       throw new UpstreamError(res.status >= 500 ? 502 : res.status, `upstream_${res.status}`);
     });

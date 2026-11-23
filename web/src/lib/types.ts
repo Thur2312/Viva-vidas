@@ -62,8 +62,18 @@ export type CampaignRow = {
   receita: number | string;
 };
 
+export type ReadinessByAction = {
+  action: string;
+  drafts: number | string;
+  compared: number | string;
+  usable_rate: number | string | null;
+  guard_failures: number | string;
+};
+
 export type Readiness = {
-  shadow: { enabled: boolean; mode?: string | null };
+  shadow: { enabled: boolean; mode?: string | null; provider?: string | null };
+  /** Por ação do cérebro de vendas (migration 011). Pode faltar ou vir vazio. */
+  byAction?: ReadinessByAction[];
   stages: {
     stage: string;
     drafts: number | string;
@@ -130,3 +140,47 @@ export type ConversationStats = {
   por_etapa: { stage: string; conversas: number }[];
   horarios_pico: { hora: number; mensagens: number }[];
 };
+
+// ───── Playbook de vendas (/pilot/playbook) ─────
+// Espelho do tipo da API (api/src/modules/pilot/brain/types.ts). Copiado, não importado.
+export type PredicateOp = "eq" | "gt" | "gte" | "lt" | "lte" | "presente" | "ausente";
+export type PredicateLeaf = { campo: string; op: PredicateOp; valor?: string | number | boolean };
+export type PredicateGroup = { all?: Predicate[]; any?: Predicate[] };
+export type Predicate = PredicateGroup | PredicateLeaf;
+
+export type ProfileField = {
+  chave: string;
+  pergunta: string;
+  porque: string;
+  obrigatorio: boolean;
+  ordem: number;
+  sensivel: boolean;
+  valores?: string[];
+};
+
+export type Objection = { id: string; gatilho: string; resposta: string; nuncaDizer: string[] };
+export type ApprovedFact = { id: string; texto: string };
+
+export type PlaybookData = {
+  oferta: { descricao: string; publico: string };
+  campos: ProfileField[];
+  criterios: { qualificado?: Predicate; desqualificado?: Predicate };
+  objecoes: Objection[];
+  fatos: ApprovedFact[];
+  tom: { formalidade: string; tamanho: string; emoji: string; frases: string[] };
+  regrasProibidas: string[];
+  passagemHumano: { quando: string[] };
+  agenda: { tiposReuniao: string[]; duracaoMin: number; janelas: string; prometer: string };
+  cadencia: { maxTentativas: number; mensagem: string };
+  /** Instruções e exemplos rotulados "EXEMPLO (não ativo)"; nunca conteúdo usável. */
+  exemplos?: Record<string, string>;
+};
+
+export type PlaybookStatus = "rascunho" | "ativo" | "arquivado";
+export type PlaybookVersionRow = { version: number; status: PlaybookStatus; source: string | null; created_at: string };
+export type PlaybookOverview = {
+  active: { version: number; data: PlaybookData; status: PlaybookStatus } | null;
+  versions: PlaybookVersionRow[];
+  template: PlaybookData;
+};
+export type PlaybookVersion = PlaybookVersionRow & { data: PlaybookData | null; notes: string | null };

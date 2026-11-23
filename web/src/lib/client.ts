@@ -72,7 +72,8 @@ export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> 
 
 /** Erro de uma ação de escrita (POST/PATCH/PUT), com a mensagem já pronta para mostrar na tela. */
 export class ActionError extends Error {
-  constructor(public status: number, public code: string, public userMessage: string) {
+  /** `missing`: lista do que falta, quando o servidor a manda (ex.: playbook incompleto, 422). */
+  constructor(public status: number, public code: string, public userMessage: string, public missing?: string[]) {
     super(code);
   }
 }
@@ -112,13 +113,15 @@ export async function sendJson<T = unknown>(
   if (!res.ok) {
     let code = `http_${res.status}`;
     let server = "";
+    let missing: string[] | undefined;
     try {
       const j = await res.json();
       if (typeof j?.error === "string") code = j.error;
       if (typeof j?.message === "string") server = j.message;
       else if (Array.isArray(j?.message)) server = j.message.filter((m: unknown) => typeof m === "string").join(" ");
+      if (Array.isArray(j?.missing)) missing = j.missing.filter((m: unknown): m is string => typeof m === "string");
     } catch { /* corpo vazio */ }
-    throw new ActionError(res.status, code, msgs.byCode?.[code] ?? (server || msgs.byStatus?.[res.status] || msgs.fallback));
+    throw new ActionError(res.status, code, msgs.byCode?.[code] ?? (server || msgs.byStatus?.[res.status] || msgs.fallback), missing);
   }
   return (await res.json().catch(() => ({}))) as T;
 }
