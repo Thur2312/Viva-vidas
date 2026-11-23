@@ -26,7 +26,8 @@ export function decideAction(i: PolicyInput): Action {
   if (!playbook || !validatePlaybook(playbook).complete) return repassar('playbook_incompleto')
   if (signals.pediuHumano) return repassar('pediu_humano')
   if (signals.falouSaude) return repassar('saude')
-  if (i.failedUnderstandingStreak + (signals.naoEntendeu ? 1 : 0) >= 2) return repassar('nao_entendeu')
+  // O turno atual precisa ele mesmo não ter sido entendido: lead que volta a ser claro não é repassado.
+  if (signals.naoEntendeu && i.failedUnderstandingStreak + 1 >= 2) return repassar('nao_entendeu')
 
   if (signals.objecaoId) {
     const conhecida = playbook.objecoes.some((o) => o.id === signals.objecaoId)
