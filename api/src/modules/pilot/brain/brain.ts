@@ -10,6 +10,7 @@ import {
   SENSITIVE_PLACEHOLDER,
   VERIFY_SCHEMA,
   WRITE_SCHEMA,
+  buildExamplesMessage,
   buildExtractSystem,
   buildVerifySystem,
   buildWriteSystem,
@@ -51,6 +52,7 @@ interface Extraction {
   campos?: Record<string, { valor?: unknown; confianca?: unknown } | null>
   objecao_id?: unknown
   pergunta_fato_id?: unknown
+  pergunta_sem_fato?: unknown
   pediu_humano?: unknown
   nao_entendeu?: unknown
 }
@@ -60,6 +62,8 @@ type Extracted = Record<string, { valor: ProfileEntry['valor']; confianca: numbe
 
 const MAX_TOKENS = { extrair: 1500, redigir: 1200, verificar: 400 }
 const MAX_VALUE_CHARS = 80
+/** Sentinela de "perguntou algo sem fato aprovado"; nunca é id de fato real. */
+export const SEM_FATO = '__sem_fato__'
 
 /**
  * Só chaves declaradas e não sensíveis; valor curto (string até 80), número finito ou booleano.
@@ -170,16 +174,21 @@ export class SalesBrain {
       signals.naoEntendeu = notUnderstood
       signals.objecaoId = str(ex?.objecao_id)
       signals.perguntaFatoId = str(ex?.pergunta_fato_id)
+      // Pergunta que nenhum fato responde: um id que não existe no playbook. Depende de
+      // decideAction mapear fato desconhecido para repassar_humano{sem_base}.
+      if (!signals.perguntaFatoId && ex?.pergunta_sem_fato === true) signals.perguntaFatoId = SEM_FATO
     }
 
     const action = decideAction({ playbook, profile, signals, failedUnderstandingStreak: i.failedUnderstandingStreak })
     if (action.tipo === 'repassar_humano') return handoff(action.motivo)
     if (action.tipo === 'aguardar' || !playbook) return finish(action, '')
 
+    const exemplos = buildExamplesMessage(i.examples)
+    const writeMessages: Messages = exemplos ? [exemplos, ...messages] : messages
     const write = async (rejection?: { violations: Violation[]; motivo?: string }) => {
       const r = await call<{ texto?: unknown }>({
-        system: buildWriteSystem({ playbook, playbookVersion: i.playbookVersion, profile, action, examples: i.examples, rejection }),
-        messages,
+        system: buildWriteSystem({ playbook, playbookVersion: i.playbookVersion, profile, action, rejection }),
+        messages: writeMessages,
         schemaName: 'redigir',
         schema: WRITE_SCHEMA,
         maxTokens: MAX_TOKENS.redigir,
