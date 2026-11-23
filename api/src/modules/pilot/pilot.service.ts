@@ -238,18 +238,27 @@ export class PilotService {
     return { duplicated: false, leadId: lead.id, conversationId: conv.id, messageId, comparison }
   }
 
-  /** Compara a resposta real do colaborador com o último rascunho ainda sem comparação. */
+  /**
+   * Compara a resposta real do colaborador com o rascunho NÃO vazio mais recente ainda sem comparação.
+   * Caminho crítico da ingestão: usa só colunas anteriores à migration 011 (aplicada à mão), para a ingestão
+   * não quebrar se o código subir antes dela. Rascunho vazio (ação 'aguardar') é pulado após descriptografar.
+   */
   private async compareWithDraft(conversationId: string, humanMessageId: number, body: string, db: Db) {
-    const draft = (
+    const rows = (
       await db.query(
         `SELECT id, draft_body FROM horizon_agent.agent_drafts
-         WHERE conversation_id = $1 AND human_message_id IS NULL AND action IS DISTINCT FROM 'aguardar'
-         ORDER BY created_at DESC LIMIT 1`,
+         WHERE conversation_id = $1 AND human_message_id IS NULL
+         ORDER BY created_at DESC, id DESC LIMIT 5`,
         [conversationId],
       )
-    ).rows[0]
+    ).rows
+    let draft: { id: string; text: string } | null = null
+    for (const r of rows) {
+      const text = this.crypto.decrypt(r.draft_body)
+      if (text?.trim()) { draft = { id: r.id, text }; break }
+    }
     if (!draft) return null
-    const sim = similarity(this.crypto.decrypt(draft.draft_body), body)
+    const sim = similarity(draft.text, body)
     const action = classify(sim)
     await db.query(
       `UPDATE horizon_agent.agent_drafts SET human_message_id = $2, similarity = $3, human_action = $4 WHERE id = $1`,
