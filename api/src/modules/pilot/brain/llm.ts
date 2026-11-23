@@ -1,4 +1,19 @@
-import { resolveAnthropicBaseUrl } from '../shadow.service'
+/**
+ * URL base da API de mensagens (formato Anthropic). Padrão: a Anthropic. `ANTHROPIC_BASE_URL` permite um
+ * gateway compatível (ex.: freeLLMAPI em testes). Só https, ou http em loopback; qualquer outra coisa é ignorada
+ * (cai no padrão) para não mandar conteúdo de conversa a um destino em texto puro por engano.
+ * Mora aqui (e não em shadow.service, que a reexporta) para o cérebro não depender do grafo Nest/pg.
+ */
+export function resolveAnthropicBaseUrl(raw?: string): string {
+  const DEFAULT = 'https://api.anthropic.com'
+  if (!raw) return DEFAULT
+  try {
+    const u = new URL(raw)
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)
+    if (u.protocol === 'https:' || (u.protocol === 'http:' && loopback)) return raw.replace(/\/+$/, '')
+  } catch { /* cai no padrão */ }
+  return DEFAULT
+}
 
 export interface LlmCall {
   system: string

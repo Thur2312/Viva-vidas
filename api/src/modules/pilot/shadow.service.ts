@@ -4,7 +4,7 @@ import { PilotService } from './pilot.service'
 import { CryptoService } from './compliance/crypto.service'
 import { pseudonymize, pseudonymizeDeep, restoreLeadName } from './compliance/redaction'
 import { BrainOutput, SalesBrain } from './brain/brain'
-import { LlmError, StructuredLlm, createStructuredLlm } from './brain/llm'
+import { LlmError, StructuredLlm, createStructuredLlm, resolveAnthropicBaseUrl } from './brain/llm'
 import { PlaybookData, Profile } from './brain/types'
 
 export interface DraftContext {
@@ -38,21 +38,8 @@ export class DisabledDraftProvider implements DraftProvider {
   }
 }
 
-/**
- * URL base da API de mensagens (formato Anthropic). Padrão: a Anthropic. `ANTHROPIC_BASE_URL` permite um
- * gateway compatível (ex.: freeLLMAPI em testes). Só https, ou http em loopback; qualquer outra coisa é ignorada
- * (cai no padrão) para não mandar conteúdo de conversa a um destino em texto puro por engano.
- */
-export function resolveAnthropicBaseUrl(raw?: string): string {
-  const DEFAULT = 'https://api.anthropic.com'
-  if (!raw) return DEFAULT
-  try {
-    const u = new URL(raw)
-    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(u.hostname)
-    if (u.protocol === 'https:' || (u.protocol === 'http:' && loopback)) return raw.replace(/\/+$/, '')
-  } catch { /* cai no padrão */ }
-  return DEFAULT
-}
+// Definida em brain/llm.ts (sem import circular); reexportada aqui para os consumidores antigos.
+export { resolveAnthropicBaseUrl }
 
 /**
  * Claude via Messages API, com tool use forçado para devolver o rascunho estruturado.

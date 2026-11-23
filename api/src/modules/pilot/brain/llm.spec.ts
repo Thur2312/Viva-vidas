@@ -214,3 +214,23 @@ describe('FakeLlm', () => {
     expect(llm.enabled).toBe(true)
   })
 })
+
+describe('grafo de imports', () => {
+  it('llm.ts não carrega shadow.service (sem import circular nem grafo Nest/pg no eval)', () => {
+    jest.isolateModules(() => {
+      jest.doMock('../shadow.service', () => {
+        throw new Error('llm.ts não deve importar shadow.service')
+      })
+      const m = require('./llm')
+      expect(m.resolveAnthropicBaseUrl('http://example.com')).toBe('https://api.anthropic.com')
+      expect(m.resolveAnthropicBaseUrl('https://gw.local/')).toBe('https://gw.local')
+    })
+    jest.dontMock('../shadow.service')
+  })
+
+  it('shadow.service continua reexportando resolveAnthropicBaseUrl', () => {
+    const shadow = require('../shadow.service')
+    const llm = require('./llm')
+    expect(shadow.resolveAnthropicBaseUrl).toBe(llm.resolveAnthropicBaseUrl)
+  })
+})
