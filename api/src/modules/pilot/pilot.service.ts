@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common'
 import { Db, PgService } from './pg.service'
 import { classify, similarity } from './similarity'
 import { AuditService, RequestCtx, SYSTEM_CTX } from './compliance/audit.service'
@@ -433,7 +433,15 @@ export class PilotService {
   }
 
   async readiness() {
-    const { rows } = await this.pg.query(`SELECT stage, drafts::int, compared::int, avg_similarity::float, usable_rate::float FROM horizon_agent.agent_readiness ORDER BY drafts DESC`)
-    return rows
+    const { rows: stages } = await this.pg.query(`SELECT stage, drafts::int, compared::int, avg_similarity::float, usable_rate::float FROM horizon_agent.agent_readiness ORDER BY drafts DESC`)
+    // A view por ação vem da migration 011: sem ela, o painel segue funcionando só com as etapas.
+    let byAction: any[] = []
+    try {
+      const r = await this.pg.query(`SELECT action, drafts::int, compared::int, usable_rate::float, guard_failures::int FROM horizon_agent.agent_readiness_by_action ORDER BY drafts DESC`)
+      byAction = r.rows
+    } catch (e: any) {
+      new Logger('PilotService').warn(`readiness_by_action indisponível (${String(e?.code ?? 'erro').slice(0, 20)})`)
+    }
+    return { stages, byAction }
   }
 }

@@ -43,6 +43,22 @@ export class PgService implements Db, OnModuleDestroy {
     return this.p.query(text, params) as Promise<{ rows: T[]; rowCount: number | null }>
   }
 
+  /** Transação mínima: um client do pool com BEGIN/COMMIT (ROLLBACK em erro). */
+  async tx<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+    const client = await this.p.connect()
+    try {
+      await client.query('BEGIN')
+      const out = await fn(client as unknown as Db)
+      await client.query('COMMIT')
+      return out
+    } catch (e) {
+      await client.query('ROLLBACK').catch(() => undefined)
+      throw e
+    } finally {
+      client.release()
+    }
+  }
+
   async onModuleDestroy() {
     await this.pool?.end()
   }

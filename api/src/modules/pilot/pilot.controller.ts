@@ -131,6 +131,6 @@ export class PilotController {
 
   @NoTenant() @Roles('viewer') @Get('readiness')
   async readiness() {
-    return { shadow: this.shadow.status(), stages: await this.pilot.readiness() }
+    return { shadow: this.shadow.status(), ...(await this.pilot.readiness()) }
   }
 }
