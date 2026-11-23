@@ -60,6 +60,8 @@ async function live(): Promise<number> {
         action: o.action,
         handoffReason: o.handoffReason,
         violations: o.violations,
+        guardEvents: o.guardEvents,
+        intendedAction: o.intendedAction,
         inputTokens: o.inputTokens,
         outputTokens: o.outputTokens,
       })),

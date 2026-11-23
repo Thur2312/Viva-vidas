@@ -90,7 +90,7 @@ const extraction = (over: Record<string, unknown> = {}) => ({
 const COLS = [
   'conversation_id', 'trigger_message_id', 'draft_body', 'model', 'playbook_version', 'stage_guess', 'qualified_guess',
   'next_action_guess', 'action', 'objection_id', 'asked_field', 'handoff_reason', 'guard_violations', 'prompt_hash',
-  'input_tokens', 'output_tokens', 'calls', 'not_understood',
+  'input_tokens', 'output_tokens', 'calls', 'not_understood', 'intended_action',
 ]
 const inserted = (params: any[]) => Object.fromEntries(COLS.map((c, i) => [c, params[i]]))
 
@@ -124,6 +124,36 @@ describe('ShadowService com o cérebro de vendas', () => {
     expect(row.not_understood).toBe(false)
     expect(JSON.parse(row.guard_violations)).toEqual([])
     expect(t.of(RE.insert)[0].sql).toMatch(/ON CONFLICT \(trigger_message_id\) DO NOTHING/)
+  })
+
+  it('I3: grava guardEvents em guard_violations e a ação pretendida em intended_action', async () => {
+    const t = setup(
+      { messages: [{ id: '3', author: 'lead', body: 'tá caro' }] },
+      [extraction({ objecao_id: 'preco' }), { texto: 'Te dou R$ 99 por mês.' }, { texto: 'Sem problema, cobre tudo!' }],
+    )
+    expect(await t.svc.run(CONV)).toEqual({ status: 'drafted', draftId: 42 })
+    const q = t.of(RE.insert)[0]
+    expect(q.params).toHaveLength(COLS.length)
+    expect(q.sql).toContain('$' + COLS.length + ')')
+    expect(q.sql).not.toContain('$' + (COLS.length + 1))
+    const row = inserted(q.params)
+    expect(row.action).toBe('repassar_humano')
+    expect(row.handoff_reason).toBe('guardacorpo')
+    expect(row.intended_action).toBe('tratar_objecao')
+    expect(row.objection_id).toBe('preco')
+    expect(JSON.parse(row.guard_violations)).toEqual(['valor_nao_aprovado', 'cobertura_nao_aprovada'])
+  })
+
+  it('I3: regeração limpa ainda registra o evento em guard_violations; intended_action null', async () => {
+    const t = setup(
+      { messages: [{ id: '3', author: 'lead', body: 'oi' }] },
+      [extraction(), { texto: 'Fica R$ 99 por mês. Quantas pessoas?' }, { texto: 'Vocês já têm plano hoje?' }],
+    )
+    await t.svc.run(CONV)
+    const row = inserted(t.of(RE.insert)[0].params)
+    expect(row.action).toBe('perguntar_campo')
+    expect(JSON.parse(row.guard_violations)).toEqual(['valor_nao_aprovado'])
+    expect(row.intended_action).toBeNull()
   })
 
   it('perfil alterado é gravado com jsonb_build_object, só depois do INSERT bem-sucedido', async () => {

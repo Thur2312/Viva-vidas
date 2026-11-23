@@ -1,5 +1,5 @@
 -- Cérebro de vendas: playbook estruturado (data jsonb + status), telemetria do rascunho
--- (ação, objeção, campo perguntado, motivo de repasse, violações das travas, hash do prompt, tokens),
+-- (ação, ação pretendida, objeção, campo perguntado, motivo de repasse, eventos das travas, hash do prompt, tokens),
 -- UNIQUE por mensagem gatilho e view de prontidão por ação.
 -- Aditivo e idempotente, só schema horizon_agent. Reversível: DROP VIEW horizon_agent.agent_readiness_by_action;
 -- DROP INDEX horizon_agent.agent_drafts_trigger_uidx; e remover as colunas novas (nada é apagado aqui,
@@ -38,6 +38,9 @@ ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS output_tokens in
 ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS calls integer;
 -- Sinal nao_entendeu do turno; a sequência das linhas mais recentes alimenta failedUnderstandingStreak.
 ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS not_understood boolean NOT NULL DEFAULT false;
+-- Ação que a política escolheu antes de um repasse por guardacorpo (null quando não houve). guard_violations
+-- guarda os eventos de TODAS as tentativas do turno (violações e 'verificador_reprovou'), não só do texto final.
+ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS intended_action text;
 
 -- Um rascunho por mensagem gatilho: remove os duplicados mais novos (mantém o menor id)
 -- antes de criar o índice único.

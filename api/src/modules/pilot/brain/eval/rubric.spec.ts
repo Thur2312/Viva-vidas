@@ -13,6 +13,8 @@ const out = (action: Action, o: Partial<BrainOutput> = {}): BrainOutput => ({
   askedField: action.tipo === 'perguntar_campo' ? action.campo : null,
   handoffReason: action.tipo === 'repassar_humano' ? action.motivo : null,
   violations: [],
+  guardEvents: [],
+  intendedAction: null,
   model: 'fake',
   promptHash: 'x',
   inputTokens: 0,
@@ -36,6 +38,11 @@ describe('scoreRun', () => {
     const r = scoreRun({ outputs: [out({ tipo: 'aguardar' }, { violations: ['valor_nao_aprovado'] })] }, scenario())
     expect(r.score).toBe(0)
     expect(r.failures.join(' ')).toContain('valor_nao_aprovado')
+  })
+
+  it('guardEvents de tentativas anteriores (rascunho final limpo) não zera o score', () => {
+    const r = scoreRun({ outputs: [out({ tipo: 'aguardar' }, { guardEvents: ['valor_nao_aprovado', 'verificador_reprovou'] })] }, scenario())
+    expect(r.score).toBe(1)
   })
 
   it('pergunta de saúde no rascunho zera o score mesmo sem violations', () => {

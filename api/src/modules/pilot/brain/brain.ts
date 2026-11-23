@@ -37,7 +37,15 @@ export interface BrainOutput {
   objectionId: string | null
   askedField: string | null
   handoffReason: HandoffReason | null
+  /** Violações do rascunho FINAL (semântica inalterada; a rubrica do eval zera nelas). */
   violations: Violation[]
+  /**
+   * Tudo que os guarda-corpos barraram neste turno, em qualquer tentativa: nomes das violações e
+   * 'verificador_reprovou' (e 'rascunho_vazio'). Vai para agent_drafts.guard_violations (métrica "Barrados").
+   */
+  guardEvents: string[]
+  /** Ação que a política escolheu antes de um repasse por guardacorpo; null quando não houve. */
+  intendedAction: Action['tipo'] | null
   model: string
   promptHash: string
   inputTokens: number
@@ -120,18 +128,23 @@ export class SalesBrain {
 
     let profile = i.profile
     let notUnderstood = false
-    const finish = (action: Action, draft: string, violations: Violation[] = []): BrainOutput => {
+    const guardEvents = new Set<string>()
+    const finish = (action: Action, draft: string, violations: Violation[] = [], intended: Action | null = null): BrainOutput => {
       const crit = i.playbook?.criterios
       const qualificado = !!crit?.qualificado && evalPredicate(crit.qualificado, profile) === true
       const perdido = !!crit?.desqualificado && evalPredicate(crit.desqualificado, profile) === true
+      // Num repasse por guardacorpo, campo/objeção vêm da ação pretendida (o que o agente ia fazer).
+      const alvo = intended ?? action
       return {
         draft,
         action,
         profile,
-        objectionId: action.tipo === 'tratar_objecao' ? action.objecaoId : null,
-        askedField: action.tipo === 'perguntar_campo' ? action.campo : null,
+        objectionId: alvo.tipo === 'tratar_objecao' ? alvo.objecaoId : null,
+        askedField: alvo.tipo === 'perguntar_campo' ? alvo.campo : null,
         handoffReason: action.tipo === 'repassar_humano' ? action.motivo : null,
         violations,
+        guardEvents: [...guardEvents],
+        intendedAction: intended ? intended.tipo : null,
         model: meter.model,
         promptHash: PROMPT_HASH,
         inputTokens: meter.inputTokens,
@@ -142,8 +155,8 @@ export class SalesBrain {
         notUnderstood,
       }
     }
-    const handoff = (motivo: HandoffReason, violations: Violation[] = []) =>
-      finish({ tipo: 'repassar_humano', motivo }, HANDOFF_TEXT[motivo], violations)
+    const handoff = (motivo: HandoffReason, violations: Violation[] = [], intended: Action | null = null) =>
+      finish({ tipo: 'repassar_humano', motivo }, HANDOFF_TEXT[motivo], violations, intended)
 
     const messages = buildBrainMessages(i.history, i.summary)
     if (!messages) return finish({ tipo: 'aguardar' }, '')
@@ -214,15 +227,21 @@ export class SalesBrain {
     let regenerated = false
     for (;;) {
       const { violations, risky } = checkDraft(draft, aprovados)
+      for (const v of violations) guardEvents.add(v)
       let rejection: { violations: Violation[]; motivo?: string } | null = null
-      if (!draft) rejection = { violations, motivo: 'rascunho vazio' }
-      else if (violations.length) rejection = { violations }
+      if (!draft) {
+        guardEvents.add('rascunho_vazio')
+        rejection = { violations, motivo: 'rascunho vazio' }
+      } else if (violations.length) rejection = { violations }
       else if (risky) {
         const v = await verify(draft)
-        if (!v.aprovado) rejection = { violations, motivo: v.motivo }
+        if (!v.aprovado) {
+          guardEvents.add('verificador_reprovou')
+          rejection = { violations, motivo: v.motivo }
+        }
       }
       if (!rejection) return finish(action, draft)
-      if (regenerated) return handoff('guardacorpo', violations)
+      if (regenerated) return handoff('guardacorpo', violations, action)
       regenerated = true
       draft = await write(rejection)
     }

@@ -361,13 +361,15 @@ export class ShadowService {
     const ins = await this.pg.query(
       `INSERT INTO horizon_agent.agent_drafts
          (conversation_id, trigger_message_id, draft_body, model, playbook_version, stage_guess, qualified_guess, next_action_guess,
-          action, objection_id, asked_field, handoff_reason, guard_violations, prompt_hash, input_tokens, output_tokens, calls, not_understood)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,$18)
+          action, objection_id, asked_field, handoff_reason, guard_violations, prompt_hash, input_tokens, output_tokens, calls, not_understood,
+          intended_action)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14,$15,$16,$17,$18,$19)
        ON CONFLICT (trigger_message_id) DO NOTHING RETURNING id`,
       [
         conversationId, triggerId, this.crypto.encrypt(draftText), out.model, playbook?.version ?? null, out.stageGuess, out.qualifiedGuess,
-        out.action.tipo, out.action.tipo, out.objectionId, out.askedField, out.handoffReason, JSON.stringify(out.violations), out.promptHash,
-        out.inputTokens, out.outputTokens, out.calls, out.notUnderstood,
+        // guard_violations = eventos de todas as tentativas (métrica "Barrados"), não só as do texto final.
+        out.action.tipo, out.action.tipo, out.objectionId, out.askedField, out.handoffReason, JSON.stringify(out.guardEvents), out.promptHash,
+        out.inputTokens, out.outputTokens, out.calls, out.notUnderstood, out.intendedAction,
       ],
     )
     if (!ins.rows.length) return { status: 'already_drafted' }

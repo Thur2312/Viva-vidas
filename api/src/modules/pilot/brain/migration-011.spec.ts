@@ -26,6 +26,12 @@ describe('migration 011_sales_brain.sql', () => {
     );
   });
 
+  it('adiciona agent_drafts.intended_action text (acao pretendida antes do guardacorpo)', () => {
+    expect(sql).toMatch(
+      /ALTER\s+TABLE\s+horizon_agent\.agent_drafts\s+ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+intended_action\s+text\s*;/i,
+    );
+  });
+
   it('cria a view de prontidao por acao', () => {
     expect(sql).toMatch(/VIEW\s+horizon_agent\.agent_readiness_by_action/);
   });

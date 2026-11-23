@@ -141,7 +141,9 @@ describe('SalesBrain', () => {
     expect(out.handoffReason).toBe('guardacorpo')
     expect(out.draft).toBe(HANDOFF_TEXT.guardacorpo)
     expect(out.calls).toBe(5)
-    expect(out.askedField).toBeNull()
+    // I3: o repasse por guardacorpo preserva o campo da ação pretendida
+    expect(out.askedField).toBe('plano_atual')
+    expect(out.intendedAction).toBe('perguntar_campo')
   })
 
   it.each(['', '[áudio]'])('(f) mensagem do lead %j: não lança', async (body) => {
@@ -403,6 +405,73 @@ describe('SalesBrain', () => {
       expect(out.handoffReason).toBe('guardacorpo')
       expect(out.violations).toContain('prazo_nao_aprovado')
       expect(llm.calls[2].system).toContain('valor_nao_aprovado')
+    })
+  })
+
+  describe('I3: guardEvents e intendedAction', () => {
+    it('rascunho que passa após uma regeração: guardEvents tem a violação, violations fica []', async () => {
+      const llm = new FakeLlm([
+        ext(),
+        { texto: 'Fica R$ 99 por mês. Quantas pessoas entrariam?' },
+        { texto: 'Vocês já têm plano hoje?' },
+      ])
+      const out = await new SalesBrain(llm).decide(input())
+      expect(out.action).toEqual({ tipo: 'perguntar_campo', campo: 'plano_atual' })
+      expect(out.violations).toEqual([])
+      expect(out.guardEvents).toEqual(['valor_nao_aprovado'])
+      expect(out.intendedAction).toBeNull()
+    })
+
+    it('verificador reprova e a regeração passa: guardEvents inclui verificador_reprovou', async () => {
+      const llm = new FakeLlm([
+        ext(),
+        { texto: RASCUNHO_COM_FATO },
+        { aprovado: false, motivo: 'tom de promessa' },
+        { texto: 'Vocês já têm plano hoje?' },
+      ])
+      const out = await new SalesBrain(llm).decide(input({ playbook: playbookComPrazo() }))
+      expect(out.handoffReason).toBeNull()
+      expect(out.violations).toEqual([])
+      expect(out.guardEvents).toEqual(['verificador_reprovou'])
+    })
+
+    it('guardacorpo por verificador: guardEvents não fica vazio e preserva a ação pretendida', async () => {
+      const llm = new FakeLlm([
+        ext(),
+        { texto: RASCUNHO_COM_FATO },
+        { aprovado: false, motivo: 'x' },
+        { texto: RASCUNHO_COM_FATO },
+        { aprovado: false, motivo: 'x' },
+      ])
+      const out = await new SalesBrain(llm).decide(input({ playbook: playbookComPrazo() }))
+      expect(out.handoffReason).toBe('guardacorpo')
+      expect(out.violations).toEqual([])
+      expect(out.guardEvents).toEqual(['verificador_reprovou'])
+      expect(out.intendedAction).toBe('perguntar_campo')
+      expect(out.askedField).toBe('plano_atual')
+      expect(out.objectionId).toBeNull()
+    })
+
+    it('guardacorpo em tratar_objecao preserva objectionId e une as violações das tentativas', async () => {
+      const llm = new FakeLlm([
+        ext({ objecao_id: 'preco' }),
+        { texto: 'Te dou R$ 99 por mês.' },
+        { texto: 'Sem problema, cobre tudo!' },
+      ])
+      const out = await new SalesBrain(llm).decide(input({ history: [lead(77, 'tá caro')] }))
+      expect(out.action).toEqual({ tipo: 'repassar_humano', motivo: 'guardacorpo' })
+      expect(out.intendedAction).toBe('tratar_objecao')
+      expect(out.objectionId).toBe('preco')
+      expect(out.askedField).toBeNull()
+      expect(out.violations).toEqual(['cobertura_nao_aprovada'])
+      expect(out.guardEvents).toEqual(['valor_nao_aprovado', 'cobertura_nao_aprovada'])
+    })
+
+    it('turno sem nenhum evento: guardEvents [] e intendedAction null', async () => {
+      const llm = new FakeLlm([ext({ pediu_humano: true })])
+      const out = await new SalesBrain(llm).decide(input())
+      expect(out.guardEvents).toEqual([])
+      expect(out.intendedAction).toBeNull()
     })
   })
 
