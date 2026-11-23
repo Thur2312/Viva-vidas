@@ -239,6 +239,18 @@ export class ShadowService {
     return { enabled: this.llm.enabled, mode: 'shadow' as const, provider: this.llm.provider }
   }
 
+  /** A mensagem gatilho ainda é a mais recente da conversa? */
+  private async isNewest(conversationId: string, triggerId: number): Promise<boolean> {
+    const newest = (
+      await this.pg.query(
+        `SELECT m.id, m.author FROM horizon_agent.messages m
+         WHERE m.conversation_id = $1 ORDER BY m.created_at DESC, m.id DESC LIMIT 1`,
+        [conversationId],
+      )
+    ).rows[0]
+    return !!newest && Number(newest.id) === triggerId
+  }
+
   /** Gera o rascunho para a última mensagem do lead na conversa, sem enviar nada. */
   async run(conversationId: string): Promise<ShadowRunResult> {
     if (!this.llm.enabled) return { status: 'disabled' }
@@ -265,14 +277,7 @@ export class ShadowService {
     if (!lead || lead.opt_out || lead.anonymized_at) return { status: 'opt_out' }
 
     // Rascunho obsoleto: se alguém (humano/agente) já falou depois do lead, não há o que rascunhar.
-    const newest = (
-      await this.pg.query(
-        `SELECT m.id, m.author FROM horizon_agent.messages m
-         WHERE m.conversation_id = $1 ORDER BY m.created_at DESC, m.id DESC LIMIT 1`,
-        [conversationId],
-      )
-    ).rows[0]
-    if (!newest || Number(newest.id) !== triggerId) return { status: 'stale' }
+    if (!(await this.isNewest(conversationId, triggerId))) return { status: 'stale' }
 
     // Atalho barato antes de gastar LLM; a garantia real contra corrida é o ON CONFLICT do INSERT abaixo.
     const already = await this.pg.query(`SELECT 1 FROM horizon_agent.agent_drafts WHERE trigger_message_id = $1`, [triggerId])
@@ -355,6 +360,10 @@ export class ShadowService {
     }
     // Localmente, devolve o primeiro nome ao rascunho para ele ser comparável com a fala real do colaborador.
     const draftText = restoreLeadName(out.draft, lead.name)
+
+    // Uma decisão pode levar minutos (retries, timeouts): reconfere logo antes de gravar. Se chegou mensagem
+    // nova (do lead ou de alguém da equipe), o rascunho já nasceu obsoleto e não é gravado.
+    if (!(await this.isNewest(conversationId, triggerId))) return { status: 'stale' }
 
     // Rascunho vazio (ação 'aguardar') também é gravado, para dedupe e telemetria.
     // Consumidores (painel, comparação com a resposta humana) devem ignorar rascunhos vazios.

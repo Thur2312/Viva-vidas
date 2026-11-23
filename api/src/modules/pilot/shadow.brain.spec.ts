@@ -197,6 +197,31 @@ describe('ShadowService com o cérebro de vendas', () => {
     expect(t.of(RE.insert)).toHaveLength(0)
   })
 
+  it('nova mensagem chega durante a decisão: reconfere antes do INSERT e devolve stale sem gravar', async () => {
+    const s: Scenario = { messages: [{ id: '3', author: 'lead', body: 'oi' }] }
+    const t = setup(s, [
+      extraction(),
+      () => {
+        // enquanto o LLM redige, o colaborador responde
+        s.messages.push({ id: '4', author: 'humano', body: 'Olá! Já te atendo.' })
+        return { texto: 'Vocês já têm plano hoje?' }
+      },
+    ])
+    expect(await t.svc.run(CONV)).toEqual({ status: 'stale' })
+    expect(t.llm.calls).toHaveLength(2)
+    expect(t.of(RE.lastAny)).toHaveLength(2)
+    expect(t.of(RE.insert)).toHaveLength(0)
+    expect(t.of(RE.update)).toHaveLength(0)
+  })
+
+  it('reconferência imediatamente antes do INSERT (última consulta antes dele)', async () => {
+    const t = setup({ messages: [{ id: '3', author: 'lead', body: 'oi' }] }, [extraction(), { texto: 'Vocês já têm plano hoje?' }])
+    expect(await t.svc.run(CONV)).toEqual({ status: 'drafted', draftId: 42 })
+    const ins = t.indexOf(RE.insert)
+    expect(RE.lastAny.test(t.queries[ins - 1].sql)).toBe(true)
+    expect(t.queries[ins - 1].params).toEqual([CONV])
+  })
+
   it('já rascunhado (SELECT): already_drafted antes de chamar o LLM', async () => {
     const t = setup({ messages: [{ id: '1', author: 'lead', body: 'oi' }], alreadyDrafted: true })
     expect(await t.svc.run(CONV)).toEqual({ status: 'already_drafted' })
