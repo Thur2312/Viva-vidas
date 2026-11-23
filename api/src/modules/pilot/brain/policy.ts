@@ -26,7 +26,7 @@ export function decideAction(i: PolicyInput): Action {
   if (!playbook || !validatePlaybook(playbook).complete) return repassar('playbook_incompleto')
   if (signals.pediuHumano) return repassar('pediu_humano')
   if (signals.falouSaude) return repassar('saude')
-  if (i.failedUnderstandingStreak >= 2) return repassar('nao_entendeu')
+  if (i.failedUnderstandingStreak + (signals.naoEntendeu ? 1 : 0) >= 2) return repassar('nao_entendeu')
 
   if (signals.objecaoId) {
     const conhecida = playbook.objecoes.some((o) => o.id === signals.objecaoId)

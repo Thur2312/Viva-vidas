@@ -51,6 +51,24 @@ describe('decideAction', () => {
     expect(decideAction(input({ failedUnderstandingStreak: 2 }))).toEqual({ tipo: 'repassar_humano', motivo: 'nao_entendeu' })
   })
 
+  it('streak 1 + naoEntendeu -> nao_entendeu', () => {
+    const i = input({ failedUnderstandingStreak: 1 })
+    i.signals.naoEntendeu = true
+    expect(decideAction(i)).toEqual({ tipo: 'repassar_humano', motivo: 'nao_entendeu' })
+  })
+
+  it('streak 0 + naoEntendeu nao repassa por nao_entendeu', () => {
+    const i = input({ failedUnderstandingStreak: 0 })
+    i.signals.naoEntendeu = true
+    expect(decideAction(i).tipo).toBe('perguntar_campo')
+  })
+
+  it('streak 2 sem naoEntendeu -> nao_entendeu', () => {
+    const i = input({ failedUnderstandingStreak: 2 })
+    i.signals.naoEntendeu = false
+    expect(decideAction(i)).toEqual({ tipo: 'repassar_humano', motivo: 'nao_entendeu' })
+  })
+
   it('streak 1 nao repassa', () => {
     expect(decideAction(input({ failedUnderstandingStreak: 1 })).tipo).toBe('perguntar_campo')
   })
