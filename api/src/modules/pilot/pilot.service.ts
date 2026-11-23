@@ -243,7 +243,7 @@ export class PilotService {
     const draft = (
       await db.query(
         `SELECT id, draft_body FROM horizon_agent.agent_drafts
-         WHERE conversation_id = $1 AND human_message_id IS NULL
+         WHERE conversation_id = $1 AND human_message_id IS NULL AND action IS DISTINCT FROM 'aguardar'
          ORDER BY created_at DESC LIMIT 1`,
         [conversationId],
       )
@@ -389,7 +389,10 @@ export class PilotService {
       lead,
       events,
       messages: messages.map((m) => ({ ...m, body: content ? this.crypto.decrypt(m.body) : RESTRICTED_TEXT })),
-      drafts: drafts.map((d) => ({ ...d, draft_body: content ? this.crypto.decrypt(d.draft_body) : RESTRICTED_TEXT })),
+      // Rascunho vazio (ação 'aguardar') não é sugestão: fica fora da lista.
+      drafts: drafts
+        .filter((d) => this.crypto.decrypt(d.draft_body))
+        .map((d) => ({ ...d, draft_body: content ? this.crypto.decrypt(d.draft_body) : RESTRICTED_TEXT })),
     }
   }
 

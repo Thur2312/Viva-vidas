@@ -88,6 +88,7 @@ export class ConversationsService {
           SELECT 1 FROM horizon_agent.agent_drafts d
           JOIN horizon_agent.messages tm ON tm.id = d.trigger_message_id
           WHERE d.conversation_id = c.id AND d.human_message_id IS NULL
+            AND d.action IS DISTINCT FROM 'aguardar' -- rascunho vazio não é sugestão pendente
             AND tm.created_at > coalesce((SELECT max(h.created_at) FROM horizon_agent.messages h WHERE h.conversation_id = c.id AND h.direction = 'out'), '-infinity'::timestamptz)
         ) AS pending
       ) pd ON true
@@ -169,7 +170,8 @@ export class ConversationsService {
           )
         ).rows
       : []
-    const byTrigger = new Map(drafts.map((d) => [String(d.trigger_message_id), d]))
+    // Rascunho vazio (ação 'aguardar') existe só para dedupe/telemetria: não vira sugestão no painel.
+    const byTrigger = new Map(drafts.filter((d) => this.crypto.decrypt(d.draft_body)).map((d) => [String(d.trigger_message_id), d]))
 
     const data = page.map((m) => {
       const d = byTrigger.get(String(m.id))

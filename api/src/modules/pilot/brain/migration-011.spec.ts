@@ -20,6 +20,12 @@ describe('migration 011_sales_brain.sql', () => {
     expect(sql).toContain('COMMIT;');
   });
 
+  it('adiciona agent_drafts.not_understood boolean NOT NULL DEFAULT false', () => {
+    expect(sql).toMatch(
+      /ALTER\s+TABLE\s+horizon_agent\.agent_drafts\s+ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+not_understood\s+boolean\s+NOT\s+NULL\s+DEFAULT\s+false/i,
+    );
+  });
+
   it('cria a view de prontidao por acao', () => {
     expect(sql).toMatch(/VIEW\s+horizon_agent\.agent_readiness_by_action/);
   });

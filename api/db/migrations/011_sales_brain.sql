@@ -36,6 +36,8 @@ ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS prompt_hash text
 ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS input_tokens integer;
 ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS output_tokens integer;
 ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS calls integer;
+-- Sinal nao_entendeu do turno; a sequência das linhas mais recentes alimenta failedUnderstandingStreak.
+ALTER TABLE horizon_agent.agent_drafts ADD COLUMN IF NOT EXISTS not_understood boolean NOT NULL DEFAULT false;
 
 -- Um rascunho por mensagem gatilho: remove os duplicados mais novos (mantém o menor id)
 -- antes de criar o índice único.
