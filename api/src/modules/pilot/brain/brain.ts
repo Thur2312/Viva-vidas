@@ -2,6 +2,7 @@ import { checkDraft, Violation } from './guardrails'
 import { LlmCall, StructuredLlm } from './llm'
 import { PolicyInput, decideAction } from './policy'
 import { evalPredicate, mergeProfile } from './profile'
+import { normalizePlaybook } from './playbook.normalize'
 import { validatePlaybook } from './playbook.validate'
 import {
   EMPTY_PLACEHOLDER,
@@ -115,7 +116,9 @@ const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null
 export class SalesBrain {
   constructor(private readonly llm: StructuredLlm) {}
 
-  async decide(i: BrainInput): Promise<BrainOutput> {
+  async decide(input: BrainInput): Promise<BrainOutput> {
+    // Defesa em profundidade: playbook vindo de qualquer lugar ganha a forma normalizada antes dos prompts.
+    const i: BrainInput = { ...input, playbook: input.playbook ? normalizePlaybook(input.playbook) : null }
     const meter = { calls: 0, inputTokens: 0, outputTokens: 0, model: 'none' }
     const call = async <T>(c: LlmCall): Promise<T> => {
       meter.calls++

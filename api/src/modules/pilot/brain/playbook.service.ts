@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { Db, PgService } from '../pg.service'
 import { AuditService, RequestCtx } from '../compliance/audit.service'
 import { emptyPlaybookTemplate } from './playbook.template'
+import { normalizePlaybook } from './playbook.normalize'
 import { validatePlaybook } from './playbook.validate'
 import { PlaybookData, Predicate } from './types'
 
@@ -96,13 +97,15 @@ export class PlaybookService {
   }
 
   async create(dto: { data?: PlaybookData; notes?: string; fromVersion?: number }, ctx: RequestCtx) {
-    let data: PlaybookData
-    if (dto.data) data = dto.data
-    else if (dto.fromVersion) data = (await this.row(dto.fromVersion)).data ?? emptyPlaybookTemplate()
+    let raw: unknown
+    if (dto.data) raw = dto.data
+    else if (dto.fromVersion) raw = (await this.row(dto.fromVersion)).data ?? emptyPlaybookTemplate()
     else {
       const { rows } = await this.pg.query(`SELECT ${VERSION_COLS} FROM horizon_agent.playbook_versions WHERE active LIMIT 1`)
-      data = rows[0]?.data ?? emptyPlaybookTemplate()
+      raw = rows[0]?.data ?? emptyPlaybookTemplate()
     }
+    // O DTO só garante "objeto": grava sempre a forma normalizada (chaves conhecidas, padrões, sem exemplos).
+    const data = normalizePlaybook(raw)
     const sql = `INSERT INTO horizon_agent.playbook_versions (version, body, notes, source, active, status, data)
       SELECT coalesce(max(version), 0) + 1, $1, $2, 'manual', false, 'rascunho', $3::jsonb FROM horizon_agent.playbook_versions
       RETURNING version`
@@ -122,7 +125,7 @@ export class PlaybookService {
     if (dto.data === undefined && dto.notes === undefined) throw new BadRequestException('Nada para atualizar')
     const cur = await this.row(version)
     if (cur.status !== 'rascunho') throw new ConflictException('Só é possível editar um rascunho')
-    const data: PlaybookData = dto.data ?? cur.data ?? emptyPlaybookTemplate()
+    const data = normalizePlaybook(dto.data ?? cur.data ?? emptyPlaybookTemplate())
     const { rowCount } = await this.pg.query(
       `UPDATE horizon_agent.playbook_versions SET data = $2::jsonb, body = $3, notes = coalesce($4, notes)
        WHERE version = $1 AND status = 'rascunho'`,
@@ -136,7 +139,8 @@ export class PlaybookService {
   async activate(version: number, ctx: RequestCtx) {
     const cur = await this.row(version)
     if (cur.status !== 'rascunho') throw new ConflictException('Só é possível ativar um rascunho')
-    const data: PlaybookData = cur.data ?? emptyPlaybookTemplate()
+    // Linha antiga/parcial: normaliza antes de validar, para pendência virar 422 e não TypeError (500).
+    const data = normalizePlaybook(cur.data ?? emptyPlaybookTemplate())
     const check = validatePlaybook(data)
     if (!check.complete) {
       throw new UnprocessableEntityException({

@@ -333,6 +333,24 @@ describe('ShadowService com o cérebro de vendas', () => {
     expect(JSON.stringify(t.llm.calls)).not.toMatch(/RESUMO|diabetes/)
   })
 
+  it('I5: playbook ativo estruturalmente parcial (sem regrasProibidas/tom.frases/nuncaDizer) não derruba o turno', async () => {
+    const decide = jest.spyOn(SalesBrain.prototype, 'decide')
+    const data: any = structuredClone(testPlaybook)
+    delete data.regrasProibidas
+    delete data.tom.frases
+    for (const o of data.objecoes) delete o.nuncaDizer
+    data.exemplos = { oferta: 'EXEMPLO (não ativo): x' }
+    const t = setup(
+      { messages: [{ id: '3', author: 'lead', body: 'tá caro' }], playbookData: data },
+      [extraction({ objecao_id: 'preco' }), { texto: 'Entendo! Posso te mostrar opções?' }],
+    )
+    expect(await t.svc.run(CONV)).toEqual({ status: 'drafted', draftId: 42 })
+    const pb = (decide.mock.calls[0][0] as BrainInput).playbook!
+    expect(pb.regrasProibidas).toEqual([])
+    expect(pb).not.toHaveProperty('exemplos')
+    expect(inserted(t.of(RE.insert)[0].params).action).toBe('tratar_objecao')
+  })
+
   it('playbook legado sem data: playbook null => passagem playbook_incompleto sem LLM', async () => {
     const decide = jest.spyOn(SalesBrain.prototype, 'decide')
     const t = setup({ messages: [{ id: '3', author: 'lead', body: 'oi' }], playbookData: null })

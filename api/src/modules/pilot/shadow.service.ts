@@ -5,7 +5,8 @@ import { CryptoService } from './compliance/crypto.service'
 import { pseudonymize, pseudonymizeDeep, restoreLeadName } from './compliance/redaction'
 import { BrainOutput, SalesBrain } from './brain/brain'
 import { LlmError, StructuredLlm, createStructuredLlm, resolveAnthropicBaseUrl } from './brain/llm'
-import { PlaybookData, Profile } from './brain/types'
+import { normalizePlaybook } from './brain/playbook.normalize'
+import { Profile } from './brain/types'
 
 export interface DraftContext {
   playbook: string | null
@@ -329,7 +330,8 @@ export class ShadowService {
     let out: BrainOutput
     try {
       out = await this.brain.decide({
-        playbook: (playbook?.data ?? null) as PlaybookData | null,
+        // Linha legada/parcial não derruba o turno: normalizada aqui (e de novo, por defesa, no cérebro).
+        playbook: playbook?.data ? normalizePlaybook(playbook.data) : null,
         playbookVersion: playbook?.version ?? null,
         profile: profileIn,
         history: history.map((m) => ({

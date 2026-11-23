@@ -197,6 +197,35 @@ describe('PlaybookController (HTTP)', () => {
     expect(txLog).toEqual([])
   })
 
+  it('I5: activate de playbook estruturalmente parcial/malformado dá 422, nunca 500', async () => {
+    for (const data of [
+      { oferta: { descricao: 5, publico: ['x'] }, campos: 'y', objecoes: [{ gatilho: 1 }], fatos: [null], agenda: 'z' },
+      { campos: [{ chave: 'a', pergunta: 1, obrigatorio: true }], criterios: { qualificado: { all: 'x' } } },
+      'texto',
+    ]) {
+      rows[4] = { version: 4, status: 'rascunho', source: 'manual', notes: null, created_at: 'x', data }
+      const r = await as('owner', http().post('/pilot/playbook/4/activate')).expect(422)
+      expect(r.body.code).toBe('playbook_incompleto')
+    }
+    expect(txLog).toEqual([])
+  })
+
+  it('I5: POST e PUT gravam o playbook normalizado (chaves conhecidas, padrões, sem exemplos)', async () => {
+    const raw = { oferta: { descricao: 'd' }, campos: [{ chave: 'c', sensivel: true, obrigatorio: true }], lixo: 1, exemplos: { a: 'b' } }
+    await as('owner', http().post('/pilot/playbook').send({ data: raw })).expect(201)
+    const ins = dataParam(sqls.find((q) => /INSERT INTO horizon_agent\.playbook_versions/.test(q.sql))!)
+    expect(ins).not.toHaveProperty('lixo')
+    expect(ins).not.toHaveProperty('exemplos')
+    expect(ins.regrasProibidas).toEqual([])
+    expect(ins.tom.frases).toEqual([])
+    expect(ins.campos[0]).toMatchObject({ chave: 'c', sensivel: true, obrigatorio: false })
+    sqls = []
+    await as('owner', http().put('/pilot/playbook/3').send({ data: raw })).expect(200)
+    const up = dataParam(sqls.find((q) => /^UPDATE horizon_agent\.playbook_versions/.test(q.sql))!)
+    expect(up).not.toHaveProperty('lixo')
+    expect(up.objecoes).toEqual([])
+  })
+
   it('activate completo: 200; arquiva o ativo e ativa, nessa ordem, dentro da transação', async () => {
     await as('owner', http().post('/pilot/playbook/2/activate')).expect(200)
     expect(txLog).toEqual(['BEGIN', 'COMMIT'])
