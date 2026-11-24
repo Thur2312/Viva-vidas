@@ -132,6 +132,19 @@ export class ChatGatewayService {
     }
   }
 
+  /**
+   * Pede ao chat para iniciar a sessão do WhatsApp (gera o QR). Idempotente no chat: conectado não é tocado.
+   * Nunca lança: devolve o motivo explícito.
+   */
+  async startConnection(): Promise<{ ok: true; data: { id: number; status: string; started: boolean } } | { ok: false; error: string }> {
+    if (!this.configured()) return { ok: false, error: 'chat_nao_configurado' }
+    try {
+      return { ok: true, data: await this.call('POST', '/pilot-bridge/connection/start', { connectionId: this.connectionId }) }
+    } catch (e: any) {
+      return { ok: false, error: e?.status === 503 ? 'chat_nao_configurado' : 'chat_indisponivel' }
+    }
+  }
+
   private async call<T = any>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
     if (!this.configured()) throw new ServiceUnavailableException('Chat não configurado (CHAT_API_URL / CHAT_BRIDGE_KEY)')
     const ctrl = new AbortController()
