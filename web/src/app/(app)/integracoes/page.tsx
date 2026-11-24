@@ -5,6 +5,8 @@ import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
 import { Folio, Marginalia } from "@/components/folha";
 import { Selo } from "@/components/Selo";
 import { ConectarOficial } from "@/components/integracoes/ConectarOficial";
+import { ConectarGoogle } from "@/components/integracoes/ConectarGoogle";
+import { CampoConfig } from "@/components/agente/CampoConfig";
 import { PageHeader } from "@/components/ui";
 import { isOwner } from "@/components/disparos/api";
 import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, useStartWhatsapp, useWhatsappConnection, type WhatsappConnection, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
@@ -26,11 +28,19 @@ function Cabecalho({ s }: { s: { enabled: boolean; configured: boolean; missing:
 }
 
 function Faltando({ list }: { list: string[] }) {
+  const role = useMe().data?.role;
   if (!list.length) return null;
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium">Falta configurar no servidor:</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-mute">{list.map((m) => <li key={m}><code className="font-mono">{m}</code></li>)}</ul>
+      <p className="text-sm font-medium">Falta configurar:</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-mute">
+        {list.map((m) => (
+          <li key={m}>
+            <code className="font-mono">{m}</code>
+            <CampoConfig name={m.split(" ")[0]} role={role} />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -129,6 +139,7 @@ function WhatsappPanel({ c, owner }: { c: WhatsappConnection; owner: boolean }) 
 }
 
 function CalendarPanel({ s }: { s: CalendarStatus }) {
+  const role = useMe().data?.role;
   const ready = s.enabled && s.configured;
   const slots = useSlots(ready);
   return (
@@ -141,8 +152,9 @@ function CalendarPanel({ s }: { s: CalendarStatus }) {
           <QueryBlock q={slots} skeleton={<Skeleton className="h-32" />}>{(d) => <SlotsList timezone={d.timezone} slots={d.slots} />}</QueryBlock>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-mute">Para agendar pelo painel, o servidor precisa da conta Google do Alberto conectada. O passo a passo está em <code className="font-mono">docs/google-calendar.md</code>.</p>
+        <p className="mt-4 text-sm text-mute">Para agendar pelo painel, conecte a conta Google do Alberto pelos passos abaixo.</p>
       )}
+      <ConectarGoogle role={role} />
     </>
   );
 }

@@ -22,11 +22,11 @@ import { SecretsService } from './config/secrets.service'
 import { PlaybookService } from './brain/playbook.service'
 import { BROADCASTS_PROVIDERS, BroadcastsController } from './broadcasts/broadcasts.module-parts'
 import { CRM_PROVIDERS, CrmController } from '../crm/crm.module-parts'
-import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.module-parts'
+import { CALENDAR_PROVIDERS, CalendarController, GoogleOAuthController } from '../calendar/calendar.module-parts'
 
 @Module({
   imports: [ChatGatewayModule, PgModule],
-  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, PlaybookImportController, AgentTestController, ConfigController, CrmController, CalendarController],
+  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, PlaybookImportController, AgentTestController, ConfigController, CrmController, CalendarController, GoogleOAuthController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,

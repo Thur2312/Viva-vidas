@@ -6,7 +6,7 @@ import { CryptoService } from '../compliance/crypto.service'
 export interface SecretDef {
   name: string
   label: string
-  group: 'IA' | 'Voz' | 'Telefonia' | 'Chat' | 'Meta' | 'Acesso'
+  group: 'IA' | 'Voz' | 'Telefonia' | 'Chat' | 'Meta' | 'Acesso' | 'CRM' | 'Agenda'
   hint: string
   /** false = configuração comum (número, URL, provedor): o painel mostra o valor atual. Padrão: segredo. */
   secret?: false
@@ -42,6 +42,17 @@ export const SECRET_DEFS: SecretDef[] = [
   { name: 'TWILIO_VOICE_NUMBER', label: 'Twilio: número de saída', group: 'Telefonia', hint: 'Formato +55… Números do Brasil exigem Regulatory Bundle aprovado.', secret: false, placeholder: '+5511999999999' },
   { name: 'VOICE_WEBHOOK_BASE_URL', label: 'URL pública da API (webhooks)', group: 'Telefonia', hint: 'HTTPS, sem barra final, alcançável pelo Twilio.', secret: false, placeholder: 'https://horizon-api.exemplo.io' },
   { name: 'VOICE_OPERATOR_PHONE', label: 'Celular do operador', group: 'Telefonia', hint: 'Quem atende primeiro. Formato +55DDDNÚMERO.', secret: false, placeholder: '+5583999999999' },
+  { name: 'CRM_PROVIDER', label: 'CRM: provedor', group: 'CRM', hint: 'Escolha pipedrive para ligar o envio dos leads ao CRM.', secret: false, options: ['pipedrive'] },
+  { name: 'PIPEDRIVE_DOMAIN', label: 'Pipedrive: subdomínio', group: 'CRM', hint: 'A parte antes de .pipedrive.com (ex.: alberto).', secret: false, placeholder: 'alberto' },
+  { name: 'PIPEDRIVE_API_TOKEN', label: 'Pipedrive: token da API', group: 'CRM', hint: 'No Pipedrive: Configurações pessoais > Preferências > API. Trate como senha.' },
+  { name: 'PIPEDRIVE_STAGE_MAP', label: 'Pipedrive: etapas do funil (opcional)', group: 'CRM', hint: 'JSON com o número da etapa de cada fase. Vazio = sem etapa.', secret: false, placeholder: '{"qualificado":12,"reuniao_marcada":13,"compareceu":14}' },
+  { name: 'CALENDAR_PROVIDER', label: 'Agenda: provedor', group: 'Agenda', hint: 'Escolha google para ligar a agenda do agente.', secret: false, options: ['google'] },
+  { name: 'GOOGLE_CLIENT_ID', label: 'Google: Client ID', group: 'Agenda', hint: 'Google Cloud > APIs e serviços > Credenciais > ID do cliente OAuth (aplicativo da Web).', secret: false },
+  { name: 'GOOGLE_CLIENT_SECRET', label: 'Google: Client Secret', group: 'Agenda', hint: 'Da mesma credencial OAuth. Trate como senha.' },
+  { name: 'GOOGLE_REFRESH_TOKEN', label: 'Google: permissão permanente', group: 'Agenda', hint: 'Preenchida sozinha ao clicar em "Conectar Google Agenda". Não precisa digitar.' },
+  { name: 'GOOGLE_CALENDAR_ID', label: 'Google: agenda (opcional)', group: 'Agenda', hint: 'E-mail da agenda ou "primary" (a principal da conta que autorizou).', secret: false, placeholder: 'primary' },
+  { name: 'API_PUBLIC_URL', label: 'Endereço público desta API', group: 'Agenda', hint: 'HTTPS, sem barra final. Usado no retorno do Google (OAuth).', secret: false, placeholder: 'https://horizon-api.exemplo.io' },
+  { name: 'PANEL_PUBLIC_URL', label: 'Endereço do painel (opcional)', group: 'Agenda', hint: 'Para onde voltar depois de conectar. HTTPS, sem barra final.', secret: false, placeholder: 'https://painel.exemplo.io' },
   { name: 'CHAT_BRIDGE_KEY', label: 'Chave da ponte do chat', group: 'Chat', hint: 'Autoriza o envio de mensagens pelo chat (API → chat).' },
   { name: 'PILOT_API_KEY', label: 'Chave de ingestão do piloto', group: 'Chat', hint: 'O chat usa esta chave para enviar mensagens à API (chat → API).' },
   { name: 'FB_APP_ID', label: 'Meta: App ID', group: 'Meta', hint: 'ID do aplicativo Meta.' },
@@ -63,7 +74,15 @@ export function checkValue(def: SecretDef, raw: string): string {
     if (!VALUE_RE.test(v)) throw new BadRequestException('Valor inválido: use de 4 a 400 caracteres, sem espaços nem quebras de linha.')
     return v
   }
+  if (def.name === 'PIPEDRIVE_STAGE_MAP') {
+    let j: unknown
+    try { j = JSON.parse(v) } catch { throw new BadRequestException('JSON inválido. Ex.: {"qualificado":12,"reuniao_marcada":13}') }
+    const ok = !!j && typeof j === 'object' && !Array.isArray(j) && Object.keys(j as object).length <= 20 && Object.entries(j as Record<string, unknown>).every(([k, n]) => /^[a-z_]{1,40}$/.test(k) && Number.isInteger(n) && (n as number) > 0)
+    if (!ok || v.length > 400) throw new BadRequestException('Use um objeto com o número inteiro da etapa de cada fase. Ex.: {"qualificado":12}')
+    return JSON.stringify(j)
+  }
   if (!LOOSE_RE.test(v)) throw new BadRequestException('Valor inválido: use só caracteres simples, até 120.')
+  if (def.name === 'PIPEDRIVE_DOMAIN' && !/^[a-z0-9](?:[a-z0-9-]{0,60}[a-z0-9])?$/i.test(v)) throw new BadRequestException('Use só o subdomínio (letras, números e hífen), sem .pipedrive.com.')
   if (def.options && !def.options.includes(v.toLowerCase())) throw new BadRequestException(`Valor inválido: use ${def.options.join(' ou ')}.`)
   if (def.options) return v.toLowerCase()
   if (/PHONE|VOICE_NUMBER/.test(def.name) && !PHONE_RE.test(v)) throw new BadRequestException('Telefone inválido: use o formato +55DDDNÚMERO.')
