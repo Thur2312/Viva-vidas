@@ -24,9 +24,16 @@ function predicateErrors(p: Predicate, chaves: Set<string>, rotulo: string, out:
   for (const f of filhos) predicateErrors(f, chaves, rotulo, out)
 }
 
+export const MIN_LIVRE = 200
+
 export function validatePlaybook(raw: PlaybookData): PlaybookCompleteness {
   const missing: string[] = []
   const d = (raw && typeof raw === 'object' ? raw : {}) as Partial<PlaybookData>
+
+  // Modo livre: o texto do dono basta (sem formulário). Texto curto demais não orienta nada.
+  if (typeof d.livre === 'string' && d.livre.trim().length > 0) {
+    return d.livre.trim().length >= MIN_LIVRE ? { complete: true, missing: [] } : { complete: false, missing: [`livre: escreva ao menos ${MIN_LIVRE} caracteres`] }
+  }
 
   if (vazio(d.oferta?.descricao)) missing.push('oferta: descreva o que a corretora vende')
   if (vazio(d.oferta?.publico)) missing.push('oferta: informe o público')

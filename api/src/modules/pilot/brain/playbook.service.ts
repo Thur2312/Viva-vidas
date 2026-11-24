@@ -21,6 +21,7 @@ function predicateText(p: any): string {
 
 /** Texto legível (pt-BR) do playbook, gravado em `body` por compatibilidade. Omite seções vazias; ignora `exemplos`. */
 export function renderPlaybookText(d: PlaybookData): string {
+  if (d?.livre && d.livre.trim()) return d.livre.trim()
   const out: string[] = []
   const section = (title: string, body: (string | false | 0 | undefined)[]) => {
     const b = body.filter(Boolean) as string[]

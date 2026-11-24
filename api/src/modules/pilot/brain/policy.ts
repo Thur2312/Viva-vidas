@@ -28,6 +28,8 @@ export function decideAction(i: PolicyInput): Action {
   if (signals.falouSaude) return repassar('saude')
   // O turno atual precisa ele mesmo não ter sido entendido: lead que volta a ser claro não é repassado.
   if (signals.naoEntendeu && i.failedUnderstandingStreak + 1 >= 2) return repassar('nao_entendeu')
+  // Modo livre: o agente conversa com base no texto do dono; só pedido de humano e saúde repassam por regra.
+  if (playbook.livre) return { tipo: 'conversar' }
 
   if (signals.objecaoId) {
     const conhecida = playbook.objecoes.some((o) => o.id === signals.objecaoId)

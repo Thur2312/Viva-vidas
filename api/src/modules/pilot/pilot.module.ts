@@ -15,6 +15,9 @@ import { RetentionService } from './compliance/retention.service'
 import { ConversationsController } from './conversations/conversations.controller'
 import { ConversationsService } from './conversations/conversations.service'
 import { PlaybookController } from './brain/playbook.controller'
+import { AgentTestController } from './brain/agent-test.controller'
+import { ConfigController } from './config/config.controller'
+import { SecretsService } from './config/secrets.service'
 import { PlaybookService } from './brain/playbook.service'
 import { BROADCASTS_PROVIDERS, BroadcastsController } from './broadcasts/broadcasts.module-parts'
 import { CRM_PROVIDERS, CrmController } from '../crm/crm.module-parts'
@@ -22,13 +25,13 @@ import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.mod
 
 @Module({
   imports: [ChatGatewayModule, PgModule],
-  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, CrmController, CalendarController],
+  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, AgentTestController, ConfigController, CrmController, CalendarController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,
     ...CALENDAR_PROVIDERS,
     PilotService, ShadowService, PilotKeyGuard,
-    CryptoService, AuditService, ConsentService, DataSubjectService, LearningService, RetentionService, ConversationsService, PlaybookService,
+    CryptoService, AuditService, ConsentService, DataSubjectService, LearningService, RetentionService, ConversationsService, PlaybookService, SecretsService,
   ],
   exports: [PilotService, ConsentService, AuditService],
 })

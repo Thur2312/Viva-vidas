@@ -174,6 +174,8 @@ export type PlaybookData = {
   cadencia: { maxTentativas: number; mensagem: string };
   /** Instruções e exemplos rotulados "EXEMPLO (não ativo)"; nunca conteúdo usável. */
   exemplos?: Record<string, string>;
+  /** Modo livre: playbook em Markdown escrito pelo dono (dispensa o formulário). */
+  livre?: string;
 };
 
 export type PlaybookStatus = "rascunho" | "ativo" | "arquivado";

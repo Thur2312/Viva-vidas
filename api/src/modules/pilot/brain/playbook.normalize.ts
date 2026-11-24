@@ -63,5 +63,6 @@ export function normalizePlaybook(raw: unknown): PlaybookData {
     passagemHumano: { quando: strs(passagem.quando) },
     agenda: { tiposReuniao: strs(agenda.tiposReuniao), duracaoMin: num(agenda.duracaoMin), janelas: str(agenda.janelas), prometer: str(agenda.prometer) },
     cadencia: { maxTentativas: num(cadencia.maxTentativas), mensagem: str(cadencia.mensagem) },
+    ...(str(x.livre).trim() ? { livre: str(x.livre).trim().slice(0, 40_000) } : {}),
   }
 }
