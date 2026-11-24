@@ -37,7 +37,7 @@ export async function rawFetch(path: string, init: RequestInit = {}): Promise<Re
       ...init,
       headers: { ...(init.headers as Record<string, string>), ...extra },
       cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
+      signal: init.signal ?? AbortSignal.timeout(15_000),
     });
   } catch {
     throw new UpstreamError(502, "api_unreachable");

@@ -4,6 +4,7 @@ import { PilotService } from './pilot.service'
 import { CryptoService } from './compliance/crypto.service'
 import { pseudonymize, pseudonymizeDeep, restoreLeadName } from './compliance/redaction'
 import { BrainOutput, SalesBrain } from './brain/brain'
+import { pdfToMarkdown } from './brain/playbook-import'
 import { LlmError, StructuredLlm, createStructuredLlm, resolveAnthropicBaseUrl } from './brain/llm'
 import { normalizePlaybook } from './brain/playbook.normalize'
 import { Profile } from './brain/types'
@@ -258,6 +259,11 @@ export class ShadowService {
 
   private get brain(): SalesBrain {
     return this.current.brain
+  }
+
+  /** PDF -> Markdown com o provedor de IA atual; lança LlmError se a IA estiver desligada. */
+  importPdf(base64: string): Promise<string> {
+    return pdfToMarkdown(this.llm, base64)
   }
 
   /**

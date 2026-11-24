@@ -21,6 +21,10 @@ export interface LlmCall {
   schemaName: string
   schema: object
   maxTokens?: number
+  /** Documento anexado à última mensagem (ex.: PDF para transcrever). */
+  document?: { mime: string; base64: string }
+  /** Sobrescreve o tempo limite desta chamada (padrão LLM_TIMEOUT_MS, 20 s). */
+  timeoutMs?: number
 }
 
 export interface LlmResult<T> {
@@ -101,6 +105,22 @@ async function postJson(
   }
 }
 
+/** Tempo limite desta chamada, se ela pedir um próprio. */
+function callOpts(base: Required<LlmOptions>, c: LlmCall): Required<LlmOptions> {
+  return c.timeoutMs && c.timeoutMs > 0 ? { ...base, timeoutMs: c.timeoutMs } : base
+}
+
+/** Anthropic: o documento vira um bloco `document` antes do texto da última mensagem. */
+function withAnthropicDocument(c: LlmCall): unknown[] {
+  if (!c.document) return c.messages
+  const doc = c.document
+  return c.messages.map((m, i) =>
+    i === c.messages.length - 1
+      ? { role: m.role, content: [{ type: 'document', source: { type: 'base64', media_type: doc.mime, data: doc.base64 } }, { type: 'text', text: m.content }] }
+      : m,
+  )
+}
+
 function resolveOpts(o?: LlmOptions): Required<LlmOptions> {
   return { timeoutMs: o?.timeoutMs ?? envTimeout(), retryDelayMs: o?.retryDelayMs ?? 500 }
 }
@@ -127,11 +147,11 @@ export class AnthropicLlm implements StructuredLlm {
         model: this.model,
         max_tokens: c.maxTokens ?? DEFAULT_MAX_TOKENS,
         system: c.system,
-        messages: c.messages,
+        messages: withAnthropicDocument(c),
         tools: [{ name: c.schemaName, description: `Registra a saída estruturada (${c.schemaName}).`, input_schema: c.schema }],
         tool_choice: { type: 'tool', name: c.schemaName },
       },
-      this.opts,
+      callOpts(this.opts, c),
     )
     if (json?.stop_reason === 'max_tokens') throw new LlmError('Anthropic truncado (max_tokens)', 'truncated')
     const block = json?.content?.find?.((b: any) => b?.type === 'tool_use')
@@ -193,7 +213,10 @@ export class GeminiLlm implements StructuredLlm {
       { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey },
       {
         systemInstruction: { parts: [{ text: c.system }] },
-        contents: c.messages.map((m) => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })),
+        contents: c.messages.map((m, i) => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [...(c.document && i === c.messages.length - 1 ? [{ inlineData: { mimeType: c.document.mime, data: c.document.base64 } }] : []), { text: m.content }],
+        })),
         generationConfig: {
           maxOutputTokens: c.maxTokens ?? DEFAULT_MAX_TOKENS,
           temperature: 0.4,
@@ -202,7 +225,7 @@ export class GeminiLlm implements StructuredLlm {
           ...(thinkingConfig ? { thinkingConfig } : {}),
         },
       },
-      this.opts,
+      callOpts(this.opts, c),
     )
     if (json?.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new LlmError('Gemini truncado (MAX_TOKENS)', 'truncated')
     const text = json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text ?? '').join('')

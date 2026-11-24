@@ -46,6 +46,7 @@ const POST_ROUTES: Route[] = [
   // Playbook: só o dono cria e ativa (o papel é conferido de novo no backend).
   { re: /^playbook$/, params: [] },
   { re: /^playbook\/\d{1,9}\/activate$/, params: [] },
+  { re: /^playbook\/import-pdf$/, params: [] },
   // Teste do agente: conversa digitada, nada é gravado nem enviado.
   { re: /^agent\/test$/, params: [] },
 ];
@@ -84,7 +85,9 @@ const MAX_BODY = 8 * 1024;
 // O playbook é um documento maior: o BFF deixa passar até 220 KB e o DTO da API (200 KiB) é quem decide.
 const PLAYBOOK_MAX_BODY = 220 * 1024;
 const isPlaybook = (path: string) => path === "playbook" || path.startsWith("playbook/");
-const maxBody = (path: string) => (isPlaybook(path) ? PLAYBOOK_MAX_BODY : path === "agent/test" ? 64 * 1024 : MAX_BODY);
+const maxBody = (path: string) => (path === "playbook/import-pdf" ? 4 * 1024 * 1024 : isPlaybook(path) ? PLAYBOOK_MAX_BODY : path === "agent/test" ? 64 * 1024 : MAX_BODY);
+// Chamadas que esperam a IA (conversa de teste, PDF) levam mais que os 15 s padrão.
+const slow = (path: string) => path === "agent/test" || path === "playbook/import-pdf";
 
 type Method = "POST" | "PATCH" | "PUT";
 
@@ -112,6 +115,7 @@ function mutate(method: Method, routes: Route[]) {
         method,
         headers: { "content-type": "application/json" },
         body: JSON.stringify(json),
+        ...(slow(path) ? { signal: AbortSignal.timeout(58_000) } : {}),
       });
       if (res.ok) return NextResponse.json(await res.json().catch(() => ({})), { status: res.status, headers: { "cache-control": "no-store" } });
 
@@ -133,6 +137,9 @@ function mutate(method: Method, routes: Route[]) {
       throw new UpstreamError(res.status >= 500 ? 502 : res.status, `upstream_${res.status}`);
     });
 }
+
+// Limite da função no Vercel (plano Hobby aceita até 60 s).
+export const maxDuration = 60;
 
 export const POST = mutate("POST", POST_ROUTES);
 export const PATCH = mutate("PATCH", PATCH_ROUTES);
