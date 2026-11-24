@@ -33,6 +33,7 @@ const GET_ROUTES: Route[] = [
   { re: /^playbook$/, params: [] },
   { re: /^playbook\/\d{1,9}$/, params: [] },
   { re: /^config\/secrets$/, params: [] },
+  { re: /^calendar\/oauth\/start$/, params: [] },
 ];
 
 const POST_ROUTES: Route[] = [
