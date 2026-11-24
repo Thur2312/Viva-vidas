@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ActionError } from "@/lib/client";
+import { ActionError, sendJson } from "@/lib/client";
 import { activatePlaybook, fetchPlaybook, savePlaybook } from "./playbook-api";
-import { botao, campo } from "./estilo";
+import { botao, botaoSec, campo } from "./estilo";
 import type { PlaybookData } from "@/lib/types";
 
 const MIN = 200;
 const MAX = 40000;
+const MAX_PDF = 2_500_000;
+
+/** ArrayBuffer -> base64 sem estourar a pilha em arquivos grandes. */
+function paraBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
 
 export function PlaybookLivre({ owner }: { owner: boolean }) {
   const q = useQuery({ queryKey: ["playbook-livre"], queryFn: ({ signal }) => fetchPlaybook(signal) });
@@ -18,6 +27,8 @@ export function PlaybookLivre({ owner }: { owner: boolean }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const id = useId();
+  const arquivo = useRef<HTMLInputElement>(null);
+  const [lendo, setLendo] = useState(false);
   const ativo = q.data?.active?.data?.livre;
 
   useEffect(() => {
@@ -43,6 +54,32 @@ export function PlaybookLivre({ owner }: { owner: boolean }) {
     }
   }
 
+  async function importar(file: File) {
+    setMsg(null);
+    if (file.size > MAX_PDF) {
+      setMsg({ ok: false, t: `O PDF passa de ${(MAX_PDF / 1_000_000).toFixed(1)} MB. Envie um arquivo menor ou divida em partes.` });
+      return;
+    }
+    if (texto.trim() && !window.confirm("Substituir o texto do editor pelo conteúdo do PDF?")) return;
+    setLendo(true);
+    try {
+      const data = paraBase64(await file.arrayBuffer());
+      const r = await sendJson<{ markdown: string }>(
+        "POST",
+        "/api/pilot/playbook/import-pdf",
+        { data },
+        { network: "Sem conexão com o servidor.", fallback: "Não foi possível ler o PDF. Tente de novo." } as never,
+      );
+      setTexto(r.markdown);
+      setMsg({ ok: true, t: "PDF convertido. Revise o texto abaixo (a IA pode errar) e clique em Salvar e ativar." });
+    } catch (e) {
+      setMsg({ ok: false, t: e instanceof ActionError ? e.message : "Não foi possível ler o PDF." });
+    } finally {
+      setLendo(false);
+      if (arquivo.current) arquivo.current.value = "";
+    }
+  }
+
   const curto = texto.trim().length < MIN;
   return (
     <div className="max-w-3xl">
@@ -57,6 +94,15 @@ export function PlaybookLivre({ owner }: { owner: boolean }) {
           <span className="text-warn">Nenhum playbook ativo: o agente repassa tudo a uma pessoa.</span>
         )}
       </p>
+      {owner && (
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <input ref={arquivo} type="file" accept="application/pdf,.pdf" className="sr-only" id={`${id}-pdf`} onChange={(e) => { const f = e.target.files?.[0]; if (f) void importar(f); }} />
+          <label htmlFor={`${id}-pdf`} className={`${botaoSec} cursor-pointer ${lendo ? "pointer-events-none opacity-40" : ""}`}>
+            {lendo ? "Lendo o PDF…" : "Importar de um PDF"}
+          </label>
+          <span className="text-sm text-mute">A IA converte o PDF em Markdown (até 2,5 MB). Nada é salvo até você revisar e confirmar.</span>
+        </div>
+      )}
       <label htmlFor={id} className="mb-1 block text-sm font-semibold">Playbook (Markdown)</label>
       <textarea
         id={id}

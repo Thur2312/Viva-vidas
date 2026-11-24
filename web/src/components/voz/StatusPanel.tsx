@@ -3,6 +3,8 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { Folio } from "@/components/folha";
+import { CampoConfig } from "@/components/agente/CampoConfig";
+import { useMe } from "@/lib/hooks";
 import { Selo } from "@/components/Selo";
 import { estadoProvedor, estadoTelefonia, type Estado } from "@/lib/agente-estados";
 import { estadoAviso } from "@/lib/voz-view";
@@ -26,7 +28,7 @@ const envName = (s: string) => s.split(" ")[0];
 
 const rotulo = "font-mono text-[11px] font-medium uppercase tracking-wider text-mute";
 
-function Row({ title, subtitle, estado, missing = [], faltaRotulo = "O que falta", extra }: { title: string; subtitle: string; estado: Estado; missing?: string[]; faltaRotulo?: string; extra?: React.ReactNode }) {
+function Row({ title, subtitle, estado, missing = [], faltaRotulo = "O que falta", extra, role }: { title: string; subtitle: string; estado: Estado; missing?: string[]; faltaRotulo?: string; extra?: React.ReactNode; role?: string }) {
   return (
     <li className="py-4">
       <div className="flex items-start justify-between gap-3">
@@ -44,6 +46,7 @@ function Row({ title, subtitle, estado, missing = [], faltaRotulo = "O que falta
               <li key={m} className="text-sm">
                 <code className="font-mono text-[13px]">{envName(m)}</code>
                 <span className="ml-2 text-mute">{howto(envName(m))}</span>
+                <CampoConfig name={envName(m)} role={role} />
               </li>
             ))}
           </ul>
@@ -74,6 +77,7 @@ function CopyUrl({ url }: { url: string }) {
 }
 
 export function StatusPanel({ s }: { s: VoiceStatus }) {
+  const role = useMe().data?.role;
   const telMissing = s.telephony.missing;
   // O webhook só faz sentido depois da base pública definida; com ela, mostra as duas URLs que o Twilio chama.
   const baseMissing = telMissing.includes("VOICE_WEBHOOK_BASE_URL");
@@ -85,6 +89,7 @@ export function StatusPanel({ s }: { s: VoiceStatus }) {
           subtitle={s.telephony.provider === "disabled" ? "Nenhum provedor ativo" : `Provedor: ${s.telephony.provider} (não testado com conta real)`}
           estado={estadoTelefonia(s.telephony)}
           missing={telMissing}
+          role={role}
           extra={
             s.webhookUrl && !baseMissing ? (
               <div className="mt-4">
@@ -100,6 +105,7 @@ export function StatusPanel({ s }: { s: VoiceStatus }) {
           subtitle={`Provedor: ${s.tts.provider === "disabled" ? "ElevenLabs" : s.tts.provider}. Só será usada pelo agente de voz, ainda não construído.`}
           estado={estadoProvedor(s.tts, true)}
           missing={s.tts.missing}
+          role={role}
           faltaRotulo={s.tts.provider === "disabled" ? "Para ligar (opcional)" : "O que falta"}
         />
         <Row
@@ -107,6 +113,7 @@ export function StatusPanel({ s }: { s: VoiceStatus }) {
           subtitle={s.stt.provider === "disabled" ? "Sem provedor: gravações não são transcritas" : `Provedor: ${s.stt.provider}`}
           estado={estadoProvedor(s.stt, true)}
           missing={s.stt.missing}
+          role={role}
           faltaRotulo={s.stt.provider === "disabled" ? "Para ligar (opcional)" : "O que falta"}
         />
         <Row

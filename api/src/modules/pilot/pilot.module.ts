@@ -16,6 +16,7 @@ import { ConversationsController } from './conversations/conversations.controlle
 import { ConversationsService } from './conversations/conversations.service'
 import { PlaybookController } from './brain/playbook.controller'
 import { AgentTestController } from './brain/agent-test.controller'
+import { PlaybookImportController } from './brain/playbook-import.controller'
 import { ConfigController } from './config/config.controller'
 import { SecretsService } from './config/secrets.service'
 import { PlaybookService } from './brain/playbook.service'
@@ -25,7 +26,7 @@ import { CALENDAR_PROVIDERS, CalendarController } from '../calendar/calendar.mod
 
 @Module({
   imports: [ChatGatewayModule, PgModule],
-  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, AgentTestController, ConfigController, CrmController, CalendarController],
+  controllers: [WhatsappController, PilotController, BroadcastsController, ConversationsController, PlaybookController, PlaybookImportController, AgentTestController, ConfigController, CrmController, CalendarController],
   providers: [
     ...BROADCASTS_PROVIDERS,
     ...CRM_PROVIDERS,

@@ -65,6 +65,9 @@ async function bootstrap() {
 
   const bodyLimit = process.env.BODY_LIMIT || '1mb'
 
+  // Importação de PDF do playbook: corpo maior só nesta rota (base64 de até 2,5 MB). Vem antes do parser global.
+  app.use('/pilot/playbook/import-pdf', json({ limit: '4mb' }))
+
   // rawBody so para as rotas de webhook que validam HMAC (ver raw-body.util).
   app.use(
     json({
