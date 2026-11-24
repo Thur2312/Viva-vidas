@@ -38,6 +38,8 @@ const GET_ROUTES: Route[] = [
 const POST_ROUTES: Route[] = [
   { re: new RegExp(`^conversations/${UUID}/messages$`), params: [] },
   { re: /^crm\/retry-dead$/, params: [] },
+  { re: /^whatsapp\/connection\/start$/, params: [] },
+  { re: /^whatsapp\/connection\/official$/, params: [] },
   { re: /^calendar\/book$/, params: [] },
   { re: /^voice\/calls$/, params: [], base: "/voice" },
   { re: /^broadcasts$/, params: [] },
@@ -92,7 +94,7 @@ const slow = (path: string) => path === "agent/test" || path === "playbook/impor
 type Method = "POST" | "PATCH" | "PUT";
 
 const passthrough = (path: string, status: number) =>
-  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status)) || (isPlaybook(path) && [400, 403, 409, 413, 422].includes(status)) || (path.startsWith("config/") && [400, 403].includes(status)) || (path === "agent/test" && [400, 403].includes(status));
+  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status)) || (isPlaybook(path) && [400, 403, 409, 413, 422].includes(status)) || (path.startsWith("config/") && [400, 403].includes(status)) || (path === "agent/test" && [400, 403].includes(status)) || (path === "whatsapp/connection/official" && [400, 403].includes(status));
 
 function mutate(method: Method, routes: Route[]) {
   return (req: Request, ctx: { params: Promise<{ path: string[] }> }) =>

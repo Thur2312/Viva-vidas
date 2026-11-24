@@ -23,6 +23,32 @@ export const useWhatsappConnection = () =>
     refetchInterval: 5_000,
   });
 
+export type WhatsappStart =
+  | { ok: true; data: { id: number; status: string; started: boolean } }
+  | { ok: false; error: string };
+
+/** Pede ao chat para iniciar a sessão do WhatsApp (gera o QR). Só o dono; o chat não derruba sessão conectada. */
+export function useStartWhatsapp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => post<WhatsappStart>("whatsapp/connection/start", {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["whatsapp", "connection"] }),
+  });
+}
+
+export type WhatsappOfficial =
+  | { ok: true; data: { id: number; status: string; created: boolean } }
+  | { ok: false; error: string };
+
+/** Cadastra a API oficial da Meta. O token vai direto ao chat; esta tela nunca o recebe de volta. */
+export function useConnectOfficial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { phoneNumberId: string; wabaId: string; accessToken: string; name?: string }) => post<WhatsappOfficial>("whatsapp/connection/official", v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["whatsapp", "connection"] }),
+  });
+}
+
 export type CalendarRules = { timezone: string; days: number[]; start: string; end: string; durationMin: number; minNoticeMin: number; horizonDays: number };
 export type CalendarStatus = { enabled: boolean; provider: string; configured: boolean; missing: string[]; rules: CalendarRules };
 export type Slot = { start: string; end: string };
