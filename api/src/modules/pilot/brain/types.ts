@@ -11,6 +11,7 @@ export type Action =
   | { tipo: 'tratar_objecao'; objecaoId: string }
   | { tipo: 'responder_duvida'; fatoId: string }
   | { tipo: 'propor_horario' }
+  | { tipo: 'conversar' }
   | { tipo: 'repassar_humano'; motivo: HandoffReason }
   | { tipo: 'aguardar' }
 
@@ -63,4 +64,6 @@ export interface PlaybookData {
   cadencia: { maxTentativas: number; mensagem: string }
   /** Instruções e exemplos rotulados "EXEMPLO (não ativo)"; nunca conteúdo usável. */
   exemplos?: Record<string, string>
+  /** Modo livre: playbook em Markdown escrito pelo dono. Quando presente, dispensa o formulário estruturado. */
+  livre?: string
 }

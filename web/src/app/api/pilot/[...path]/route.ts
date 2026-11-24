@@ -32,6 +32,7 @@ const GET_ROUTES: Route[] = [
   { re: new RegExp(`^broadcasts/${UUID}/recipients$`), params: ["status", "page"] },
   { re: /^playbook$/, params: [] },
   { re: /^playbook\/\d{1,9}$/, params: [] },
+  { re: /^config\/secrets$/, params: [] },
 ];
 
 const POST_ROUTES: Route[] = [
@@ -45,6 +46,8 @@ const POST_ROUTES: Route[] = [
   // Playbook: só o dono cria e ativa (o papel é conferido de novo no backend).
   { re: /^playbook$/, params: [] },
   { re: /^playbook\/\d{1,9}\/activate$/, params: [] },
+  // Teste do agente: conversa digitada, nada é gravado nem enviado.
+  { re: /^agent\/test$/, params: [] },
 ];
 
 const PATCH_ROUTES: Route[] = [{ re: new RegExp(`^broadcasts/${UUID}$`), params: [] }];
@@ -53,6 +56,7 @@ const PATCH_ROUTES: Route[] = [{ re: new RegExp(`^broadcasts/${UUID}$`), params:
 const PUT_ROUTES: Route[] = [
   { re: /^voice\/settings$/, params: [], base: "/voice" },
   { re: /^playbook\/\d{1,9}$/, params: [] },
+  { re: /^config\/secrets\/[A-Z][A-Z0-9_]{2,63}$/, params: [] },
 ];
 
 // voice/... -> /voice/...  |  demais -> /pilot/...
@@ -80,12 +84,12 @@ const MAX_BODY = 8 * 1024;
 // O playbook é um documento maior: o BFF deixa passar até 220 KB e o DTO da API (200 KiB) é quem decide.
 const PLAYBOOK_MAX_BODY = 220 * 1024;
 const isPlaybook = (path: string) => path === "playbook" || path.startsWith("playbook/");
-const maxBody = (path: string) => (isPlaybook(path) ? PLAYBOOK_MAX_BODY : MAX_BODY);
+const maxBody = (path: string) => (isPlaybook(path) ? PLAYBOOK_MAX_BODY : path === "agent/test" ? 64 * 1024 : MAX_BODY);
 
 type Method = "POST" | "PATCH" | "PUT";
 
 const passthrough = (path: string, status: number) =>
-  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status)) || (isPlaybook(path) && [400, 403, 409, 413, 422].includes(status));
+  status === 422 || status === 503 || (path.startsWith("calendar/") && [400, 403, 404, 409, 502].includes(status)) || (path === "crm/retry-dead" && status === 403) || (path.startsWith("broadcasts") && [400, 403, 409].includes(status)) || (path === "voice/settings" && [400, 403].includes(status)) || (isPlaybook(path) && [400, 403, 409, 413, 422].includes(status)) || (path.startsWith("config/") && [400, 403].includes(status)) || (path === "agent/test" && [400, 403].includes(status));
 
 function mutate(method: Method, routes: Route[]) {
   return (req: Request, ctx: { params: Promise<{ path: string[] }> }) =>

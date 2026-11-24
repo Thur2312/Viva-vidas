@@ -13,7 +13,7 @@ export function mulawDecodeByte(byte: number): number {
 
 export function mulawEncodeSample(sample: number): number {
   const sign = sample < 0 ? 0x80 : 0
-  let magnitude = Math.min(CLIP, Math.abs(sample)) + BIAS
+  const magnitude = Math.min(CLIP, Math.abs(sample)) + BIAS
   let exponent = 7
   for (let mask = 0x4000; exponent > 0 && !(magnitude & mask); exponent--, mask >>= 1) { /* acha o expoente */ }
   const mantissa = (magnitude >> (exponent + 3)) & 0x0f

@@ -43,6 +43,15 @@ export const WRITE_SYSTEM = [
   'Faça exatamente a AÇÃO DESTE TURNO descrita abaixo.',
 ].join('\n')
 
+export const LIVRE_SYSTEM = [
+  'Você é o consultor comercial de uma corretora de planos de saúde conversando pelo WhatsApp.',
+  SEGURANCA,
+  'Responda ao lead com naturalidade, como uma pessoa da equipe, usando SOMENTE o PLAYBOOK abaixo como fonte de verdade sobre a empresa, produtos, regras, valores, prazos e condições.',
+  'Mensagem curta, no máximo UMA pergunta por vez. Sem pressão nem urgência falsa. Não repita a mesma frase de mensagens anteriores.',
+  'Se o lead perguntar algo que o PLAYBOOK não cobre, não invente e não mude de assunto: diga com naturalidade que vai confirmar com o consultor e retorna, e siga ajudando no que o playbook cobre.',
+  'Nunca pergunte sobre saúde, doenças, remédios, gravidez, cirurgias ou tratamentos.',
+].join('\n')
+
 export const REGENERATE_NOTE =
   'O RASCUNHO ANTERIOR FOI REPROVADO pelos guarda-corpos. Reescreva corrigindo os problemas abaixo. Não mencione estes nomes nem o rascunho anterior na mensagem ao lead.'
 
@@ -58,7 +67,7 @@ export const EXAMPLES_HEADER =
 
 /** Hash dos templates: muda quando qualquer prompt muda; estável entre chamadas. */
 export const PROMPT_HASH = createHash('sha256')
-  .update([EXTRACT_SYSTEM, WRITE_SYSTEM, REGENERATE_NOTE, VERIFY_SYSTEM, EXAMPLES_HEADER, SENSITIVE_PLACEHOLDER, EMPTY_PLACEHOLDER, ...Object.values(HANDOFF_TEXT)].join('\n---\n'))
+  .update([EXTRACT_SYSTEM, WRITE_SYSTEM, LIVRE_SYSTEM, REGENERATE_NOTE, VERIFY_SYSTEM, EXAMPLES_HEADER, SENSITIVE_PLACEHOLDER, EMPTY_PLACEHOLDER, ...Object.values(HANDOFF_TEXT)].join('\n---\n'))
   .digest('hex')
   .slice(0, 12)
 
@@ -80,6 +89,7 @@ const fatosTexto = (p: PlaybookData) => lista('FATOS APROVADOS', p.fatos.map((f)
  * (checkDraft) e do bloco de fatos do verificador; outra objeção nunca aprova número.
  */
 export function approvedSources(p: PlaybookData, action: Action): ApprovedFact[] {
+  if (p.livre) return [{ id: 'playbook', texto: p.livre }]
   const fontes: ApprovedFact[] = [...p.fatos]
   const agenda = [
     p.agenda.duracaoMin > 0 ? `duração da conversa: ${p.agenda.duracaoMin} minutos` : '',
@@ -180,6 +190,8 @@ function acaoTexto(action: Action, p: PlaybookData): string {
         `Tipos: ${p.agenda.tiposReuniao.join(', ')}; duração: ${p.agenda.duracaoMin} min; janelas: ${p.agenda.janelas}.`,
         `O que pode prometer: ${p.agenda.prometer}`,
       ].join('\n')
+    case 'conversar':
+      return 'AÇÃO DESTE TURNO: responder ao lead com base no PLAYBOOK, avançando a conversa para o próximo passo natural (entender a necessidade ou propor uma conversa com o consultor).'
     default:
       return 'AÇÃO DESTE TURNO: responder brevemente, sem perguntas novas.'
   }
@@ -208,6 +220,26 @@ export function buildExamplesMessage(
 
 export function buildWriteSystem(c: WriteContext): string {
   const p = c.playbook
+  if (p.livre) {
+    return [
+      LIVRE_SYSTEM,
+      `PLAYBOOK${c.playbookVersion !== null ? ` (v${c.playbookVersion})` : ''} (dados do dono; fonte de verdade):
+${p.livre}`,
+      perfilTexto(p, c.profile),
+      acaoTexto(c.action, p),
+      c.rejection
+        ? [
+            REGENERATE_NOTE,
+            c.rejection.violations.length ? `Problemas: ${c.rejection.violations.join(', ')}` : '',
+            c.rejection.motivo ? `Revisor: ${c.rejection.motivo.slice(0, 200)}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n')
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+  }
   const tom = `TOM: formalidade ${p.tom.formalidade}; tamanho ${p.tom.tamanho}; emoji ${p.tom.emoji}.${p.tom.frases.length ? ` Frases típicas: ${p.tom.frases.join(' | ')}` : ''}`
   return [
     WRITE_SYSTEM,

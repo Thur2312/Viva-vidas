@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { QueryBlock, Skeleton } from "@/components/Block";
 import { PlaybookEditor } from "@/components/agente/PlaybookEditor";
+import { ChavesFolio } from "@/components/agente/Chaves";
+import { PlaybookLivre } from "@/components/agente/PlaybookLivre";
+import { TesteAgente } from "@/components/agente/TesteAgente";
 import { isOwner, useNumberHealth, useTemplatesCache } from "@/components/disparos/api";
 import { Folio, Marginalia, type MarginItem } from "@/components/folha";
 import { CHIP, Selo } from "@/components/Selo";
@@ -30,6 +33,7 @@ const ACAO: Record<string, string> = {
   propor_horario: "Propor horário",
   repassar_humano: "Repassar a uma pessoa",
   aguardar: "Aguardar",
+  conversar: "Conversar com base no playbook",
 };
 
 export default function Agente() {
@@ -203,11 +207,23 @@ export default function Agente() {
             </ul>
           </Folio>
 
-          <Folio n="03" title="Playbook" hint="O que o agente sabe e como vende: oferta, perguntas, critérios, objeções e fatos. Versionado; o agente usa só a versão ativa.">
+          <Folio n="03" title="Testar o agente" hint="Converse como se fosse o lead. Usa o playbook ativo e a IA de verdade, mas não grava nada nem envia nada ao WhatsApp.">
+            <TesteAgente role={me.data?.role} />
+          </Folio>
+
+          <Folio n="04" title="Playbook em texto" hint="Escreva ou cole o playbook como texto (Markdown). O agente conversa com base nele e passa a uma pessoa o que ele não cobre. Versionado; vale a versão ativa.">
+            <PlaybookLivre owner={isOwner(me.data?.role)} />
+          </Folio>
+
+          <Folio n="05" title="Playbook estruturado" hint="Alternativa guiada, por campos: oferta, perguntas, critérios, objeções e fatos. Só vale se estiver completo.">
             <PlaybookEditor owner={isOwner(me.data?.role)} />
           </Folio>
 
-          <Folio n="04" title="Templates do WhatsApp" hint="Os templates planejados no playbook, cruzados com o que a Meta já tem. Lido do que o servidor sincronizou.">
+          <Folio n="06" title="Chaves e integrações" hint="Cadastre aqui as chaves de IA, voz, telefonia e Meta. Ficam criptografadas e valem na hora, sem reiniciar.">
+            <ChavesFolio role={me.data?.role} />
+          </Folio>
+
+          <Folio n="07" title="Templates do WhatsApp" hint="Os templates planejados no playbook, cruzados com o que a Meta já tem. Lido do que o servidor sincronizou.">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <caption className="sr-only">Templates planejados e o estado de cada um na Meta</caption>

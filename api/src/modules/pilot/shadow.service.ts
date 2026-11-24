@@ -221,8 +221,8 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> => !!v && typeo
 export class ShadowService {
   private readonly log = new Logger(ShadowService.name)
   private readonly crypto: CryptoService
-  private readonly llm: StructuredLlm
-  private readonly brain: SalesBrain
+  private injected?: StructuredLlm
+  private cache?: { sig: string; llm: StructuredLlm; brain: SalesBrain }
 
   constructor(
     private readonly pg: PgService,
@@ -231,9 +231,74 @@ export class ShadowService {
     @Optional() @Inject(STRUCTURED_LLM) llm?: StructuredLlm,
   ) {
     this.crypto = crypto ?? new CryptoService()
-    this.llm = llm ?? createStructuredLlm()
-    this.brain = new SalesBrain(this.llm)
+    this.injected = llm
     if (!this.llm.enabled) this.log.warn('Nenhuma chave de LLM utilizável (GEMINI_API_KEY/ANTHROPIC_API_KEY): rascunhos em modo sombra desativados')
+  }
+
+  /**
+   * Resolvido a cada uso: uma chave cadastrada no painel (ou trocada) vale sem reiniciar a API.
+   * Com LLM injetado (testes) nada muda.
+   */
+  private get current(): { llm: StructuredLlm; brain: SalesBrain } {
+    if (this.injected) {
+      this.cache ??= { sig: 'injected', llm: this.injected, brain: new SalesBrain(this.injected) }
+      return this.cache
+    }
+    const sig = [process.env.LLM_PROVIDER, process.env.GEMINI_API_KEY, process.env.ANTHROPIC_API_KEY].join('|')
+    if (this.cache?.sig !== sig) {
+      const llm = createStructuredLlm()
+      this.cache = { sig, llm, brain: new SalesBrain(llm) }
+    }
+    return this.cache
+  }
+
+  private get llm(): StructuredLlm {
+    return this.current.llm
+  }
+
+  private get brain(): SalesBrain {
+    return this.current.brain
+  }
+
+  /**
+   * Teste do agente pelo painel: roda o cérebro sobre uma conversa digitada, SEM gravar nada
+   * (nem lead, nem rascunho, nem mensagem) e sem enviar nada. Usa o playbook ativo ou a versão pedida.
+   */
+  async simulate(history: { author: 'lead' | 'agente'; body: string }[], version?: number) {
+    if (!this.llm.enabled) return { status: 'disabled' as const }
+    const row = (
+      await this.pg.query(
+        version ? `SELECT version, data FROM horizon_agent.playbook_versions WHERE version = $1` : `SELECT version, data FROM horizon_agent.playbook_versions WHERE active LIMIT 1`,
+        version ? [version] : [],
+      )
+    ).rows[0]
+    const playbook = row?.data ? normalizePlaybook(row.data) : null
+    const turns = history.map((m, i) => ({ author: m.author, id: i + 1, sensitive: false, body: m.body }))
+    try {
+      const out = await this.brain.decide({
+        playbook,
+        playbookVersion: row?.version ?? null,
+        profile: {},
+        history: turns,
+        summary: null,
+        examples: [],
+        failedUnderstandingStreak: 0,
+        triggerMessageId: turns.length,
+      })
+      return {
+        status: 'ok' as const,
+        playbookVersion: row?.version ?? null,
+        draft: out.draft,
+        action: out.action.tipo,
+        handoffReason: out.handoffReason,
+        guardEvents: out.guardEvents,
+        model: out.model,
+        provider: this.llm.provider,
+      }
+    } catch (e) {
+      if (e instanceof LlmError) return { status: 'llm_error' as const, code: e.code }
+      throw e
+    }
   }
 
   status() {

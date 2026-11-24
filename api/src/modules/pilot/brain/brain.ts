@@ -193,7 +193,11 @@ export class SalesBrain {
       signals.perguntaFatoId = str(ex?.pergunta_fato_id)
       // Pergunta que nenhum fato responde: um id que não existe no playbook. Depende de
       // decideAction mapear fato desconhecido para repassar_humano{sem_base}.
-      if (!signals.perguntaFatoId && ex?.pergunta_sem_fato === true) signals.perguntaFatoId = SEM_FATO
+      // No modo livre não há lista de fatos: pergunta fora do texto é tratada na redação ("vou confirmar"), não repassada.
+      if (playbook.livre) {
+        signals.objecaoId = null
+        signals.perguntaFatoId = null
+      } else if (!signals.perguntaFatoId && ex?.pergunta_sem_fato === true) signals.perguntaFatoId = SEM_FATO
     }
 
     const action = decideAction({ playbook, profile, signals, failedUnderstandingStreak: i.failedUnderstandingStreak })
