@@ -4,6 +4,7 @@ import { Link2, RefreshCw, Workflow } from "lucide-react";
 import { EmptyState, QueryBlock, Skeleton } from "@/components/Block";
 import { Folio, Marginalia } from "@/components/folha";
 import { Selo } from "@/components/Selo";
+import { ConectarOficial } from "@/components/integracoes/ConectarOficial";
 import { PageHeader } from "@/components/ui";
 import { isOwner } from "@/components/disparos/api";
 import { useCalendarStatus, useCrmStatus, useRetryDead, useSlots, useStartWhatsapp, useWhatsappConnection, type WhatsappConnection, slotDay, slotHour, type CalendarStatus, type CrmStatus, type Slot } from "@/components/integracoes/api";
@@ -159,8 +160,12 @@ export default function Integracoes() {
 
       <div className="grid gap-x-14 gap-y-12 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-12">
-          <Folio n="01" title="WhatsApp" hint="Conexão do número pelo chat. Quando precisar parear, o QR aparece aqui.">
+          <Folio n="01" title="WhatsApp" hint="Dois canais. O QR pareia um número comum: serve para receber e acompanhar conversas. A API oficial da Meta é o canal para mensagens ativas e disparos (exige opt-in, janela de 24 h e templates aprovados).">
             <QueryBlock q={wa} skeleton={<Skeleton className="h-40" />}>{(c) => <WhatsappPanel c={c} owner={isOwner(me.data?.role)} />}</QueryBlock>
+            {isOwner(me.data?.role) && <ConectarOficial conectada={false} />}
+            <p className="mt-5 max-w-xl text-sm text-mute">
+              Conformidade: o envio pelo agente e pelos disparos só sai pela API oficial, e só para quem deu consentimento e não pediu para parar. O QR não é um canal oficial do WhatsApp e não deve ser usado para mensagens em massa: a conta pode ser bloqueada pela Meta.
+            </p>
           </Folio>
 
           <Folio n="02" title="Pipedrive (CRM)" hint="Cada etapa do funil vira um negócio no CRM do Alberto, por uma fila com nova tentativa.">

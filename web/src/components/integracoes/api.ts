@@ -36,6 +36,19 @@ export function useStartWhatsapp() {
   });
 }
 
+export type WhatsappOfficial =
+  | { ok: true; data: { id: number; status: string; created: boolean } }
+  | { ok: false; error: string };
+
+/** Cadastra a API oficial da Meta. O token vai direto ao chat; esta tela nunca o recebe de volta. */
+export function useConnectOfficial() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { phoneNumberId: string; wabaId: string; accessToken: string; name?: string }) => post<WhatsappOfficial>("whatsapp/connection/official", v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["whatsapp", "connection"] }),
+  });
+}
+
 export type CalendarRules = { timezone: string; days: number[]; start: string; end: string; durationMin: number; minNoticeMin: number; horizonDays: number };
 export type CalendarStatus = { enabled: boolean; provider: string; configured: boolean; missing: string[]; rules: CalendarRules };
 export type Slot = { start: string; end: string };

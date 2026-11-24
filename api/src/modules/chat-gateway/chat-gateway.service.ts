@@ -145,6 +145,38 @@ export class ChatGatewayService {
     }
   }
 
+  /**
+   * Cadastra/atualiza a conexão da API OFICIAL (Cloud API) no chat. O token só passa por aqui a caminho do chat:
+   * não é gravado nem logado nesta API, e a resposta nunca o devolve. O chat confere o token na Graph antes de salvar.
+   * Nunca lança: devolve o motivo explícito.
+   */
+  async connectOfficial(i: { phoneNumberId: string; wabaId: string; accessToken: string; name?: string }): Promise<
+    { ok: true; data: { id: number; status: string; created: boolean } } | { ok: false; error: string }
+  > {
+    if (!this.configured()) return { ok: false, error: 'chat_nao_configurado' }
+    const ctrl = new AbortController()
+    const t = setTimeout(() => ctrl.abort(), 15_000)
+    try {
+      const res = await fetch(this.url + '/pilot-bridge/connection/official', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-pilot-key': this.key },
+        body: JSON.stringify({ phoneNumberId: i.phoneNumberId, wabaId: i.wabaId, accessToken: i.accessToken, name: i.name }),
+        signal: ctrl.signal,
+      })
+      if (res.ok) return { ok: true, data: (await res.json()) as { id: number; status: string; created: boolean } }
+      if (res.status === 400) {
+        const j: any = await res.json().catch(() => null)
+        const code = String(j?.error ?? j?.code ?? '')
+        return { ok: false, error: code === 'credenciais_invalidas' ? 'credenciais_invalidas' : 'dados_invalidos' }
+      }
+      return { ok: false, error: res.status === 503 ? 'chat_nao_configurado' : 'chat_indisponivel' }
+    } catch {
+      return { ok: false, error: 'chat_indisponivel' }
+    } finally {
+      clearTimeout(t)
+    }
+  }
+
   private async call<T = any>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
     if (!this.configured()) throw new ServiceUnavailableException('Chat não configurado (CHAT_API_URL / CHAT_BRIDGE_KEY)')
     const ctrl = new AbortController()
